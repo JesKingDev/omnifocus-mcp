@@ -119,7 +119,7 @@ vi.mock('../../src/omnifocus/OmniAutomation.js', () => ({
   setPendingOperationsTracker: setPendingOperationsTrackerMock,
 }));
 
-function resetEnv(overrides: NodeJS.ProcessEnv = {}) {
+function resetEnv(overrides: Record<string, string | undefined> = {}) {
   process.env = { ...originalEnv, ...overrides };
 }
 
@@ -194,6 +194,75 @@ describe('server entrypoint', () => {
     expect(cacheManager.getStats).toHaveBeenCalledTimes(1);
     expect(serverConnectMock).toHaveBeenCalledWith(transport);
     expect(permissionCheckerInstance.checkPermissions).toHaveBeenCalledTimes(1);
+  });
+
+  it('emits the OWNER startup role line when OMNIFOCUS_MCP_ROLE=owner (D-09 / ROLE-03)', async () => {
+    resetEnv({
+      MCP_SKIP_AUTO_START: 'true',
+      NODE_ENV: 'development',
+      CI: 'false',
+      OMNIFOCUS_MCP_ROLE: 'owner',
+    });
+    Object.defineProperty(process, 'platform', { value: 'darwin' });
+    loggerInstance.info.mockClear();
+    const { runServer } = await importEntry();
+
+    await runServer();
+
+    const roleLines = loggerInstance.info.mock.calls
+      .map((call) => call[0])
+      .filter((arg): arg is string => typeof arg === 'string' && /^resolved role=/.test(arg));
+
+    expect(roleLines).toHaveLength(1);
+    expect(roleLines[0]).toBe('resolved role=OWNER source=explicit-env');
+    expect(roleLines[0]).toMatch(/resolved role=(OWNER|AGENT) source=(explicit-env|fail-safe-default)/);
+  });
+
+  it('emits the AGENT fail-safe startup role line when OMNIFOCUS_MCP_ROLE is unset (D-09 / ROLE-03)', async () => {
+    const overrides: Record<string, string | undefined> = {
+      MCP_SKIP_AUTO_START: 'true',
+      NODE_ENV: 'development',
+      CI: 'false',
+    };
+    resetEnv(overrides);
+    // resetEnv spreads originalEnv, which may carry OMNIFOCUS_MCP_ROLE from the
+    // launching shell; delete it so the unset (fail-safe) branch is exercised.
+    delete process.env.OMNIFOCUS_MCP_ROLE;
+    Object.defineProperty(process, 'platform', { value: 'darwin' });
+    loggerInstance.info.mockClear();
+    const { runServer } = await importEntry();
+
+    await runServer();
+
+    const roleLines = loggerInstance.info.mock.calls
+      .map((call) => call[0])
+      .filter((arg): arg is string => typeof arg === 'string' && /^resolved role=/.test(arg));
+
+    expect(roleLines).toHaveLength(1);
+    expect(roleLines[0]).toBe('resolved role=AGENT source=fail-safe-default');
+    expect(roleLines[0]).toMatch(/resolved role=(OWNER|AGENT) source=(explicit-env|fail-safe-default)/);
+  });
+
+  it('resolves and logs the role BEFORE registerTools is called (ROLE-01 ordering invariant)', async () => {
+    resetEnv({ MCP_SKIP_AUTO_START: 'true', NODE_ENV: 'development', CI: 'false' });
+    delete process.env.OMNIFOCUS_MCP_ROLE;
+    Object.defineProperty(process, 'platform', { value: 'darwin' });
+    loggerInstance.info.mockClear();
+    registerToolsMock.mockClear();
+    const { runServer } = await importEntry();
+
+    await runServer();
+
+    const roleCallIndex = loggerInstance.info.mock.calls.findIndex(
+      (call) => typeof call[0] === 'string' && /^resolved role=/.test(call[0]),
+    );
+    expect(roleCallIndex).toBeGreaterThanOrEqual(0);
+    expect(registerToolsMock).toHaveBeenCalledTimes(1);
+
+    const roleLogOrder = loggerInstance.info.mock.invocationCallOrder[roleCallIndex];
+    const registerToolsOrder = registerToolsMock.mock.invocationCallOrder[0];
+
+    expect(roleLogOrder).toBeLessThan(registerToolsOrder);
   });
 
   it('disables cache warming in CI environments', async () => {
