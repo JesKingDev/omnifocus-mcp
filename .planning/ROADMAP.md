@@ -51,7 +51,7 @@ ROLE-02, ROLE-03 **Success Criteria** (what must be TRUE):
 Plans:
 
 - [x] 01-01-PLAN.md — Role contract types (roles.ts) + logger SENSITIVE_KEYS extension (D-08)
-- [ ] 01-02-PLAN.md — Role resolver module + exhaustive 14-class parse matrix unit test
+- [x] 01-02-PLAN.md — Role resolver module + exhaustive 14-class parse matrix unit test
 - [ ] 01-03-PLAN.md — Wire resolver into src/index.ts startup + D-09 log line + human verify
 
 ### Phase 2: Operation Policy (Deny-Deletes & Gating)
@@ -138,7 +138,7 @@ must be TRUE):
 
 | Phase                                       | Plans Complete | Status      | Completed |
 | ------------------------------------------- | -------------- | ----------- | --------- |
-| 1. Role Model & Resolver                    | 1/3            | In Progress |           |
+| 1. Role Model & Resolver                    | 2/3            | In Progress |           |
 | 2. Operation Policy (Deny-Deletes & Gating) | 0/TBD          | Not started | -         |
 | 3. RoleGate & Agent Read Paths              | 0/TBD          | Not started | -         |
 | 4. HTTP Edge Hardening                      | 0/TBD          | Not started | -         |
