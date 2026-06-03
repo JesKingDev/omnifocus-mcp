@@ -15,6 +15,8 @@ import { SessionManager } from './session-manager.js';
 import { HttpServerManager } from './http-server.js';
 import { StartupTimer } from './utils/startup-timer.js';
 import { assertSandboxGuardAtStartup } from './utils/sandbox-guard.js';
+import { parseRole, resolveStdioIdentity, resolveHttpIdentity } from './auth/role-resolver.js';
+import type { ResolvedIdentity, Role } from './contracts/roles.js';
 
 // First executable statement: performance.now() here ≈ Node bootstrap + ESM
 // import-graph load (the cold-`npm ci` FS cost). Must precede parseCLIArgs.
@@ -138,18 +140,23 @@ export async function runServer() {
   }
   startupTimer.mark('warmEnd');
 
+  // Phase 1: resolve identity and role before any tool dispatch (ROLE-01, ROLE-02, ROLE-03)
+  const identity = cliConfig.httpMode ? resolveHttpIdentity() : resolveStdioIdentity();
+  const role = parseRole();
+  logger.info(`resolved role=${role.toUpperCase()} source=${identity.roleSource}`);
+
   // Check if we're running in HTTP mode
   if (cliConfig.httpMode) {
-    await runHttpServer(cacheManager, cliConfig);
+    await runHttpServer(cacheManager, cliConfig, identity, role);
   } else {
-    await runStdioServer(cacheManager);
+    await runStdioServer(cacheManager, identity, role);
   }
 }
 
 /**
  * Runs the server in stdio mode (original behavior)
  */
-async function runStdioServer(cacheManager: CacheManager) {
+async function runStdioServer(cacheManager: CacheManager, _identity: ResolvedIdentity, _role: Role) {
   logger.info('Starting server in stdio mode');
 
   // Create server instance with MCP 2025-11-25 metadata
@@ -238,7 +245,12 @@ async function runStdioServer(cacheManager: CacheManager) {
 /**
  * Runs the server in HTTP mode
  */
-async function runHttpServer(cacheManager: CacheManager, cliConfig: CLIConfig) {
+async function runHttpServer(
+  cacheManager: CacheManager,
+  cliConfig: CLIConfig,
+  _identity: ResolvedIdentity,
+  _role: Role,
+) {
   logger.info('Starting server in HTTP mode', {
     port: cliConfig.port,
     host: cliConfig.host,
