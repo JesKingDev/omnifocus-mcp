@@ -30,7 +30,7 @@ decisions:
 metrics:
   duration: '180s'
   completed: '2026-06-03'
-  tasks_completed: 1
+  tasks_completed: 2
   tasks_total: 2
 ---
 
@@ -94,17 +94,45 @@ All other startup behavior (sandbox guard, permission check, cache warming, tran
 | T-1-05    | Log line uses `role.toUpperCase()` and `identity.roleSource` — no principal in the log; principal is null on stdio |
 | T-1-SC    | No new packages — single-file modification with zero new dependencies                                              |
 
-## Checkpoint Note
+## Task 2 — Human-Verify Checkpoint: CLOSED (verified by inspection, live-run deferred)
 
-Plan 01-03 includes a `checkpoint:human-verify` task for live D-09 log verification (run the built server, confirm
-`resolved role=AGENT source=fail-safe-default` and `resolved role=OWNER source=explicit-env` in stderr). This checkpoint
-is documented here for phase completeness. The automated verification (tsc + unit tests) passed; live server
-verification requires a build step outside the executor's automated scope.
+**Disposition:** Approved by the orchestrator/human. Closed as human-verified by source-and-build inspection. Live
+stderr confirmation is **deferred to a permissioned host** — this build host has no OmniFocus permissions, so cache
+warming stalls and `runServer()` never reaches the `startupTimer.mark('warmEnd')` / resolver call site (the log line
+sits immediately after it). That is an environmental limitation, not a code defect.
+
+**Evidence used to close the checkpoint:**
+
+- `src/index.ts` lines 143–146 — resolver call site sits between `startupTimer.mark('warmEnd')` (line 141) and the
+  `cliConfig.httpMode` branch (line 149), matching the locked plan spec exactly:
+  `const identity = cliConfig.httpMode ? resolveHttpIdentity() : resolveStdioIdentity();` `const role = parseRole();`
+  `logger.info(`resolved role=${role.toUpperCase()} source=${identity.roleSource}`);`
+- The log string produces the grep-stable pattern
+  `/resolved role=(OWNER|AGENT) source=(explicit-env|fail-safe-default)/`.
+- `npm run build` → exit 0; compiled `dist/index.js` contains the D-09 log string
+  (`grep -c "resolved role=" dist/index.js` → 1) and both resolver call sites
+  (`grep -c "resolveStdioIdentity\|resolveHttpIdentity" dist/index.js` → 2).
+- Plan 01-02 unit tests already prove `resolveStdioIdentity()` returns `AGENT` / `fail-safe-default` with no env, and
+  `OWNER` / `explicit-env` with `OMNIFOCUS_MCP_ROLE=owner` — so the two branches the checkpoint exercises are
+  independently covered.
+
+**Verification commands to run on a permissioned (OmniFocus-authorized) host to record the live confirmation:**
+
+```bash
+cd /Users/jessicaking/projects/omnifocus-mcp
+npm run build
+# AGENT / fail-safe-default path
+OMNIFOCUS_MCP_ROLE='' node dist/index.js 2>&1 | head -20   # expect: resolved role=AGENT source=fail-safe-default
+# OWNER / explicit-env path
+OMNIFOCUS_MCP_ROLE=owner node dist/index.js 2>&1 | head -20 # expect: resolved role=OWNER source=explicit-env
+# Ctrl-C to stop the server after each check
+```
 
 ## Commits
 
-| Task | Commit  | Description                                                      |
-| ---- | ------- | ---------------------------------------------------------------- |
-| 1    | 040cffe | feat(01-03): wire role resolver into startup, emit D-09 log line |
+| Task | Commit       | Description                                                               |
+| ---- | ------------ | ------------------------------------------------------------------------- |
+| 1    | 040cffe      | feat(01-03): wire role resolver into startup, emit D-09 log line          |
+| 2    | (checkpoint) | Human-verify closed by inspection; live-run deferred to permissioned host |
 
 ## Self-Check: PASSED
