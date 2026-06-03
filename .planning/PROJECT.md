@@ -45,6 +45,11 @@ can trust OmniFocus as the source of truth. If everything else fails, write-safe
 - Vault-checkbox migration into OmniFocus — **later milestone**; trust writes before migrating real data
 - `[TKWW]` Action Tracker work bridge → OmniFocus — **later/follow-up**; depends on Gemini, which has been unreliable;
   its eventual deprecation/replacement is a separate effort
+  - *Idea to revisit when addressed:* the tracker exists only because of limited corporate Google Workspace integration.
+    Before rebuilding it, check whether **Fantastical** already surfaces the work account's **Google Tasks**. If so, use
+    Gmail's built-in Google Tasks to capture a task (with the email link + due date) on the work side, and have this
+    OmniFocus integration **pull new work Google Tasks into OmniFocus** as the canonical store — no Gemini, no custom
+    work bridge.
 - Markdown surface **regeneration** (regenerating `today.md` / `daily-briefing.md` from OF) — **deferred**; start with
   native OF perspectives and only add markdown regeneration if still needed
 - **Cloud hosting** (Railway, containers, etc.) — ruled out; the server is Mac-pinned via `osascript` / Apple Events
