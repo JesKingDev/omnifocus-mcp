@@ -41,6 +41,9 @@ export {
   unwrapScriptOutput,
 } from './responses.js';
 
+// Role contracts
+export { type Role, type RoleSource, type ResolvedIdentity, type ResolvedContext } from './roles.js';
+
 // Generator
 export {
   generateTagFilterFunction,
