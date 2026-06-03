@@ -49,3 +49,114 @@ logs/
 
 # Timing baseline data (machine-specific)
 docs/dev/integration-test-timing-baseline.json
+
+# ─────────────────────────────────────────────────────────────
+# Entries below synced from standard template (ecomm-promotions-api)
+# ─────────────────────────────────────────────────────────────
+
+### Dependencies
+.pnp
+.pnp.js
+
+### Local env files
+.env.development.local
+.env.test.local
+.env.production.local
+.env*
+!.env.dist
+!.env.docker
+
+### Testing
+blob-report/
+test-results/
+playwright/.cache/
+playwright-report/
+*.lcov
+
+### Turbo
+.turbo
+
+### Vercel
+.vercel
+
+### Build Outputs
+.next/
+out/
+build
+**/src/generated/prisma
+*.tsbuildinfo
+.eslintcache
+*.tgz
+.webpack/
+
+### Terraform ###
+# Local .terraform directories
+**/.terraform/*
+
+# .tfstate files
+*.tfstate
+*.tfstate.*
+
+# Ignore override files as they are usually used to override resources locally and so
+# are not checked in
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+# Include tfplan files to ignore the plan output of command: terraform plan -out=tfplan
+# example: *tfplan*
+.terraform.lock.hcl
+
+### IDEs and editors
+/.idea
+.project
+.classpath
+.c9/
+*.launch
+.settings/
+*.sublime-workspace
+
+### IDE - VSCode
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+
+### Diagnostic reports (https://nodejs.org/api/report.html)
+report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
+
+### Runtime data
+pids
+*.pid
+*.seed
+*.pid.lock
+
+### macOS
+.AppleDouble
+.LSOverride
+
+#### Files that might appear in the root of a volume
+.DocumentRevisions-V100
+.fseventsd
+.Spotlight-V100
+.TemporaryItems
+.Trashes
+.VolumeIcon.icns
+.com.apple.timemachine.donotpresent
+
+#### Directories potentially created on remote AFP share
+.AppleDB
+.AppleDesktop
+Network Trash Folder
+Temporary Items
+.apdisk
+
+# Thumbnails
+._*
+
+### Misc
+*.pem
+tmp
+.github/plans
+generated
+db-snapshots/
