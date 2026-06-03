@@ -29,7 +29,12 @@ Decimal phases appear between their surrounding integers in numeric order.
   1. A stdio connection started with explicit OWNER configuration (env / launchd label) resolves to OWNER; the same connection started with AGENT config resolves to AGENT.
   2. A stdio connection with no explicit role configuration resolves to AGENT (fail-safe to least privilege), never to OWNER.
   3. Resolving "who is connected" (identity) returns a distinct result from "what they may do" (authorization) — the two are separate, inspectable steps, and an HTTP resolver stub exists for Phase 4 to fill.
-**Plans**: TBD
+**Plans**: 3 plans
+
+Plans:
+- [ ] 01-01-PLAN.md — Role contract types (roles.ts) + logger SENSITIVE_KEYS extension (D-08)
+- [ ] 01-02-PLAN.md — Role resolver module + exhaustive 14-class parse matrix unit test
+- [ ] 01-03-PLAN.md — Wire resolver into src/index.ts startup + D-09 log line + human verify
 
 ### Phase 2: Operation Policy (Deny-Deletes & Gating)
 **Goal**: The AGENT role cannot perform any content-destructive delete on single OR batch paths, structural destructive ops are gated behind dry-run + owner approval, and OWNER retains the full surface — all enforced at the single mutation funnel.
@@ -94,7 +99,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Role Model & Resolver | 0/TBD | Not started | - |
+| 1. Role Model & Resolver | 0/3 | Not started | - |
 | 2. Operation Policy (Deny-Deletes & Gating) | 0/TBD | Not started | - |
 | 3. RoleGate & Agent Read Paths | 0/TBD | Not started | - |
 | 4. HTTP Edge Hardening | 0/TBD | Not started | - |
