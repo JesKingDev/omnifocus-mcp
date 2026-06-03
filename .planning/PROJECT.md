@@ -92,7 +92,9 @@ can trust OmniFocus as the source of truth. If everything else fails, write-safe
 | OmniFocus as canonical store (Architecture A) | Fixes JessOS capture friction; JessOS stays supervisory | — Pending |
 | Host-resident server, Mac-pinned | `osascript`/Apple Events can't be containerized or cloud-hosted | — Pending |
 | localhost/stdio default; Tailscale+auth for remote; no cloud | Least privilege + Mac pin; minimal attack surface | — Pending |
-| Agent role: remove destructive deletes (complete/drop only) | Least privilege; protects real data from silent-write-failure damage | — Pending |
+| Agent role: remove content deletes (task/project/folder hard + bulk delete) | Least privilege; protects real data from silent-write-failure damage | — Pending |
+| Agent role: gate (not remove) tag delete/merge + perspective delete via dry-run + owner approval | Structural ops don't destroy task content and are valued setup hygiene (analyze tool recommends merges); OWNER keeps full `tag_manage` | — Pending |
+| Evaluate Cloudflare options at HTTP-edge phase | jessicaking.com is on Cloudflare; Tunnel/Access may help, but must not violate Mac-pin / Tailscale-default posture | — Pending |
 | Native OF perspectives first; markdown regeneration deferred | Less bespoke code; add regeneration only if still needed | — Pending |
 | [TKWW] work bridge out of this milestone | Smaller blast radius; Gemini dependency unreliable | — Pending |
 | Vault-checkbox migration deferred to later milestone | Trust verified writes before migrating real data | — Pending |
