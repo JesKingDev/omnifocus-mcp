@@ -20,8 +20,8 @@ write-verification is always a separate post-mutation round-trip, never an in-sc
 
 Decimal phases appear between their surrounding integers in numeric order.
 
-- [ ] **Phase 1: Role Model & Resolver** - A connection resolves to exactly one fail-safe role (OWNER | AGENT) before
-      any dispatch.
+- [x] **Phase 1: Role Model & Resolver** - A connection resolves to exactly one fail-safe role (OWNER | AGENT) before
+      (completed 2026-06-03) any dispatch.
 - [ ] **Phase 2: Operation Policy (Deny-Deletes & Gating)** - The agent cannot hard-delete or bulk-delete; structural
       destructive ops are gated, enforced at the single mutation funnel.
 - [ ] **Phase 3: RoleGate & Agent Read Paths** - Role-aware tool advertisement and dispatch ship a fully usable
@@ -52,7 +52,7 @@ Plans:
 
 - [x] 01-01-PLAN.md — Role contract types (roles.ts) + logger SENSITIVE_KEYS extension (D-08)
 - [x] 01-02-PLAN.md — Role resolver module + exhaustive 14-class parse matrix unit test
-- [ ] 01-03-PLAN.md — Wire resolver into src/index.ts startup + D-09 log line + human verify
+- [x] 01-03-PLAN.md — Wire resolver into src/index.ts startup + D-09 log line + human verify
 
 ### Phase 2: Operation Policy (Deny-Deletes & Gating)
 
@@ -136,11 +136,11 @@ must be TRUE):
 
 **Execution Order:** Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6
 
-| Phase                                       | Plans Complete | Status      | Completed |
-| ------------------------------------------- | -------------- | ----------- | --------- |
-| 1. Role Model & Resolver                    | 2/3            | In Progress |           |
-| 2. Operation Policy (Deny-Deletes & Gating) | 0/TBD          | Not started | -         |
-| 3. RoleGate & Agent Read Paths              | 0/TBD          | Not started | -         |
-| 4. HTTP Edge Hardening                      | 0/TBD          | Not started | -         |
-| 5. Write-Verifier                           | 0/TBD          | Not started | -         |
-| 6. launchd Deployment & ADR                 | 0/TBD          | Not started | -         |
+| Phase                                       | Plans Complete | Status      | Completed  |
+| ------------------------------------------- | -------------- | ----------- | ---------- |
+| 1. Role Model & Resolver                    | 3/3            | Complete    | 2026-06-03 |
+| 2. Operation Policy (Deny-Deletes & Gating) | 0/TBD          | Not started | -          |
+| 3. RoleGate & Agent Read Paths              | 0/TBD          | Not started | -          |
+| 4. HTTP Edge Hardening                      | 0/TBD          | Not started | -          |
+| 5. Write-Verifier                           | 0/TBD          | Not started | -          |
+| 6. launchd Deployment & ADR                 | 0/TBD          | Not started | -          |
