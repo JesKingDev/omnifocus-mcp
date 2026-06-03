@@ -1,7 +1,7 @@
 ---
 gsd_state_version: 1.0
-milestone: v1.0
-milestone_name: milestone
+milestone: hardening
+milestone_name: Hardening
 status: executing
 last_updated: '2026-06-03T18:55:22.495Z'
 progress:
