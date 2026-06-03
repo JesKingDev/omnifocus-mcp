@@ -38,6 +38,19 @@ describe('logger', () => {
     expect(() => logger.error('boom', new Error('details'))).not.toThrow();
   });
 
+  it('redacts principal and tokenId (D-08 follow-through)', () => {
+    const out = redactArgs({ principal: 'tok_abc123', tokenId: 'id_xyz', role: 'owner' }) as any;
+    expect(out.principal).toBe('[REDACTED]');
+    expect(out.tokenId).toBe('[REDACTED]');
+    expect(out.role).toBe('owner');
+  });
+
+  it('redacts principal nested inside an identity object', () => {
+    const out = redactArgs({ identity: { principal: 'tok_abc', roleSource: 'explicit-env' } }) as any;
+    expect(out.identity.principal).toBe('[REDACTED]');
+    expect(out.identity.roleSource).toBe('explicit-env');
+  });
+
   afterAll(() => {
     process.env.LOG_LEVEL = orig;
   });

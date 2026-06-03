@@ -39,7 +39,18 @@ export function generateCorrelationId(): string {
 }
 
 // Keys whose values should be redacted in logs
-const SENSITIVE_KEYS = new Set(['name', 'note', 'notes', 'taskName', 'projectName', 'tagName', 'title', 'script']);
+const SENSITIVE_KEYS = new Set([
+  'name',
+  'note',
+  'notes',
+  'taskName',
+  'projectName',
+  'tagName',
+  'title',
+  'script',
+  'principal', // D-08 follow-through: identity fields — never log raw
+  'tokenId', // D-08 follow-through: identity fields — never log raw
+]);
 
 // Best‑effort deep redaction that preserves structure for debugging.
 // Returns `unknown`: the redacted value is only ever serialized to a log sink,
