@@ -245,3 +245,18 @@ confidently wrong solutions (e.g., "/verbose command"). If uncertain, say so and
 - **Server won't start?** Run `npm run build`
 - **Script timeouts?** Check OmniFocus not blocked by dialogs
 - **Graceful exit is NOT an error** - it's required MCP compliance
+
+<!-- GSD:workflow-start source:GSD defaults -->
+## GSD Workflow Enforcement
+
+This repo uses GSD for planned milestone work. Planning artifacts live in `.planning/` (PROJECT.md, ROADMAP.md,
+REQUIREMENTS.md, config.json, research/, codebase/).
+
+Before broad planned changes, start through a GSD command so planning artifacts and execution context stay in sync:
+- `/gsd-plan-phase N` then `/gsd-execute-phase N` for planned phase work
+- `/gsd-quick` for small fixes, doc updates, and ad-hoc tasks
+- `/gsd-debug` for investigation and bug fixing
+
+Existing repo workflows (TDD via superpowers, the `.claude/processes/` decision trees) still apply within phases.
+<!-- GSD:workflow-end -->
+

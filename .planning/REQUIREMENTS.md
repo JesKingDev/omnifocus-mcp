@@ -87,42 +87,41 @@ Explicitly excluded. Documented to prevent scope creep.
 | Hard delete / bulk delete for the AGENT role | Irreversible-damage risk; drop is the recoverable substitute (anti-feature) |
 | Repetition-rule authoring in the agent hot path | Bridge-heavy, high error rate; defer |
 | Atomic multi-write transactions | OmniFocus has no real transaction boundary across `osascript` spawns — would over-promise |
-| Full Disk Access | Forbidden by posture; Automation permission is the correct, narrower TCC service |
 
 ## Traceability
 
-Proposed phase mapping (roadmapper finalizes). Each requirement maps to exactly one phase.
+Final phase mapping (roadmapper finalized 2026-06-03). Each requirement maps to exactly one phase. Phase mapping confirms the research's strict bottom-up dependency order; no coverage gap found.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| ROLE-01 | Phase 1 | Pending |
-| ROLE-02 | Phase 1 | Pending |
-| ROLE-03 | Phase 1 | Pending |
-| POLICY-01 | Phase 2 | Pending |
-| POLICY-02 | Phase 2 | Pending |
-| POLICY-03 | Phase 2 | Pending |
-| POLICY-04 | Phase 2 | Pending |
-| POLICY-05 | Phase 2 | Pending |
-| POLICY-06 | Phase 2 | Pending |
-| POLICY-07 | Phase 2 | Pending |
-| GATE-01 | Phase 3 | Pending |
-| GATE-02 | Phase 3 | Pending |
-| GATE-03 | Phase 3 | Pending |
-| READ-01 | Phase 3 | Pending |
-| READ-02 | Phase 3 | Pending |
-| READ-03 | Phase 3 | Pending |
-| HTTP-01 | Phase 4 | Pending |
-| HTTP-02 | Phase 4 | Pending |
-| HTTP-03 | Phase 4 | Pending |
-| HTTP-04 | Phase 4 | Pending |
-| HTTP-05 | Phase 4 | Pending |
-| VERIFY-01 | Phase 5 | Pending |
-| VERIFY-02 | Phase 5 | Pending |
-| VERIFY-03 | Phase 5 | Pending |
-| DEPLOY-01 | Phase 6 | Pending |
-| DEPLOY-02 | Phase 6 | Pending |
-| DEPLOY-03 | Phase 6 | Pending |
-| DEPLOY-04 | Phase 6 | Pending |
+| ROLE-01 | Phase 1 — Role Model & Resolver | Pending |
+| ROLE-02 | Phase 1 — Role Model & Resolver | Pending |
+| ROLE-03 | Phase 1 — Role Model & Resolver | Pending |
+| POLICY-01 | Phase 2 — Operation Policy (Deny-Deletes & Gating) | Pending |
+| POLICY-02 | Phase 2 — Operation Policy (Deny-Deletes & Gating) | Pending |
+| POLICY-03 | Phase 2 — Operation Policy (Deny-Deletes & Gating) | Pending |
+| POLICY-04 | Phase 2 — Operation Policy (Deny-Deletes & Gating) | Pending |
+| POLICY-05 | Phase 2 — Operation Policy (Deny-Deletes & Gating) | Pending |
+| POLICY-06 | Phase 2 — Operation Policy (Deny-Deletes & Gating) | Pending |
+| POLICY-07 | Phase 2 — Operation Policy (Deny-Deletes & Gating) | Pending |
+| GATE-01 | Phase 3 — RoleGate & Agent Read Paths | Pending |
+| GATE-02 | Phase 3 — RoleGate & Agent Read Paths | Pending |
+| GATE-03 | Phase 3 — RoleGate & Agent Read Paths | Pending |
+| READ-01 | Phase 3 — RoleGate & Agent Read Paths | Pending |
+| READ-02 | Phase 3 — RoleGate & Agent Read Paths | Pending |
+| READ-03 | Phase 3 — RoleGate & Agent Read Paths | Pending |
+| HTTP-01 | Phase 4 — HTTP Edge Hardening | Pending |
+| HTTP-02 | Phase 4 — HTTP Edge Hardening | Pending |
+| HTTP-03 | Phase 4 — HTTP Edge Hardening | Pending |
+| HTTP-04 | Phase 4 — HTTP Edge Hardening | Pending |
+| HTTP-05 | Phase 4 — HTTP Edge Hardening | Pending |
+| VERIFY-01 | Phase 5 — Write-Verifier | Pending |
+| VERIFY-02 | Phase 5 — Write-Verifier | Pending |
+| VERIFY-03 | Phase 5 — Write-Verifier | Pending |
+| DEPLOY-01 | Phase 6 — launchd Deployment & ADR | Pending |
+| DEPLOY-02 | Phase 6 — launchd Deployment & ADR | Pending |
+| DEPLOY-03 | Phase 6 — launchd Deployment & ADR | Pending |
+| DEPLOY-04 | Phase 6 — launchd Deployment & ADR | Pending |
 
 **Coverage:**
 - v1 requirements: 28 total
@@ -131,4 +130,4 @@ Proposed phase mapping (roadmapper finalizes). Each requirement maps to exactly 
 
 ---
 *Requirements defined: 2026-06-03*
-*Last updated: 2026-06-03 after initial definition*
+*Last updated: 2026-06-03 after roadmap traceability finalized*
