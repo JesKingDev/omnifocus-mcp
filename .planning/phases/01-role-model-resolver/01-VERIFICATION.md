@@ -1,26 +1,35 @@
 ---
 phase: 01-role-model-resolver
 verified: 2026-06-03T15:02:00Z
-status: human_needed
+status: verified
+human_verification_resolved: 2026-06-03T20:37:30Z
 score: 5/5 must-haves verified
 overrides_applied: 0
 human_verification:
   - test: 'Start server with no OMNIFOCUS_MCP_ROLE set and observe stderr'
     expected: "Line matching 'resolved role=AGENT source=fail-safe-default' appears before any tool registration output"
     why_human:
-      'Live server start is blocked on this host — OmniFocus permissions stall cache warming before the resolver fires.
-      The two role branches are unit-tested independently; live two-branch observation requires a permissioned host.'
+      'Live server start was blocked on the CI host — OmniFocus permissions stall cache warming before the resolver
+      fires. The two role branches are unit-tested independently; live two-branch observation requires a permissioned
+      host.'
+    resolved:
+      'CONFIRMED live in 01-UAT.md Test 2 (2026-06-03, user permissioned Mac): observed `[INFO] [server] resolved
+      role=AGENT source=fail-safe-default`.'
   - test: 'Start server with OMNIFOCUS_MCP_ROLE=owner and observe stderr'
     expected: "Line matching 'resolved role=OWNER source=explicit-env' appears before any tool registration output"
     why_human: 'Same environmental constraint as above.'
+    resolved:
+      'CONFIRMED live in 01-UAT.md Test 3 (2026-06-03, ts 20:35:10.374Z): observed `[INFO] [server] resolved role=OWNER
+      source=explicit-env`. Test 4 additionally confirmed the default-deny path (capital "Owner" → `resolved role=AGENT
+      source=explicit-env`).'
 ---
 
 # Phase 1: Role Model & Resolver Verification Report
 
 **Phase Goal:** A connection resolves to exactly one role before any tool dispatch, failing safe to the least-privileged
-role, with identity kept separate from authorization. **Verified:** 2026-06-03T15:02:00Z **Status:** human_needed —
-automated checks all pass; two live startup log checks require a permissioned host **Re-verification:** No — initial
-verification
+role, with identity kept separate from authorization. **Verified:** 2026-06-03T15:02:00Z **Status:** verified —
+automated checks all pass; the two live startup-log checks were confirmed live via 01-UAT.md (2026-06-03) on the user's
+permissioned Mac **Re-verification:** No — initial verification
 
 ---
 
