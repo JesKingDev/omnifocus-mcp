@@ -547,9 +547,14 @@ artifacts carry any "role" string that would require migration.
 
 ---
 
-## Open Questions
+## Open Questions (RESOLVED)
 
-1. **D-11 exact helper scope**
+> All three resolved by the recommendations below and implemented in the Phase 3 plans: Q1 → Plan 03-02 T1 step 8
+> (drift-guarded normalization) + Plan 03-01 (normalizeArgsToPolicy at raw args level); Q2 → Plan 03-02 T1 step 4 + Plan
+> 03-03 (ResolvedContext into SystemTool constructor); Q3 → Plan 03-04 T1 (parameterized AGENT vs OWNER integration
+> test).
+
+1. **D-11 exact helper scope** — RESOLVED (recommendation adopted)
    - What we know: the Phase 2 inline normalization operates on `CompiledMutation` (post-compile); the dispatch gate
      receives raw MCP `args` (pre-compile).
    - What's unclear: should the shared helper normalize raw `args.mutation` (simpler for dispatch gate) or
