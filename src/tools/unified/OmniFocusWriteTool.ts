@@ -59,6 +59,8 @@ import { localToUTC } from '../../utils/timezone.js';
 import { parsingError, formatErrorWithRecovery, invalidDateError } from '../../utils/error-messages.js';
 import { sanitizeTaskUpdates } from './utils/task-sanitizer.js';
 import { flattenBatchResults } from './batch-response-flatten.js';
+import { decide } from '../../auth/operation-policy.js';
+import { parseRole } from '../../auth/role-resolver.js';
 
 // Convert string IDs to branded types for type safety (compile-time only, no runtime validation)
 const convertToTaskId = (id: string): TaskId => id as TaskId;
@@ -174,7 +176,13 @@ MOVE TO INBOX: Set project: null
 
 SAFETY:
 - Delete is permanent - confirm with user first
-- Batch supports up to 100 operations`;
+- Batch supports up to 100 operations
+
+OPERATION POLICY (agent role):
+- delete, bulk_delete: rejected for the agent role (POLICY_DENY_DELETE). Use 'complete' or 'drop' instead.
+- tag_manage with action 'delete' or 'merge': gated (POLICY_GATE_REQUIRES_OWNER). Re-run from an owner connection.
+- All other operations: allowed for both agent and owner roles.
+- OWNER role: no restrictions — all operations including delete and tag_manage/delete/merge are permitted.`;
 
   schema = WriteSchema;
 
@@ -324,6 +332,78 @@ SAFETY:
 
   async executeValidated(args: WriteInput): Promise<unknown> {
     const compiled = this.compiler.compile(args);
+
+    // ─── Policy guard (Phase 2 — POLICY-01 through POLICY-07) ───────────────
+    // Runs before every routing branch. Normalizes compiled mutation into a flat
+    // list of (operation, target) items and calls decide() on each. First
+    // denied/gated item short-circuits and returns a structured error; nothing
+    // executes past this block unless every item is 'allow'.
+    {
+      const role = parseRole();
+
+      // Build normalized item list from the compiled mutation
+      type PolicyItem = { operation: string; target: string };
+      let policyItems: PolicyItem[];
+
+      if (compiled.operation === 'batch') {
+        // Walk each sub-operation in the batch
+        policyItems = (compiled.operations as Array<{ operation: string; target?: string }>).map((op) => ({
+          operation: op.operation,
+          target: op.target ?? 'task',
+        }));
+      } else if (compiled.operation === 'bulk_delete') {
+        // bulk_delete is a single operation-level check (not per-ID)
+        policyItems = [{ operation: 'bulk_delete', target: (compiled as { target?: string }).target ?? 'task' }];
+      } else if (compiled.operation === 'tag_manage') {
+        // tag_manage gate target is the action (delete/merge/create/etc.)
+        policyItems = [{ operation: 'tag_manage', target: (compiled as { action?: string }).action ?? '' }];
+      } else {
+        policyItems = [
+          {
+            operation: compiled.operation,
+            target: (compiled as { target?: string }).target ?? 'task',
+          },
+        ];
+      }
+
+      // Evaluate each item; short-circuit on first deny or gate
+      for (const item of policyItems) {
+        const outcome = decide(role, item.operation, item.target);
+
+        if (outcome === 'deny') {
+          return createErrorResponseV2(
+            'omnifocus_write',
+            'POLICY_DENY_DELETE',
+            'Delete operations are not permitted for the agent role.',
+            "Use 'complete' or 'drop' instead of delete.",
+            { allowed: ['complete', 'drop'], role, operation: item.operation, target: item.target },
+            new OperationTimerV2().toMetadata(),
+          );
+        }
+
+        if (outcome === 'gate') {
+          return createErrorResponseV2(
+            'omnifocus_write',
+            'POLICY_GATE_REQUIRES_OWNER',
+            'This structural operation requires owner approval before execution.',
+            'Re-run from an owner connection using the ownerCommand below, or ask the owner to execute it.',
+            {
+              dryRun: true,
+              preview: {
+                wouldAffect: {
+                  count: 1,
+                  operation: item.operation,
+                  target: item.target,
+                },
+              },
+              ownerCommand: { mutation: args.mutation },
+            },
+            new OperationTimerV2().toMetadata(),
+          );
+        }
+      }
+    }
+    // ─────────────────────────────────────────────────────────────────────────
 
     // Tag management operations
     if (compiled.operation === 'tag_manage') {
