@@ -108,7 +108,27 @@ Criteria** (what must be TRUE):
 3. The AGENT role can create, complete, drop, defer/reschedule, tag, move, and flag tasks end-to-end over stdio.
 4. The AGENT role can run the core read paths (today/forecast, overdue, flagged, available vs blocked, by-project,
    by-tag, inbox, date-range, count-only), look up a task/project by identifier, and list/read native OmniFocus
-   perspectives. **Plans**: TBD **UI hint**: yes
+   perspectives. **Plans**: 4 plans
+
+**Wave 1**
+
+- [ ] 03-01-PLAN.md — allowedOperations(role) enumerator + normalizeArgsToPolicy shared helper + Wave 0 test stubs +
+      D-06 parity test
+
+**Wave 2** _(blocked on Wave 1 completion)_
+
+- [ ] 03-02-PLAN.md — registerTools role threading (both call sites) + ListTools role-aware advertisement + CallTool
+      pre-dispatch gate (GATE-01/02)
+
+**Wave 3** _(blocked on Wave 2 completion)_
+
+- [ ] 03-03-PLAN.md — system whoami op: dual-schema (Zod + inputSchema + description) + owner-only identity redaction
+      (D-12/D-13/D-15)
+
+**Wave 4** _(blocked on Wave 3 completion)_
+
+- [ ] 03-04-PLAN.md — READ-01/02/03 read-path confirmation + integration test role-aware extension + end-to-end human
+      verify
 
 ### Phase 4: HTTP Edge Hardening
 
@@ -169,7 +189,7 @@ must be TRUE):
 | ------------------------------------------- | -------------- | ----------- | ---------- |
 | 1. Role Model & Resolver                    | 3/3            | Complete    | 2026-06-03 |
 | 2. Operation Policy (Deny-Deletes & Gating) | 3/3            | Complete    | 2026-06-04 |
-| 3. RoleGate & Agent Read Paths              | 0/TBD          | Not started | -          |
+| 3. RoleGate & Agent Read Paths              | 0/4            | Not started | -          |
 | 4. HTTP Edge Hardening                      | 0/TBD          | Not started | -          |
 | 5. Write-Verifier                           | 0/TBD          | Not started | -          |
 | 6. launchd Deployment & ADR                 | 0/TBD          | Not started | -          |
