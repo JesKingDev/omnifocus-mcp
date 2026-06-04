@@ -2196,7 +2196,15 @@ OPERATION POLICY (agent role):
     for (let i = createdItems.length - 1; i >= 0; i--) {
       const item = createdItems[i];
       try {
-        const generatedScript = await buildDeleteScript(parseRole(), item.type, item.realId);
+        // Rollback is a trusted internal compensating action: it deletes objects
+        // the system itself created moments ago in this same batch, not a
+        // user-requested delete. It runs with 'owner' authority deliberately so an
+        // agent's atomic batch can still roll back on partial failure. Using
+        // parseRole() here would make agent rollbacks throw POLICY: DENY and
+        // silently orphan the partial creates (WR-01). This is NOT a weakening of
+        // the agent delete policy — user-initiated deletes still route through the
+        // funnel guard with the caller's real role.
+        const generatedScript = await buildDeleteScript('owner', item.type, item.realId);
         await this.execJson(generatedScript.script);
         this.logger.debug(`Rolled back ${item.type}: ${item.realId}`);
       } catch (error) {
