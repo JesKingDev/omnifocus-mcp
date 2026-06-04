@@ -821,7 +821,7 @@ describe('buildCompleteScript', () => {
 
 describe('buildDeleteScript', () => {
   it('generates valid script for task deletion', async () => {
-    const result = await buildDeleteScript('task', 'task-123');
+    const result = await buildDeleteScript('owner', 'task', 'task-123');
 
     expect(result.script).toContain('task-123');
     expect(result.operation).toBe('delete');
@@ -829,7 +829,7 @@ describe('buildDeleteScript', () => {
   });
 
   it('generates valid script for project deletion', async () => {
-    const result = await buildDeleteScript('project', 'project-123');
+    const result = await buildDeleteScript('owner', 'project', 'project-123');
 
     expect(result.script).toContain('project-123');
     expect(result.operation).toBe('delete');
@@ -837,8 +837,8 @@ describe('buildDeleteScript', () => {
   });
 
   it('uses deleteObject() — the correct OmniJS API for deletion', async () => {
-    const taskResult = await buildDeleteScript('task', 'task-123');
-    const projectResult = await buildDeleteScript('project', 'proj-123');
+    const taskResult = await buildDeleteScript('owner', 'task', 'task-123');
+    const projectResult = await buildDeleteScript('owner', 'project', 'proj-123');
 
     // OmniJS uses deleteObject(item) — not item.remove() (which doesn't exist)
     expect(taskResult.script).toContain('deleteObject(item)');
@@ -846,8 +846,8 @@ describe('buildDeleteScript', () => {
   });
 
   it('does NOT use item.remove() — that method does not exist in OmniJS', async () => {
-    const taskResult = await buildDeleteScript('task', 'task-123');
-    const projectResult = await buildDeleteScript('project', 'proj-123');
+    const taskResult = await buildDeleteScript('owner', 'task', 'task-123');
+    const projectResult = await buildDeleteScript('owner', 'project', 'proj-123');
 
     expect(taskResult.script).not.toContain('item.remove()');
     expect(projectResult.script).not.toContain('item.remove()');
@@ -1008,7 +1008,7 @@ describe('script structure consistency', () => {
       buildUpdateTaskScript('id', { name: 'Test' }),
       buildUpdateProjectScript('id', { name: 'Test' }),
       buildCompleteScript('task', 'id'),
-      buildDeleteScript('task', 'id'),
+      buildDeleteScript('owner', 'task', 'id'),
       Promise.resolve(buildBatchScript('task', [])),
       buildBulkDeleteScript('task', ['id']),
     ]);
@@ -1025,7 +1025,7 @@ describe('script structure consistency', () => {
     const scripts = [
       (await buildCreateTaskScript({ name: 'Test' })).script,
       (await buildCompleteScript('task', 'id')).script,
-      (await buildDeleteScript('task', 'id')).script,
+      (await buildDeleteScript('owner', 'task', 'id')).script,
     ];
 
     scripts.forEach((script) => {

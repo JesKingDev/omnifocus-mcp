@@ -1,6 +1,8 @@
 import { describe, it, expect } from 'vitest';
 import { decide } from '../../../src/auth/operation-policy.js';
-import type { PolicyOutcome , Role } from '../../../src/contracts/roles.js';
+import type { PolicyOutcome, Role } from '../../../src/contracts/roles.js';
+import { buildDeleteScript } from '../../../src/contracts/ast/mutation-script-builder.js';
+import { buildDeleteTagScript, buildMergeTagsScript } from '../../../src/contracts/ast/tag-mutation-script-builder.js';
 
 // ---------------------------------------------------------------------------
 // decide() — exhaustive D-08 policy matrix
@@ -203,5 +205,54 @@ describe('decide() — D-08 policy matrix', () => {
     },
   ])('$label', ({ role, operation, target, expected }) => {
     expect(decide(role, operation, target)).toBe(expected);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// script-builder re-assertion — defense-in-depth (D-03)
+//
+// Confirms that assertPolicyAllow() fires as the first statement in each
+// destructive/gated builder, independently of the funnel guard (POLICY-04).
+//
+// AGENT role → POLICY error thrown before any JXA is emitted.
+// OWNER role → policy passes through; no POLICY error (other errors are OK).
+// ---------------------------------------------------------------------------
+
+describe('script-builder re-assertion — defense-in-depth (D-03)', () => {
+  // -------------------------------------------------------------------------
+  // AGENT — deny: buildDeleteScript throws POLICY: DENY
+  // -------------------------------------------------------------------------
+  it('buildDeleteScript("agent", "task", id) throws POLICY: DENY', async () => {
+    await expect(buildDeleteScript('agent', 'task', 'fake-id')).rejects.toThrow(/POLICY: DENY/);
+  });
+
+  // -------------------------------------------------------------------------
+  // AGENT — gate: buildDeleteTagScript throws POLICY: GATE
+  // -------------------------------------------------------------------------
+  it('buildDeleteTagScript("agent", {tagName}) throws POLICY: GATE', () => {
+    expect(() => buildDeleteTagScript('agent', { tagName: 'some-tag' })).toThrow(/POLICY: GATE/);
+  });
+
+  // -------------------------------------------------------------------------
+  // AGENT — gate: buildMergeTagsScript throws POLICY: GATE
+  // -------------------------------------------------------------------------
+  it('buildMergeTagsScript("agent", {tagName, targetTag}) throws POLICY: GATE', () => {
+    expect(() => buildMergeTagsScript('agent', { tagName: 'src-tag', targetTag: 'dest-tag' })).toThrow(/POLICY: GATE/);
+  });
+
+  // -------------------------------------------------------------------------
+  // OWNER — pass-through: no POLICY error (other errors from JXA context are OK)
+  // -------------------------------------------------------------------------
+  it('buildDeleteScript("owner", "task", id) does NOT throw a POLICY error', async () => {
+    // Owner passes the re-assertion; the function returns a GeneratedMutationScript.
+    // In unit test mode there is no OmniFocus process, but the builder only builds
+    // a script string — it does not execute JXA. So it should resolve, not throw.
+    await expect(buildDeleteScript('owner', 'task', 'fake-id')).resolves.not.toThrow();
+  });
+
+  it('buildDeleteTagScript("owner", {tagName}) does NOT throw a POLICY error', () => {
+    // Owner passes the re-assertion; validateTagMutation is inactive in unit test
+    // mode (SANDBOX_GUARD_ENABLED is not set). Expect clean return, no POLICY error.
+    expect(() => buildDeleteTagScript('owner', { tagName: 'some-tag' })).not.toThrow(/POLICY:/);
   });
 });

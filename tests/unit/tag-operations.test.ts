@@ -13,7 +13,7 @@ describe('Tag Operations Fix Verification', () => {
   });
 
   it('should use OmniJS bridge for merge tag retagging', async () => {
-    const { script } = await buildMergeTagsScript({ tagName: 'src', targetTag: 'tgt' });
+    const { script } = await buildMergeTagsScript('owner', { tagName: 'src', targetTag: 'tgt' });
     // Merge must use evaluateJavascript (OmniJS bridge) — JXA tag mutations silently fail
     expect(script).toContain('app.evaluateJavascript(mergeScript)');
 
@@ -23,7 +23,7 @@ describe('Tag Operations Fix Verification', () => {
   });
 
   it('should not use JXA plural tag methods for merge', async () => {
-    const { script } = await buildMergeTagsScript({ tagName: 'src', targetTag: 'tgt' });
+    const { script } = await buildMergeTagsScript('owner', { tagName: 'src', targetTag: 'tgt' });
     // JXA plural methods (addTags/removeTags) silently fail — must not be used
     expect(script).not.toContain('task.removeTags(');
     expect(script).not.toContain('task.addTags(');
@@ -33,7 +33,7 @@ describe('Tag Operations Fix Verification', () => {
     // Verify all return statements use JSON.stringify
     const returnPattern = /return JSON\.stringify\(/g;
     const { script: listScript } = buildTagsScript({ mode: 'full' });
-    const { script: mergeScript } = await buildMergeTagsScript({ tagName: 'src', targetTag: 'tgt' });
+    const { script: mergeScript } = await buildMergeTagsScript('owner', { tagName: 'src', targetTag: 'tgt' });
     const listMatches = listScript.match(returnPattern);
     const mergeMatches = mergeScript.match(returnPattern);
 

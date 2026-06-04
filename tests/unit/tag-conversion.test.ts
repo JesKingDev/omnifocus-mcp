@@ -5,7 +5,7 @@ import { buildMergeTagsScript } from '../../src/contracts/ast/tag-mutation-scrip
 describe('Tag Type Conversion Issues', () => {
   it('should check for array/object conversion patterns in tag scripts', async () => {
     const { script: LIST_TAGS_SCRIPT } = buildTagsScript({ mode: 'full' });
-    const { script: MERGE_SCRIPT } = await buildMergeTagsScript({ tagName: 'src', targetTag: 'tgt' });
+    const { script: MERGE_SCRIPT } = await buildMergeTagsScript('owner', { tagName: 'src', targetTag: 'tgt' });
 
     // Neither script should use JXA plural tag methods (they silently fail)
     expect(LIST_TAGS_SCRIPT).not.toContain('.addTags([');
@@ -21,14 +21,14 @@ describe('Tag Type Conversion Issues', () => {
     expect(LIST_TAGS_SCRIPT).toContain('task.tags');
 
     // Merge uses OmniJS bridge with singular methods (JXA plural methods silently fail)
-    const { script: MERGE_SCRIPT } = await buildMergeTagsScript({ tagName: 'src', targetTag: 'tgt' });
+    const { script: MERGE_SCRIPT } = await buildMergeTagsScript('owner', { tagName: 'src', targetTag: 'tgt' });
     expect(MERGE_SCRIPT).toContain('task.addTag(');
     expect(MERGE_SCRIPT).toContain('task.removeTag(');
   });
 
   it('should use JSON.stringify for all return values', async () => {
     const { script: LIST_TAGS_SCRIPT } = buildTagsScript({ mode: 'full' });
-    const { script: MERGE_SCRIPT } = await buildMergeTagsScript({ tagName: 'src', targetTag: 'tgt' });
+    const { script: MERGE_SCRIPT } = await buildMergeTagsScript('owner', { tagName: 'src', targetTag: 'tgt' });
 
     const returnPattern = /return JSON\.stringify\(/g;
     expect(LIST_TAGS_SCRIPT.match(returnPattern)!.length).toBeGreaterThan(0);
