@@ -3,6 +3,8 @@ import { decide } from '../../../src/auth/operation-policy.js';
 import type { PolicyOutcome, Role } from '../../../src/contracts/roles.js';
 import { buildDeleteScript } from '../../../src/contracts/ast/mutation-script-builder.js';
 import { buildDeleteTagScript, buildMergeTagsScript } from '../../../src/contracts/ast/tag-mutation-script-builder.js';
+import { buildDeleteTaskScript } from '../../../src/omnifocus/scripts/tasks/delete-task.js';
+import { buildBulkDeleteTasksScript } from '../../../src/omnifocus/scripts/tasks/delete-tasks-bulk.js';
 
 // ---------------------------------------------------------------------------
 // decide() — exhaustive D-08 policy matrix
@@ -227,6 +229,18 @@ describe('script-builder re-assertion — defense-in-depth (D-03)', () => {
   });
 
   // -------------------------------------------------------------------------
+  // AGENT — deny: task-delete builders throw POLICY: DENY (CR-01)
+  // These are the highest-traffic destructive paths; the funnel routes here.
+  // -------------------------------------------------------------------------
+  it('buildDeleteTaskScript("agent", {taskId}) throws POLICY: DENY', () => {
+    expect(() => buildDeleteTaskScript('agent', { taskId: 'fake-id' })).toThrow(/POLICY: DENY/);
+  });
+
+  it('buildBulkDeleteTasksScript("agent", {taskIds}) throws POLICY: DENY', () => {
+    expect(() => buildBulkDeleteTasksScript('agent', { taskIds: ['a', 'b'] })).toThrow(/POLICY: DENY/);
+  });
+
+  // -------------------------------------------------------------------------
   // AGENT — gate: buildDeleteTagScript throws POLICY: GATE
   // -------------------------------------------------------------------------
   it('buildDeleteTagScript("agent", {tagName}) throws POLICY: GATE', () => {
@@ -248,6 +262,14 @@ describe('script-builder re-assertion — defense-in-depth (D-03)', () => {
     // In unit test mode there is no OmniFocus process, but the builder only builds
     // a script string — it does not execute JXA. So it should resolve, not throw.
     await expect(buildDeleteScript('owner', 'task', 'fake-id')).resolves.not.toThrow();
+  });
+
+  it('buildDeleteTaskScript("owner", {taskId}) does NOT throw a POLICY error', () => {
+    expect(() => buildDeleteTaskScript('owner', { taskId: 'fake-id' })).not.toThrow(/POLICY:/);
+  });
+
+  it('buildBulkDeleteTasksScript("owner", {taskIds}) does NOT throw a POLICY error', () => {
+    expect(() => buildBulkDeleteTasksScript('owner', { taskIds: ['a', 'b'] })).not.toThrow(/POLICY:/);
   });
 
   it('buildDeleteTagScript("owner", {tagName}) does NOT throw a POLICY error', () => {

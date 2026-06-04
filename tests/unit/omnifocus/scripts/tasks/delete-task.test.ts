@@ -3,12 +3,12 @@ import { buildDeleteTaskScript } from '../../../../../src/omnifocus/scripts/task
 
 describe('buildDeleteTaskScript', () => {
   it('serializes taskId into the script body', () => {
-    const script = buildDeleteTaskScript({ taskId: 'abc-123' });
+    const script = buildDeleteTaskScript('owner', { taskId: 'abc-123' });
     expect(script).toContain('"taskId":"abc-123"');
   });
 
   it('emits a JXA IIFE that calls evaluateJavascript with the Task.byIdentifier lookup', () => {
-    const script = buildDeleteTaskScript({ taskId: 'x' });
+    const script = buildDeleteTaskScript('owner', { taskId: 'x' });
     expect(script).toMatch(/Application\('OmniFocus'\)/);
     expect(script).toContain('Task.byIdentifier(targetId)');
     expect(script).toContain('deleteObject(task)');
@@ -17,7 +17,7 @@ describe('buildDeleteTaskScript', () => {
   });
 
   it('escapes taskId values with quotes safely via JSON.stringify', () => {
-    const script = buildDeleteTaskScript({ taskId: 'has"quote' });
+    const script = buildDeleteTaskScript('owner', { taskId: 'has"quote' });
     expect(script).toContain('"taskId":"has\\"quote"');
   });
 });

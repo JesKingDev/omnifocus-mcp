@@ -1026,7 +1026,7 @@ OPERATION POLICY (agent role):
     }
 
     try {
-      const deleteScript = buildDeleteTaskScript({ taskId });
+      const deleteScript = buildDeleteTaskScript(parseRole(), { taskId });
       const res = await this.execJson(deleteScript);
       const deleteResult =
         res && typeof res === 'object' && 'success' in res
@@ -1136,7 +1136,7 @@ OPERATION POLICY (agent role):
     const errors: unknown[] = [];
 
     try {
-      const script = buildBulkDeleteTasksScript({
+      const script = buildBulkDeleteTasksScript(parseRole(), {
         taskIds: taskIds.map((id) => id as string),
       });
       const result = await this.execJson(script);

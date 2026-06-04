@@ -1,4 +1,6 @@
 import { getUnifiedHelpers } from '../shared/helpers.js';
+import { decide } from '../../../auth/operation-policy.js';
+import type { Role } from '../../../contracts/roles.js';
 
 /**
  * Optimized bulk delete script using OmniJS bridge with O(1) lookups
@@ -15,7 +17,19 @@ export interface BulkDeleteTasksParams {
   taskIds: string[];
 }
 
-export function buildBulkDeleteTasksScript(params: BulkDeleteTasksParams): string {
+/**
+ * @param role   Caller role from parseRole(). Re-asserts policy before emitting JXA (D-03).
+ *               Script-builder defense-in-depth layer mirroring assertPolicyAllow in
+ *               mutation-script-builder.ts. The funnel guard is the primary; both call decide().
+ * @param params The task IDs to delete.
+ */
+export function buildBulkDeleteTasksScript(role: Role, params: BulkDeleteTasksParams): string {
+  // Policy re-assertion (defense-in-depth, D-03) — before any script emission.
+  const outcome = decide(role, 'bulk_delete', 'task');
+  if (outcome !== 'allow') {
+    throw new Error(`POLICY: ${outcome.toUpperCase()} bulk_delete/task for role '${role}'`);
+  }
+
   const serialized = JSON.stringify({ taskIds: params.taskIds });
 
   return `

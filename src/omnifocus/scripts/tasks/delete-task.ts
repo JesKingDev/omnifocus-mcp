@@ -1,4 +1,6 @@
 import { getUnifiedHelpers } from '../shared/helpers.js';
+import { decide } from '../../../auth/operation-policy.js';
+import type { Role } from '../../../contracts/roles.js';
 
 /**
  * Script to delete a task in OmniFocus using pure OmniJS bridge
@@ -13,7 +15,21 @@ export interface DeleteTaskParams {
   taskId: string;
 }
 
-export function buildDeleteTaskScript(params: DeleteTaskParams): string {
+/**
+ * @param role   Caller role from parseRole(). Re-asserts policy before emitting JXA (D-03).
+ *               This is the script-builder defense-in-depth layer; the funnel guard in
+ *               OmniFocusWriteTool is the primary. Both call the same decide() — no policy
+ *               logic is duplicated. Error string mirrors assertPolicyAllow in
+ *               mutation-script-builder.ts.
+ * @param params The task ID to delete.
+ */
+export function buildDeleteTaskScript(role: Role, params: DeleteTaskParams): string {
+  // Policy re-assertion (defense-in-depth, D-03) — before any script emission.
+  const outcome = decide(role, 'delete', 'task');
+  if (outcome !== 'allow') {
+    throw new Error(`POLICY: ${outcome.toUpperCase()} delete/task for role '${role}'`);
+  }
+
   const serialized = JSON.stringify({ taskId: params.taskId });
 
   return `
