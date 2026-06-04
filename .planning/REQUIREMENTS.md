@@ -16,20 +16,20 @@ Requirements for this hardening milestone. Each maps to a roadmap phase.
 
 ### Operation Policy (Deny-Deletes & Gating)
 
-- [ ] **POLICY-01**: The AGENT role cannot hard-delete any task, project, or folder (content-destructive operations are
+- [x] **POLICY-01**: The AGENT role cannot hard-delete any task, project, or folder (content-destructive operations are
       removed, not gated).
-- [ ] **POLICY-02**: The AGENT role cannot execute bulk/batch destructive deletes of tasks/projects — the deny is
+- [x] **POLICY-02**: The AGENT role cannot execute bulk/batch destructive deletes of tasks/projects — the deny is
       enforced on batch paths, not only single-item paths.
-- [ ] **POLICY-03**: The AGENT role may perform additive/structural tag operations directly (create, rename, nest,
+- [x] **POLICY-03**: The AGENT role may perform additive/structural tag operations directly (create, rename, nest,
       unnest, reparent), but tag **delete**, tag **merge**, and **perspective delete** are gated (see POLICY-07) — never
       executed silently.
-- [ ] **POLICY-04**: Destructive-operation enforcement (deny + gate) lives at the single mutation funnel where single
+- [x] **POLICY-04**: Destructive-operation enforcement (deny + gate) lives at the single mutation funnel where single
       and batch operations are normalized, with a defense-in-depth re-assertion in the script builder.
-- [ ] **POLICY-05**: For the AGENT role, task "done" is expressed as complete or drop (recoverable in OmniFocus), never
+- [x] **POLICY-05**: For the AGENT role, task "done" is expressed as complete or drop (recoverable in OmniFocus), never
       destructive delete.
-- [ ] **POLICY-06**: The OWNER role retains the full `tag_manage` surface (create, rename, delete, merge, nest, unnest,
+- [x] **POLICY-06**: The OWNER role retains the full `tag_manage` surface (create, rename, delete, merge, nest, unnest,
       reparent) and perspective management — interactive setup design with Claude runs in OWNER mode.
-- [ ] **POLICY-07**: A gated structural operation requested by the AGENT role (tag delete, tag merge, perspective
+- [x] **POLICY-07**: A gated structural operation requested by the AGENT role (tag delete, tag merge, perspective
       delete) returns a dry-run preview and requires explicit owner approval before execution; it is never performed on
       first request.
 
@@ -126,13 +126,13 @@ confirms the research's strict bottom-up dependency order; no coverage gap found
 | ROLE-01     | Phase 1 — Role Model & Resolver                    | Complete |
 | ROLE-02     | Phase 1 — Role Model & Resolver                    | Complete |
 | ROLE-03     | Phase 1 — Role Model & Resolver                    | Complete |
-| POLICY-01   | Phase 2 — Operation Policy (Deny-Deletes & Gating) | Pending  |
-| POLICY-02   | Phase 2 — Operation Policy (Deny-Deletes & Gating) | Pending  |
-| POLICY-03   | Phase 2 — Operation Policy (Deny-Deletes & Gating) | Pending  |
-| POLICY-04   | Phase 2 — Operation Policy (Deny-Deletes & Gating) | Pending  |
-| POLICY-05   | Phase 2 — Operation Policy (Deny-Deletes & Gating) | Pending  |
-| POLICY-06   | Phase 2 — Operation Policy (Deny-Deletes & Gating) | Pending  |
-| POLICY-07   | Phase 2 — Operation Policy (Deny-Deletes & Gating) | Pending  |
+| POLICY-01   | Phase 2 — Operation Policy (Deny-Deletes & Gating) | Complete |
+| POLICY-02   | Phase 2 — Operation Policy (Deny-Deletes & Gating) | Complete |
+| POLICY-03   | Phase 2 — Operation Policy (Deny-Deletes & Gating) | Complete |
+| POLICY-04   | Phase 2 — Operation Policy (Deny-Deletes & Gating) | Complete |
+| POLICY-05   | Phase 2 — Operation Policy (Deny-Deletes & Gating) | Complete |
+| POLICY-06   | Phase 2 — Operation Policy (Deny-Deletes & Gating) | Complete |
+| POLICY-07   | Phase 2 — Operation Policy (Deny-Deletes & Gating) | Complete |
 | GATE-01     | Phase 3 — RoleGate & Agent Read Paths              | Pending  |
 | GATE-02     | Phase 3 — RoleGate & Agent Read Paths              | Pending  |
 | GATE-03     | Phase 3 — RoleGate & Agent Read Paths              | Pending  |

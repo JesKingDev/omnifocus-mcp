@@ -82,7 +82,7 @@ POLICY-07 **Success Criteria** (what must be TRUE):
 4. The OWNER role can execute the full `tag_manage` surface (including delete and merge) and perspective management
    directly, with no gating. **Plans**: 3 plans Plans: **Wave 1**
 
-- [ ] 02-01-PLAN.md — PolicyOutcome type + decide() function + exhaustive policy-matrix unit test (TDD)
+- [x] 02-01-PLAN.md — PolicyOutcome type + decide() function + exhaustive policy-matrix unit test (TDD)
 
 **Wave 2** _(blocked on Wave 1 completion)_
 
@@ -168,7 +168,7 @@ must be TRUE):
 | Phase                                       | Plans Complete | Status      | Completed  |
 | ------------------------------------------- | -------------- | ----------- | ---------- |
 | 1. Role Model & Resolver                    | 3/3            | Complete    | 2026-06-03 |
-| 2. Operation Policy (Deny-Deletes & Gating) | 0/3            | Not started | -          |
+| 2. Operation Policy (Deny-Deletes & Gating) | 1/3            | In Progress |            |
 | 3. RoleGate & Agent Read Paths              | 0/TBD          | Not started | -          |
 | 4. HTTP Edge Hardening                      | 0/TBD          | Not started | -          |
 | 5. Write-Verifier                           | 0/TBD          | Not started | -          |
