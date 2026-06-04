@@ -3,14 +3,13 @@ gsd_state_version: 1.0
 milestone: hardening
 milestone_name: Hardening
 status: ready_to_plan
-last_updated: 2026-06-04T14:45:31.641Z
+last_updated: '2026-06-04T15:03:23.561Z'
 progress:
   total_phases: 6
   completed_phases: 1
   total_plans: 3
   completed_plans: 6
   percent: 17
-stopped_at: Phase 02 complete (3/3) — ready to discuss Phase 3
 ---
 
 # Project State
@@ -74,6 +73,7 @@ Decisions are logged in PROJECT.md Key Decisions table. Recent decisions affecti
 - [Phase 01-02]: sonarjs/todo-tag rule flags TODO comments as errors — Phase 4 annotations use plain prose instead
 - [Phase 02-03]: assertPolicyAllow() defined locally in each builder — no shared module needed; 4-line helper avoids
   import cycle risk
+
 - [Phase 02-03]: Pre-existing builder tests updated to owner role — same pattern as Plan 02 for JXA-dispatch tests vs.
   policy tests
 
@@ -100,4 +100,4 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-06-04T02:16:24.875Z
+Last session: 2026-06-04T15:03:23.555Z
