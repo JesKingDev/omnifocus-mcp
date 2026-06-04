@@ -179,7 +179,7 @@ SAFETY:
 - Batch supports up to 100 operations
 
 OPERATION POLICY (agent role):
-- delete, bulk_delete: rejected for the agent role (POLICY_DENY_DELETE). Use 'complete' or 'drop' instead.
+- delete, bulk_delete: rejected for the agent role (POLICY_DENY_DELETE). Use 'complete', or update the task with status 'dropped', instead.
 - tag_manage with action 'delete' or 'merge': gated (POLICY_GATE_REQUIRES_OWNER). Re-run from an owner connection.
 - All other operations: allowed for both agent and owner roles.
 - OWNER role: no restrictions — all operations including delete and tag_manage/delete/merge are permitted.`;
@@ -371,12 +371,23 @@ OPERATION POLICY (agent role):
         const outcome = decide(role, item.operation, item.target);
 
         if (outcome === 'deny') {
+          // decide() returns 'deny' for known destructive ops (delete/bulk_delete)
+          // AND for any unrecognised operation/target (fail-closed). Branch the
+          // message so a fail-closed deny does not emit delete-specific recovery
+          // advice that would be nonsensical (WR-03). The recovery text points at
+          // operations the write schema actually accepts — there is no 'drop'
+          // operation; dropping a task is an update with status 'dropped' (WR-04).
+          const isKnownDelete = item.operation === 'delete' || item.operation === 'bulk_delete';
           return createErrorResponseV2(
             'omnifocus_write',
-            'POLICY_DENY_DELETE',
-            'Delete operations are not permitted for the agent role.',
-            "Use 'complete' or 'drop' instead of delete.",
-            { allowed: ['complete', 'drop'], role, operation: item.operation, target: item.target },
+            isKnownDelete ? 'POLICY_DENY_DELETE' : 'POLICY_DENY',
+            isKnownDelete
+              ? 'Delete operations are not permitted for the agent role.'
+              : `Operation '${item.operation}' is not permitted for the agent role.`,
+            isKnownDelete
+              ? "Use 'complete', or update the task with status 'dropped', instead of delete."
+              : 'Re-run from an owner connection.',
+            { role, operation: item.operation, target: item.target },
             new OperationTimerV2().toMetadata(),
           );
         }

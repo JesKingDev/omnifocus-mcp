@@ -40,6 +40,11 @@ const AGENT_POLICY: Record<string, PolicyOutcome | Record<string, PolicyOutcome>
   // Allow: recoverable / non-destructive ops
   // -------------------------------------------------------------------------
   complete: 'allow',
+  // Forward-declared/unreachable (WR-04): the write schema has no 'drop'
+  // operation literal — dropping a task is an 'update' with status 'dropped',
+  // covered by the 'update' entry below. This entry is inert with respect to
+  // the funnel today, kept (like tag_manage's perspective_delete) so a future
+  // first-class 'drop' op resolves to 'allow' rather than fail-closed deny.
   drop: 'allow',
   create: 'allow',
   update: 'allow',
