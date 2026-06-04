@@ -27,6 +27,19 @@
 export type Role = 'owner' | 'agent';
 
 /**
+ * The outcome of a policy decision for a given (role, operation, target) triple.
+ *
+ * - 'allow' — operation may proceed
+ * - 'deny'  — operation is blocked; no script emitted
+ * - 'gate'  — operation requires owner approval; dry-run preview only
+ *
+ * Consumed by:
+ * - PolicyEngine (Phase 2 — decide() in src/auth/operation-policy.ts)
+ * - MutationGate (Phase 3 — funnel guard + script-builder re-assertion)
+ */
+export type PolicyOutcome = 'allow' | 'deny' | 'gate';
+
+/**
  * How the role was determined at startup.
  *
  * - 'explicit-env'      — OMNIFOCUS_ROLE env var was set and parsed successfully
