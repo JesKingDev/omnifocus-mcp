@@ -391,9 +391,12 @@ OPERATION POLICY (agent role):
               dryRun: true,
               preview: {
                 wouldAffect: {
-                  count: 1,
                   operation: item.operation,
                   target: item.target,
+                  // The funnel cannot cheaply compute true blast radius without a
+                  // lookup, so we omit a count rather than hardcode a misleading
+                  // scalar (WR-02). A merge/delete may touch many tasks.
+                  note: 'Scope not computed in gate preview; merge/delete may affect many items.',
                 },
               },
               ownerCommand: { mutation: args.mutation },
