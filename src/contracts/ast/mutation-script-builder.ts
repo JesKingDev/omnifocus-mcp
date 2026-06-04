@@ -24,6 +24,28 @@ import type {
   ProjectUpdateData,
   MutationTarget,
 } from '../mutations.js';
+import { decide } from '../../auth/operation-policy.js';
+import type { Role } from '../../contracts/roles.js';
+
+// =============================================================================
+// POLICY RE-ASSERTION (defense-in-depth, D-03)
+// =============================================================================
+
+/**
+ * Throws if decide(role, operation, target) returns anything other than 'allow'.
+ *
+ * This is the script-builder re-assertion layer (D-03, POLICY-04). It is the
+ * second enforcement point — the funnel guard in OmniFocusWriteTool is the
+ * primary. Both call the same decide() function; no policy logic is duplicated.
+ *
+ * Propagates synchronously to the funnel's catch block.
+ */
+function assertPolicyAllow(role: Role, operation: string, target: string): void {
+  const outcome = decide(role, operation, target);
+  if (outcome !== 'allow') {
+    throw new Error(`POLICY: ${outcome.toUpperCase()} ${operation}/${target} for role '${role}'`);
+  }
+}
 
 // =============================================================================
 // TEST SANDBOX GUARD
@@ -1996,8 +2018,19 @@ export async function buildCompleteScript(
 
 /**
  * Build a JXA script for deleting a task or project
+ *
+ * @param role   Caller role from parseRole(). Re-asserts policy before emitting JXA (D-03).
+ * @param target The mutation target ('task' | 'project' | 'folder')
+ * @param id     The OmniFocus ID of the item to delete
  */
-export async function buildDeleteScript(target: MutationTarget, id: string): Promise<GeneratedMutationScript> {
+export async function buildDeleteScript(
+  role: Role,
+  target: MutationTarget,
+  id: string,
+): Promise<GeneratedMutationScript> {
+  // Policy re-assertion (defense-in-depth, D-03) — before any I/O or script emission
+  assertPolicyAllow(role, 'delete', target);
+
   // Test sandbox guard
   if (target === 'task') {
     await validateTaskInSandbox(id, 'delete');

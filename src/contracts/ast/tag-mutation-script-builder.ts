@@ -12,6 +12,27 @@ import { getUnifiedHelpers } from '../../omnifocus/scripts/shared/helpers.js';
 import type { MutationTarget } from '../mutations.js';
 import type { GeneratedMutationScript } from './mutation-script-builder.js';
 import { isTestMode, TEST_TAG_PREFIX } from './mutation-script-builder.js';
+import { decide } from '../../auth/operation-policy.js';
+import type { Role } from '../../contracts/roles.js';
+
+// =============================================================================
+// POLICY RE-ASSERTION (defense-in-depth, D-03)
+// =============================================================================
+
+/**
+ * Throws if decide(role, operation, target) returns anything other than 'allow'.
+ *
+ * This is the script-builder re-assertion layer (D-03, POLICY-04). Both script
+ * builder files call the same decide() function — no policy logic is duplicated.
+ *
+ * Propagates synchronously to the funnel's catch block.
+ */
+function assertPolicyAllow(role: Role, operation: string, target: string): void {
+  const outcome = decide(role, operation, target);
+  if (outcome !== 'allow') {
+    throw new Error(`POLICY: ${outcome.toUpperCase()} ${operation}/${target} for role '${role}'`);
+  }
+}
 
 // ─── Sandbox guard ──────────────────────────────────────────────────
 
@@ -341,7 +362,9 @@ ${tagScriptEpilogue()}`;
   return { script, operation: 'rename', target: 'tag' as MutationTarget };
 }
 
-export function buildDeleteTagScript(data: { tagName: string }): GeneratedMutationScript {
+export function buildDeleteTagScript(role: Role, data: { tagName: string }): GeneratedMutationScript {
+  // Policy re-assertion (defense-in-depth, D-03) — before any I/O or script emission
+  assertPolicyAllow(role, 'tag_manage', 'delete');
   validateTagMutation(data.tagName);
 
   const tagName = JSON.stringify(data.tagName);
@@ -387,7 +410,12 @@ ${tagScriptEpilogue()}`;
   return { script, operation: 'delete', target: 'tag' as MutationTarget };
 }
 
-export function buildMergeTagsScript(data: { tagName: string; targetTag: string }): GeneratedMutationScript {
+export function buildMergeTagsScript(
+  role: Role,
+  data: { tagName: string; targetTag: string },
+): GeneratedMutationScript {
+  // Policy re-assertion (defense-in-depth, D-03) — before any I/O or script emission
+  assertPolicyAllow(role, 'tag_manage', 'merge');
   validateTagMutation(data.tagName);
   validateTagMutation(data.targetTag);
 

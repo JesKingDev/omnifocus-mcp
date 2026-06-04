@@ -1346,7 +1346,7 @@ OPERATION POLICY (agent role):
   private async handleProjectDelete(projectId: string): Promise<unknown> {
     const timer = new OperationTimerV2();
 
-    const generatedScript = await buildDeleteScript('project', projectId);
+    const generatedScript = await buildDeleteScript(parseRole(), 'project', projectId);
     const result = await this.execJson(generatedScript.script);
 
     if (isScriptError(result)) {
@@ -2196,7 +2196,7 @@ OPERATION POLICY (agent role):
     for (let i = createdItems.length - 1; i >= 0; i--) {
       const item = createdItems[i];
       try {
-        const generatedScript = await buildDeleteScript(item.type, item.realId);
+        const generatedScript = await buildDeleteScript(parseRole(), item.type, item.realId);
         await this.execJson(generatedScript.script);
         this.logger.debug(`Rolled back ${item.type}: ${item.realId}`);
       } catch (error) {
@@ -2279,10 +2279,10 @@ OPERATION POLICY (agent role):
         generated = await buildRenameTagScript({ tagName, newName: newName! });
         break;
       case 'delete':
-        generated = await buildDeleteTagScript({ tagName });
+        generated = await buildDeleteTagScript(parseRole(), { tagName });
         break;
       case 'merge':
-        generated = await buildMergeTagsScript({ tagName, targetTag: targetTag! });
+        generated = await buildMergeTagsScript(parseRole(), { tagName, targetTag: targetTag! });
         break;
       case 'nest':
         generated = await buildNestTagScript({ tagName, parentTagName });
