@@ -86,7 +86,7 @@ POLICY-07 **Success Criteria** (what must be TRUE):
 
 **Wave 2** _(blocked on Wave 1 completion)_
 
-- [ ] 02-02-PLAN.md — Funnel guard in OmniFocusWriteTool.executeValidated() + mandatory batch-parity test
+- [x] 02-02-PLAN.md — Funnel guard in OmniFocusWriteTool.executeValidated() + mandatory batch-parity test
 
 **Wave 3** _(blocked on Wave 2 completion)_
 
@@ -168,7 +168,7 @@ must be TRUE):
 | Phase                                       | Plans Complete | Status      | Completed  |
 | ------------------------------------------- | -------------- | ----------- | ---------- |
 | 1. Role Model & Resolver                    | 3/3            | Complete    | 2026-06-03 |
-| 2. Operation Policy (Deny-Deletes & Gating) | 1/3            | In Progress |            |
+| 2. Operation Policy (Deny-Deletes & Gating) | 2/3            | In Progress |            |
 | 3. RoleGate & Agent Read Paths              | 0/TBD          | Not started | -          |
 | 4. HTTP Edge Hardening                      | 0/TBD          | Not started | -          |
 | 5. Write-Verifier                           | 0/TBD          | Not started | -          |
