@@ -23,8 +23,8 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 1: Role Model & Resolver** - A connection resolves to exactly one fail-safe role (OWNER | AGENT) before
       (completed 2026-06-03) any dispatch.
 
-- [ ] **Phase 2: Operation Policy (Deny-Deletes & Gating)** - The agent cannot hard-delete or bulk-delete; structural
-      destructive ops are gated, enforced at the single mutation funnel.
+- [x] **Phase 2: Operation Policy (Deny-Deletes & Gating)** - The agent cannot hard-delete or bulk-delete; structural
+      (completed 2026-06-04) destructive ops are gated, enforced at the single mutation funnel.
 
 - [ ] **Phase 3: RoleGate & Agent Read Paths** - Role-aware tool advertisement and dispatch ship a fully usable
       least-privilege stdio agent with its core read surface.
@@ -90,7 +90,7 @@ POLICY-07 **Success Criteria** (what must be TRUE):
 
 **Wave 3** _(blocked on Wave 2 completion)_
 
-- [ ] 02-03-PLAN.md — Defense-in-depth re-assertion in mutation-script-builder + tag-mutation-script-builder
+- [x] 02-03-PLAN.md — Defense-in-depth re-assertion in mutation-script-builder + tag-mutation-script-builder
 
 ### Phase 3: RoleGate & Agent Read Paths
 
@@ -168,7 +168,7 @@ must be TRUE):
 | Phase                                       | Plans Complete | Status      | Completed  |
 | ------------------------------------------- | -------------- | ----------- | ---------- |
 | 1. Role Model & Resolver                    | 3/3            | Complete    | 2026-06-03 |
-| 2. Operation Policy (Deny-Deletes & Gating) | 2/3            | In Progress |            |
+| 2. Operation Policy (Deny-Deletes & Gating) | 3/3            | Complete    | 2026-06-04 |
 | 3. RoleGate & Agent Read Paths              | 0/TBD          | Not started | -          |
 | 4. HTTP Edge Hardening                      | 0/TBD          | Not started | -          |
 | 5. Write-Verifier                           | 0/TBD          | Not started | -          |

@@ -3,7 +3,7 @@ gsd_state_version: 1.0
 milestone: hardening
 milestone_name: Hardening
 status: executing
-last_updated: '2026-06-04T02:08:14.813Z'
+last_updated: '2026-06-04T02:16:24.888Z'
 progress:
   total_phases: 6
   completed_phases: 1
@@ -23,8 +23,7 @@ so JessOS can trust OmniFocus as the source of truth. **Current focus:** Phase 0
 
 ## Current Position
 
-Phase: 02 (operation-policy-deny-deletes-gating) — EXECUTING Plan: 2 of 3 (live-run deferred to permissioned host) Last
-activity: 2026-06-03
+Phase: 02 (operation-policy-deny-deletes-gating) — COMPLETE Plan: 3 of 3 (all plans complete) Last activity: 2026-06-04
 
 Progress: [░░░░░░░░░░] 0%
 
@@ -48,8 +47,8 @@ Progress: [░░░░░░░░░░] 0%
 - Trend: —
 
 _Updated after each plan completion_ | Phase 01-role-model-resolver P01 | 190s | 2 tasks | 4 files | _Updated after each
-plan completion_ | Phase 01-role-model-resolver P02 | 180s | 2 tasks | 2 files | | Phase 02 P01 | 540 | 3 tasks | 3
-files |
+plan completion_ | Phase 01-role-model-resolver P02 | 180s | 2 tasks | 2 files | | Phase 02 P01 | 540s | 3 tasks | 3
+files | | Phase 02 P02 | 480s | 2 tasks | 5 files | | Phase 02 P03 | 900s | 2 tasks | 7 files |
 
 ## Accumulated Context
 
@@ -72,6 +71,10 @@ Decisions are logged in PROJECT.md Key Decisions table. Recent decisions affecti
   error in this repo config
 
 - [Phase 01-02]: sonarjs/todo-tag rule flags TODO comments as errors — Phase 4 annotations use plain prose instead
+- [Phase 02-03]: assertPolicyAllow() defined locally in each builder — no shared module needed; 4-line helper avoids
+  import cycle risk
+- [Phase 02-03]: Pre-existing builder tests updated to owner role — same pattern as Plan 02 for JXA-dispatch tests vs.
+  policy tests
 
 ### Pending Todos
 
@@ -96,4 +99,4 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-06-04T02:08:14.809Z
+Last session: 2026-06-04T02:16:24.875Z
