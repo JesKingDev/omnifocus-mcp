@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
 // Import the WriteSchema to test BatchOperationSchema indirectly
 // (BatchOperationSchema is not exported, but is validated through WriteSchema)
@@ -157,6 +157,20 @@ class StubCache {
 }
 
 describe('routeToBatch — partition and delegate', () => {
+  let originalRole: string | undefined;
+  beforeEach(() => {
+    // These tests exercise JXA dispatch; run as owner so policy guard passes through.
+    originalRole = process.env['OMNIFOCUS_MCP_ROLE'];
+    process.env['OMNIFOCUS_MCP_ROLE'] = 'owner';
+  });
+  afterEach(() => {
+    if (originalRole === undefined) {
+      delete process.env['OMNIFOCUS_MCP_ROLE'];
+    } else {
+      process.env['OMNIFOCUS_MCP_ROLE'] = originalRole;
+    }
+  });
+
   it('should handle batch with only updates (original bug)', async () => {
     const cache = new StubCache();
     const tool = new OmniFocusWriteTool(cache as any);
@@ -227,6 +241,20 @@ describe('routeToBatch — partition and delegate', () => {
 });
 
 describe('previewBatch — dry run', () => {
+  let originalRole: string | undefined;
+  beforeEach(() => {
+    // These tests exercise the previewBatch path; run as owner so policy guard passes through.
+    originalRole = process.env['OMNIFOCUS_MCP_ROLE'];
+    process.env['OMNIFOCUS_MCP_ROLE'] = 'owner';
+  });
+  afterEach(() => {
+    if (originalRole === undefined) {
+      delete process.env['OMNIFOCUS_MCP_ROLE'];
+    } else {
+      process.env['OMNIFOCUS_MCP_ROLE'] = originalRole;
+    }
+  });
+
   it('should preview all four operation types', async () => {
     const cache = new StubCache();
     const tool = new OmniFocusWriteTool(cache as any);

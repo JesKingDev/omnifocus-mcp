@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { OmniFocusWriteTool } from '../../../../src/tools/unified/OmniFocusWriteTool.js';
 import { CacheManager } from '../../../../src/cache/CacheManager.js';
 import { createScriptSuccess, createScriptError } from '../../../../src/omnifocus/script-result-types.js';
@@ -28,14 +28,28 @@ describe('OmniFocusWriteTool task operations', () => {
   let tool: OmniFocusWriteTool;
   let mockCache: CacheManager;
   let execJsonSpy: ReturnType<typeof vi.fn>;
+  let originalRole: string | undefined;
 
   beforeEach(() => {
+    // Run as OWNER so policy guard passes through — these tests verify JXA dispatch,
+    // not policy enforcement (policy guard tests live in write-tool-policy-guard.test.ts).
+    originalRole = process.env['OMNIFOCUS_MCP_ROLE'];
+    process.env['OMNIFOCUS_MCP_ROLE'] = 'owner';
+
     mockCache = createMockCache();
     tool = new OmniFocusWriteTool(mockCache);
 
     // Mock execJson on the tool instance (protected method on BaseTool)
     execJsonSpy = vi.fn();
     vi.spyOn(tool as any, 'execJson').mockImplementation(execJsonSpy);
+  });
+
+  afterEach(() => {
+    if (originalRole === undefined) {
+      delete process.env['OMNIFOCUS_MCP_ROLE'];
+    } else {
+      process.env['OMNIFOCUS_MCP_ROLE'] = originalRole;
+    }
   });
 
   // ─── CREATE ─────────────────────────────────────────────────────────

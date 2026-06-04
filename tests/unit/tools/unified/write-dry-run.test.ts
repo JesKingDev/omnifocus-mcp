@@ -1,12 +1,18 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { OmniFocusWriteTool } from '../../../../src/tools/unified/OmniFocusWriteTool.js';
 import { CacheManager } from '../../../../src/cache/CacheManager.js';
 
 describe('OmniFocusWriteTool dry-run mode', () => {
   let tool: OmniFocusWriteTool;
   let mockCache: CacheManager;
+  let originalRole: string | undefined;
 
   beforeEach(() => {
+    // Run as OWNER so policy guard passes — these tests exercise the dryRun preview paths,
+    // not policy enforcement (bulk_delete is denied for agent role).
+    originalRole = process.env['OMNIFOCUS_MCP_ROLE'];
+    process.env['OMNIFOCUS_MCP_ROLE'] = 'owner';
+
     mockCache = {
       get: vi.fn(),
       set: vi.fn(),
@@ -19,6 +25,14 @@ describe('OmniFocusWriteTool dry-run mode', () => {
     } as unknown as CacheManager;
 
     tool = new OmniFocusWriteTool(mockCache);
+  });
+
+  afterEach(() => {
+    if (originalRole === undefined) {
+      delete process.env['OMNIFOCUS_MCP_ROLE'];
+    } else {
+      process.env['OMNIFOCUS_MCP_ROLE'] = originalRole;
+    }
   });
 
   describe('batch operation dry-run', () => {
