@@ -2,14 +2,15 @@
 gsd_state_version: 1.0
 milestone: hardening
 milestone_name: Hardening
-status: executing
-last_updated: '2026-06-04T02:16:24.888Z'
+status: ready_to_plan
+last_updated: 2026-06-04T14:45:31.641Z
 progress:
   total_phases: 6
   completed_phases: 1
   total_plans: 3
-  completed_plans: 3
+  completed_plans: 6
   percent: 17
+stopped_at: Phase 02 complete (3/3) — ready to discuss Phase 3
 ---
 
 # Project State
@@ -19,11 +20,11 @@ progress:
 See: .planning/PROJECT.md (updated 2026-06-03)
 
 **Core value:** The agent can read and write OmniFocus tasks safely — no silent write failures, no destructive deletes —
-so JessOS can trust OmniFocus as the source of truth. **Current focus:** Phase 02 — operation-policy-deny-deletes-gating
+so JessOS can trust OmniFocus as the source of truth. **Current focus:** Phase 3 — rolegate & agent read paths
 
 ## Current Position
 
-Phase: 02 (operation-policy-deny-deletes-gating) — COMPLETE Plan: 3 of 3 (all plans complete) Last activity: 2026-06-04
+Phase: 3 of 3 (rolegate & agent read paths)
 
 Progress: [░░░░░░░░░░] 0%
 
@@ -31,7 +32,7 @@ Progress: [░░░░░░░░░░] 0%
 
 **Velocity:**
 
-- Total plans completed: 0
+- Total plans completed: 3
 - Average duration: —
 - Total execution time: —
 
@@ -39,7 +40,7 @@ Progress: [░░░░░░░░░░] 0%
 
 | Phase | Plans | Total | Avg/Plan |
 | ----- | ----- | ----- | -------- |
-| -     | -     | -     | -        |
+| 02    | 3     | -     | -        |
 
 **Recent Trend:**
 
