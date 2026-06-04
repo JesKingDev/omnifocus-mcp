@@ -22,14 +22,19 @@ Decimal phases appear between their surrounding integers in numeric order.
 
 - [x] **Phase 1: Role Model & Resolver** - A connection resolves to exactly one fail-safe role (OWNER | AGENT) before
       (completed 2026-06-03) any dispatch.
+
 - [ ] **Phase 2: Operation Policy (Deny-Deletes & Gating)** - The agent cannot hard-delete or bulk-delete; structural
       destructive ops are gated, enforced at the single mutation funnel.
+
 - [ ] **Phase 3: RoleGate & Agent Read Paths** - Role-aware tool advertisement and dispatch ship a fully usable
       least-privilege stdio agent with its core read surface.
+
 - [ ] **Phase 4: HTTP Edge Hardening** - The HTTP/Tailscale remote path matches the stdio path's guarantees: bearer
       auth, loopback bind, DNS-rebinding protection, Serve-only.
+
 - [ ] **Phase 5: Write-Verifier** - Every agent mutation is confirmed by an independent post-mutation read-back with a
       field-level diff and a reported verification status.
+
 - [ ] **Phase 6: launchd Deployment & ADR** - The hardened server runs as a least-privilege LaunchAgent with an
       Automation-only grant, a fail-fast probe, and a superseding ADR.
 
@@ -43,8 +48,10 @@ ROLE-02, ROLE-03 **Success Criteria** (what must be TRUE):
 
 1. A stdio connection started with explicit OWNER configuration (env / launchd label) resolves to OWNER; the same
    connection started with AGENT config resolves to AGENT.
+
 2. A stdio connection with no explicit role configuration resolves to AGENT (fail-safe to least privilege), never to
    OWNER.
+
 3. Resolving "who is connected" (identity) returns a distinct result from "what they may do" (authorization) — the two
    are separate, inspectable steps, and an HTTP resolver stub exists for Phase 4 to fill. **Plans**: 3 plans
 
@@ -63,14 +70,27 @@ POLICY-07 **Success Criteria** (what must be TRUE):
 
 1. A hard-delete of a task, project, or folder requested by the AGENT role is rejected; the recoverable substitute
    (complete or drop) succeeds.
+
 2. A delete embedded inside a batch/bulk payload is rejected for the AGENT role with the same outcome as the single-item
    path (batch-parity check — the OMN-119 lesson), because the deny is enforced at the single funnel where single and
    batch ops are normalized, with a re-assertion in the script builder.
+
 3. An AGENT request for tag delete, tag merge, or perspective delete returns a dry-run preview and is NOT executed on
    first request; it requires explicit owner approval before execution — while additive/structural tag ops (create,
    rename, nest, unnest, reparent) execute directly.
+
 4. The OWNER role can execute the full `tag_manage` surface (including delete and merge) and perspective management
-   directly, with no gating. **Plans**: TBD
+   directly, with no gating. **Plans**: 3 plans Plans: **Wave 1**
+
+- [ ] 02-01-PLAN.md — PolicyOutcome type + decide() function + exhaustive policy-matrix unit test (TDD)
+
+**Wave 2** _(blocked on Wave 1 completion)_
+
+- [ ] 02-02-PLAN.md — Funnel guard in OmniFocusWriteTool.executeValidated() + mandatory batch-parity test
+
+**Wave 3** _(blocked on Wave 2 completion)_
+
+- [ ] 02-03-PLAN.md — Defense-in-depth re-assertion in mutation-script-builder + tag-mutation-script-builder
 
 ### Phase 3: RoleGate & Agent Read Paths
 
@@ -81,8 +101,10 @@ Criteria** (what must be TRUE):
 
 1. `ListTools` over an AGENT connection advertises only the operations the agent is allowed to perform; an OWNER
    connection sees the full surface.
+
 2. A disallowed operation requested by the AGENT role is rejected at the dispatch point with a clear error, even when it
    was never advertised.
+
 3. The AGENT role can create, complete, drop, defer/reschedule, tag, move, and flag tasks end-to-end over stdio.
 4. The AGENT role can run the core read paths (today/forecast, overdue, flagged, available vs blocked, by-project,
    by-tag, inbox, date-range, count-only), look up a task/project by identifier, and list/read native OmniFocus
@@ -97,10 +119,13 @@ Criteria** (what must be TRUE):
 
 1. An HTTP request without a valid bearer token is rejected before dispatch; a valid token is accepted via a
    constant-time comparison.
+
 2. The HTTP server binds to `127.0.0.1` and a startup assertion fails closed (refuses to start) if it would bind to any
    open interface; a foreign Origin/Host is refused via DNS-rebinding protection with explicit allowlists.
+
 3. An authenticated HTTP connection's role is derived from its token and is agent-scoped — the same allow/deny outcomes
    as the stdio agent apply.
+
 4. Remote reachability works only via `tailscale serve` (never `funnel`), and a bearer token is still required per
    request in addition to tailnet reachability. **Plans**: TBD **UI hint**: yes
 
@@ -112,8 +137,10 @@ diff, surfacing a verification status so JessOS can trust that writes persisted.
 
 1. After an agent mutation, a separate read-back round-trip (by identifier) runs against a fresh context — never an
    in-script read of the same execution — confirming the change.
+
 2. The read-back performs a field-level diff against the intended change and fails explicitly on mismatch (a silent
    no-op write surfaces as a failure, not a false success).
+
 3. Each mutation response reports a verification status of `verified | unverified | skipped`. **Plans**: TBD
 
 ### Phase 6: launchd Deployment & ADR
@@ -126,9 +153,11 @@ must be TRUE):
 1. The server runs as a macOS LaunchAgent with a pinned, stable Node binary path, and a verified end-to-end write
    succeeds under `launchctl` with no interactive prompt — surviving a `brew upgrade` without losing the TCC Automation
    grant.
+
 2. The deployment requests Automation (Apple Events) permission only — no Full Disk Access, no open network.
 3. Startup runs a fail-fast Automation-permission probe that errors loudly (with a short timeout, never hangs) when the
    grant is missing or revoked.
+
 4. A new ADR documents the deployment posture (localhost default / Tailscale optional / cloud ruled out by the Mac pin)
    and the security model, explicitly superseding ADR 001. **Plans**: TBD
 
@@ -139,7 +168,7 @@ must be TRUE):
 | Phase                                       | Plans Complete | Status      | Completed  |
 | ------------------------------------------- | -------------- | ----------- | ---------- |
 | 1. Role Model & Resolver                    | 3/3            | Complete    | 2026-06-03 |
-| 2. Operation Policy (Deny-Deletes & Gating) | 0/TBD          | Not started | -          |
+| 2. Operation Policy (Deny-Deletes & Gating) | 0/3            | Not started | -          |
 | 3. RoleGate & Agent Read Paths              | 0/TBD          | Not started | -          |
 | 4. HTTP Edge Hardening                      | 0/TBD          | Not started | -          |
 | 5. Write-Verifier                           | 0/TBD          | Not started | -          |
