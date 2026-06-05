@@ -67,10 +67,10 @@ Requirements for this hardening milestone. Each maps to a roadmap phase.
 
 ### Read & Surfacing
 
-- [ ] **READ-01**: The AGENT role can access core read paths — today/forecast, overdue, flagged, available vs blocked,
+- [x] **READ-01**: The AGENT role can access core read paths — today/forecast, overdue, flagged, available vs blocked,
       by-project, by-tag, inbox, date-range, and count-only.
-- [ ] **READ-02**: The AGENT role can look up a task/project by identifier (prerequisite for write-verification).
-- [ ] **READ-03**: The AGENT role can list and read native OmniFocus perspectives as the JessOS working surface.
+- [x] **READ-02**: The AGENT role can look up a task/project by identifier (prerequisite for write-verification).
+- [x] **READ-03**: The AGENT role can list and read native OmniFocus perspectives as the JessOS working surface.
 
 ### Deployment
 
@@ -136,9 +136,9 @@ confirms the research's strict bottom-up dependency order; no coverage gap found
 | GATE-01     | Phase 3 — RoleGate & Agent Read Paths              | Complete |
 | GATE-02     | Phase 3 — RoleGate & Agent Read Paths              | Complete |
 | GATE-03     | Phase 3 — RoleGate & Agent Read Paths              | Complete |
-| READ-01     | Phase 3 — RoleGate & Agent Read Paths              | Pending  |
-| READ-02     | Phase 3 — RoleGate & Agent Read Paths              | Pending  |
-| READ-03     | Phase 3 — RoleGate & Agent Read Paths              | Pending  |
+| READ-01     | Phase 3 — RoleGate & Agent Read Paths              | Complete |
+| READ-02     | Phase 3 — RoleGate & Agent Read Paths              | Complete |
+| READ-03     | Phase 3 — RoleGate & Agent Read Paths              | Complete |
 | HTTP-01     | Phase 4 — HTTP Edge Hardening                      | Pending  |
 | HTTP-02     | Phase 4 — HTTP Edge Hardening                      | Pending  |
 | HTTP-03     | Phase 4 — HTTP Edge Hardening                      | Pending  |
