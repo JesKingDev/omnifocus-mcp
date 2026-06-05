@@ -112,7 +112,7 @@ Criteria** (what must be TRUE):
 
 **Wave 1**
 
-- [ ] 03-01-PLAN.md — allowedOperations(role) enumerator + normalizeArgsToPolicy shared helper + Wave 0 test stubs +
+- [x] 03-01-PLAN.md — allowedOperations(role) enumerator + normalizeArgsToPolicy shared helper + Wave 0 test stubs +
       D-06 parity test
 
 **Wave 2** _(blocked on Wave 1 completion)_
@@ -189,7 +189,7 @@ must be TRUE):
 | ------------------------------------------- | -------------- | ----------- | ---------- |
 | 1. Role Model & Resolver                    | 3/3            | Complete    | 2026-06-03 |
 | 2. Operation Policy (Deny-Deletes & Gating) | 3/3            | Complete    | 2026-06-04 |
-| 3. RoleGate & Agent Read Paths              | 0/4            | Not started | -          |
+| 3. RoleGate & Agent Read Paths              | 1/4            | In Progress |            |
 | 4. HTTP Edge Hardening                      | 0/TBD          | Not started | -          |
 | 5. Write-Verifier                           | 0/TBD          | Not started | -          |
 | 6. launchd Deployment & ADR                 | 0/TBD          | Not started | -          |
