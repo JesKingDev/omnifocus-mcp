@@ -149,7 +149,24 @@ Criteria** (what must be TRUE):
    CONTEXT D-01/D-02/D-03.)_
 
 4. Remote reachability works only via `tailscale serve` (never `funnel`), and a bearer token is still required per
-   request in addition to tailnet reachability. **Plans**: TBD **UI hint**: yes
+   request in addition to tailnet reachability. **Plans**: 4 plans
+
+**Wave 0**
+
+- [ ] 04-01-PLAN.md — Failing test contracts: token-registry.test.ts (new), cli.test.ts (new), http-server.test.ts
+      (new), role-resolver stub test update
+
+**Wave 1** _(blocked on Wave 0 completion — plans 02 and 03 run in parallel)_
+
+- [ ] 04-02-PLAN.md — token-registry.ts (new): constant-time validateTokenSet + buildTokenRegistry; fill
+      resolveHttpIdentity stub
+- [ ] 04-03-PLAN.md — cli.ts: default host → 127.0.0.1, new token env vars, validateCLIConfig startup assertions
+      (D-06/D-07/D-13)
+
+**Wave 2** _(blocked on Wave 1 completion)_
+
+- [ ] 04-04-PLAN.md — session-manager.ts per-session role, http-server.ts Host/Origin middleware + unconditional auth,
+      index.ts registry wiring + human verify
 
 ### Phase 5: Write-Verifier
 
@@ -192,6 +209,6 @@ must be TRUE):
 | 1. Role Model & Resolver                    | 3/3            | Complete    | 2026-06-03 |
 | 2. Operation Policy (Deny-Deletes & Gating) | 3/3            | Complete    | 2026-06-04 |
 | 3. RoleGate & Agent Read Paths              | 4/4            | Complete    | 2026-06-05 |
-| 4. HTTP Edge Hardening                      | 0/TBD          | Not started | -          |
+| 4. HTTP Edge Hardening                      | 0/4            | Not started | -          |
 | 5. Write-Verifier                           | 0/TBD          | Not started | -          |
 | 6. launchd Deployment & ADR                 | 0/TBD          | Not started | -          |
