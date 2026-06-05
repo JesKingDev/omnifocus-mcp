@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { decide } from '../../../src/auth/operation-policy.js';
+import { decide, allowedOperations } from '../../../src/auth/operation-policy.js';
 import type { PolicyOutcome, Role } from '../../../src/contracts/roles.js';
 import { buildDeleteScript } from '../../../src/contracts/ast/mutation-script-builder.js';
 import { buildDeleteTagScript, buildMergeTagsScript } from '../../../src/contracts/ast/tag-mutation-script-builder.js';
@@ -276,5 +276,49 @@ describe('script-builder re-assertion — defense-in-depth (D-03)', () => {
     // Owner passes the re-assertion; validateTagMutation is inactive in unit test
     // mode (SANDBOX_GUARD_ENABLED is not set). Expect clean return, no POLICY error.
     expect(() => buildDeleteTagScript('owner', { tagName: 'some-tag' })).not.toThrow(/POLICY:/);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// advertise⟺enforce parity (D-06)
+//
+// Structural defense against drift between the ListTools advertisement
+// (allowedOperations) and the CallTool enforcement (decide()).
+//
+// Contract:
+//   - Every op in allowedOperations('agent') must not be 'deny' when passed to decide()
+//   - Every non-denied op in the policy must appear in allowedOperations('agent')
+//   - OWNER allowedOperations must include delete and bulk_delete (no trimming)
+// ---------------------------------------------------------------------------
+
+describe('advertise⟺enforce parity (D-06)', () => {
+  it('every AGENT-advertised op resolves to decide() !== deny', () => {
+    const { operations, tagManageActions } = allowedOperations('agent');
+    for (const op of operations) {
+      if (op === 'tag_manage') continue; // tag_manage dispatches via target, not op alone
+      expect(decide('agent', op, 'task')).not.toBe('deny');
+    }
+    for (const action of tagManageActions) {
+      expect(decide('agent', 'tag_manage', action)).not.toBe('deny');
+    }
+  });
+
+  it('every non-denied AGENT op is advertised', () => {
+    const { operations } = allowedOperations('agent');
+    // Known non-deny flat ops for agent (tag_manage excluded — uses per-target dispatch)
+    const knownNonDenyFlatOps = ['complete', 'drop', 'create', 'update', 'batch', 'create_folder'];
+    for (const op of knownNonDenyFlatOps) {
+      // Verify this is indeed non-deny via decide(), then assert it is advertised
+      expect(decide('agent', op, 'task')).not.toBe('deny');
+      expect(operations).toContain(op);
+    }
+    // tag_manage itself is advertised (D-05: gated-but-advertised for the op level)
+    expect(operations).toContain('tag_manage');
+  });
+
+  it('OWNER allowedOperations returns all ops including delete and bulk_delete', () => {
+    const { operations } = allowedOperations('owner');
+    expect(operations).toContain('delete');
+    expect(operations).toContain('bulk_delete');
   });
 });
