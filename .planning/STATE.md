@@ -3,14 +3,13 @@ gsd_state_version: 1.0
 milestone: hardening
 milestone_name: Hardening
 status: ready_to_plan
-last_updated: 2026-06-05T15:04:40.974Z
+last_updated: '2026-06-05T16:37:54.062Z'
 progress:
   total_phases: 6
   completed_phases: 2
   total_plans: 4
   completed_plans: 10
   percent: 33
-stopped_at: Phase 03 complete (4/4) — ready to discuss Phase 4
 ---
 
 # Project State
@@ -90,6 +89,7 @@ Decisions are logged in PROJECT.md Key Decisions table. Recent decisions affecti
 - [Phase 03-04]: withCorrelation override required for any tool that repurposes BaseTool constructor arg 2 (e.g. for
   context: ResolvedContext); base reconstruction new ctor(cache, correlationId) silently drops the context slot —
   override must thread both args in the correct positions
+
 - [Phase 03-04]: Regression tests for withCorrelation should drive whoami through the reconstruction path
   (tool.withCorrelation(...).call(...)), not direct construction, to catch this class of failure
 
@@ -116,4 +116,4 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-06-05T15:00:00.000Z Stopped at: Completed 03-04-PLAN.md — Phase 3 complete; ready to plan Phase 4
+Last session: 2026-06-05T16:37:54.057Z
