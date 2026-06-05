@@ -9,7 +9,10 @@ export interface CLIConfig {
   httpMode: boolean;
   port: number;
   host: string;
-  authToken?: string;
+  authToken?: string; // D-11: retained for backward-compat; treated as agentToken alias
+  agentToken?: string; // D-09: MCP_AGENT_TOKEN
+  ownerToken?: string; // D-09: MCP_OWNER_TOKEN
+  allowedHosts?: string[]; // D-15: MCP_ALLOWED_HOSTS (parsed comma-separated)
 }
 
 /**
@@ -18,7 +21,7 @@ export interface CLIConfig {
 export const DEFAULT_CLI_CONFIG: CLIConfig = {
   httpMode: false,
   port: 3000,
-  host: '0.0.0.0',
+  host: '127.0.0.1',
 };
 
 /**
@@ -72,6 +75,19 @@ export function parseCLIArgs(): CLIConfig {
   }
 
   // Environment variables override command line args
+  if (process.env.MCP_AGENT_TOKEN) config.agentToken = process.env.MCP_AGENT_TOKEN;
+  if (process.env.MCP_OWNER_TOKEN) config.ownerToken = process.env.MCP_OWNER_TOKEN;
+  if (process.env.MCP_AUTH_TOKEN && !config.agentToken) {
+    // D-11 backward-compat alias — MCP_AUTH_TOKEN maps to agentToken with a deprecation warning
+    logger.warn('MCP_AUTH_TOKEN is deprecated. Set MCP_AGENT_TOKEN instead.');
+    config.agentToken = process.env.MCP_AUTH_TOKEN;
+  }
+  if (process.env.MCP_ALLOWED_HOSTS) {
+    const hosts = process.env.MCP_ALLOWED_HOSTS.split(',')
+      .map((h) => h.trim())
+      .filter(Boolean);
+    if (hosts.length > 0) config.allowedHosts = hosts;
+  }
   if (process.env.MCP_AUTH_TOKEN) config.authToken = process.env.MCP_AUTH_TOKEN;
   if (process.env.MCP_PORT) config.port = parsePort(process.env.MCP_PORT, 'MCP_PORT', config.port);
   if (process.env.MCP_HOST) config.host = process.env.MCP_HOST;
@@ -81,6 +97,8 @@ export function parseCLIArgs(): CLIConfig {
     port: config.port,
     host: config.host,
     authToken: config.authToken ? '[REDACTED]' : undefined,
+    agentToken: config.agentToken ? '[REDACTED]' : undefined,
+    ownerToken: config.ownerToken ? '[REDACTED]' : undefined,
   });
 
   return config;
@@ -111,11 +129,14 @@ Usage: omnifocus-mcp-cached [options]
 Options:
   --http              Enable HTTP transport instead of stdio
   --port <port>       HTTP server port (default: 3000)
-  --host <host>       Bind address (default: 0.0.0.0)
+  --host <host>       Bind address (default: 127.0.0.1)
   -h, --help          Show this help message
 
 Environment Variables:
-  MCP_AUTH_TOKEN      Bearer token for authentication (optional)
+  MCP_AGENT_TOKEN     Bearer token for agent role (required in HTTP mode)
+  MCP_OWNER_TOKEN     Bearer token for owner role (optional; must differ from MCP_AGENT_TOKEN)
+  MCP_ALLOWED_HOSTS   Comma-separated additional allowed Host/Origin values (optional)
+  MCP_AUTH_TOKEN      Deprecated. Use MCP_AGENT_TOKEN instead.
   MCP_PORT            Alternative to --port flag
   MCP_HOST            Alternative to --host flag
   MCP_SKIP_AUTO_START Skip automatic server startup (for testing)
@@ -125,11 +146,10 @@ Examples:
   node dist/index.js
 
   # New HTTP mode
-  node dist/index.js --http --port 3000
-  node dist/index.js --http --port 3000 --host 127.0.0.1
+  MCP_AGENT_TOKEN=$(openssl rand -hex 32) node dist/index.js --http --port 3000
 
   # Using environment variables
-  export MCP_AUTH_TOKEN=$(openssl rand -hex 32)
+  export MCP_AGENT_TOKEN=$(openssl rand -hex 32)
   export MCP_PORT=3000
   node dist/index.js --http
 `);
