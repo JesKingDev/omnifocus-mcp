@@ -16,8 +16,8 @@
  * conflated (T-1-02).
  *
  * Phase 4 fills resolveHttpIdentity() with token→role/principal lookup.
- * Until then, the stub always returns fail-safe-default / null principal so
- * the HTTP path is safe by default.
+ * The caller passes a pre-validated TokenEntry; this function constructs
+ * the ResolvedIdentity with roleSource='http-token' and the entry's principal.
  *
  * Anti-patterns explicitly absent (D-01, T-1-01):
  *   - No .toLowerCase() or .toUpperCase()
@@ -28,6 +28,7 @@
  */
 
 import type { Role, RoleSource, ResolvedIdentity } from '../contracts/roles.js';
+import type { TokenEntry } from './token-registry.js';
 
 /**
  * Parses OMNIFOCUS_MCP_ROLE with default-deny semantics (ROLE-02, D-01).
@@ -63,24 +64,20 @@ export function resolveStdioIdentity(env: Record<string, string | undefined> = p
 }
 
 /**
- * HTTP resolver stub — Phase 4 fills this body (D-10, T-1-04).
+ * Resolves an HTTP connection's identity from a pre-validated TokenEntry (D-10, T-1-04).
  *
- * Always returns fail-safe-default / null principal until Phase 4 implements
- * bearer token → role/principal lookup. The contract shape is fixed so Phase 4
- * can fill the body without reshaping callers.
+ * The caller (http-server.ts) has already validated the bearer token via
+ * validateTokenSet; this function constructs the ResolvedIdentity with the
+ * correct roleSource and principal. roleSource is always 'http-token' —
+ * the bearer token is the authoritative source of identity on the HTTP path.
+ * principal is sourced directly from the resolved TokenEntry (D-10).
  *
- * Phase 4 will replace this stub with token→role/principal lookup:
- *   - Extract bearer token from Authorization header
- *   - Validate via timingSafeEqual (node:crypto) — never === for token comparison
- *   - Populate principal from token claims
- *   - Set roleSource to 'http-token' when token determines role
+ * @param entry  The TokenEntry returned by validateTokenSet for the request's bearer token.
  */
-export function resolveHttpIdentity(): ResolvedIdentity {
+export function resolveHttpIdentity(entry: TokenEntry): ResolvedIdentity {
   return {
     transport: 'http',
-    // Phase 4 will derive roleSource from bearer token claims
-    roleSource: 'fail-safe-default',
-    // Phase 4 will populate principal from bearer token
-    principal: null,
+    roleSource: 'http-token',
+    principal: entry.principal,
   };
 }
