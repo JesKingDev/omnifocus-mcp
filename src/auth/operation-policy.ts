@@ -91,6 +91,90 @@ const AGENT_POLICY: Record<string, PolicyOutcome | Record<string, PolicyOutcome>
  * @param operation The operation string from the compiled mutation
  * @param target    Optional target string (required for tag_manage disambiguation)
  */
+// =============================================================================
+// CAPABILITY ENUMERATOR
+// =============================================================================
+
+/**
+ * Represents a single (operation, target) pair for policy evaluation.
+ * Used by normalizeArgsToPolicy and the dispatch gate.
+ */
+export type PolicyItem = { operation: string; target: string };
+
+/**
+ * Returns the set of operations and tag_manage actions permitted for the given role.
+ *
+ * Forward-read over AGENT_POLICY (D-04) — never inverse of decide().
+ * Includes 'gate' outcomes in the advertised set (D-05: gated ops are
+ * advertised-but-guarded, not hidden from the tool surface).
+ *
+ * OWNER returns all keys unconditionally (POLICY-06).
+ * AGENT returns all non-deny entries (allow + gate).
+ */
+export function allowedOperations(role: Role): { operations: string[]; tagManageActions: string[] } {
+  if (role === 'owner') {
+    return {
+      operations: Object.keys(AGENT_POLICY),
+      tagManageActions: Object.keys(AGENT_POLICY['tag_manage'] as Record<string, PolicyOutcome>),
+    };
+  }
+  // AGENT: include 'allow' AND 'gate' (D-05: gated ops are advertised-but-guarded, not hidden)
+  const operations: string[] = [];
+  const tagManageActions: string[] = [];
+  for (const [op, entry] of Object.entries(AGENT_POLICY)) {
+    if (typeof entry === 'string') {
+      if (entry !== 'deny') operations.push(op);
+    } else {
+      // tag_manage subtable: the op itself is always advertised (D-05)
+      operations.push(op);
+      for (const [action, outcome] of Object.entries(entry)) {
+        if (outcome !== 'deny') tagManageActions.push(action);
+      }
+    }
+  }
+  return { operations, tagManageActions };
+}
+
+// =============================================================================
+// NORMALIZATION HELPER
+// =============================================================================
+
+/**
+ * Normalize raw MCP args into a flat list of (operation, target) pairs
+ * for decide() evaluation. Operates on the raw args.mutation shape
+ * (pre-Zod-compile) so it can be called at dispatch time without importing
+ * MutationCompiler. Shared between the dispatch gate in index.ts and the
+ * Write tool funnel (D-11 — OMN-119 normalization drift guard).
+ *
+ * Returns [] for args that have no mutation field (read ops, system ops).
+ */
+export function normalizeArgsToPolicy(args: Record<string, unknown>): PolicyItem[] {
+  const mutation = args['mutation'] as Record<string, unknown> | undefined;
+  if (!mutation) return [];
+
+  const op = mutation['operation'] as string | undefined;
+  if (!op) return [];
+
+  if (op === 'batch') {
+    const operations = (mutation['operations'] as Array<Record<string, unknown>>) ?? [];
+    return operations.map((sub) => ({
+      operation: sub['operation'] as string,
+      target: (sub['target'] as string | undefined) ?? 'task',
+    }));
+  }
+  if (op === 'bulk_delete') {
+    return [{ operation: 'bulk_delete', target: (mutation['target'] as string | undefined) ?? 'task' }];
+  }
+  if (op === 'tag_manage') {
+    return [{ operation: 'tag_manage', target: (mutation['action'] as string | undefined) ?? '' }];
+  }
+  return [{ operation: op, target: (mutation['target'] as string | undefined) ?? 'task' }];
+}
+
+// =============================================================================
+// DECISION FUNCTION
+// =============================================================================
+
 export function decide(role: Role, operation: string, target?: string): PolicyOutcome {
   // OWNER always passes through — no gating, no deny (POLICY-06)
   if (role === 'owner') {
