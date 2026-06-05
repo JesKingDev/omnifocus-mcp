@@ -158,9 +158,9 @@ Criteria** (what must be TRUE):
 
 **Wave 1** _(blocked on Wave 0 completion — plans 02 and 03 run in parallel)_
 
-- [ ] 04-02-PLAN.md — token-registry.ts (new): constant-time validateTokenSet + buildTokenRegistry; fill
+- [x] 04-02-PLAN.md — token-registry.ts (new): constant-time validateTokenSet + buildTokenRegistry; fill
       resolveHttpIdentity stub
-- [ ] 04-03-PLAN.md — cli.ts: default host → 127.0.0.1, new token env vars, validateCLIConfig startup assertions
+- [x] 04-03-PLAN.md — cli.ts: default host → 127.0.0.1, new token env vars, validateCLIConfig startup assertions
       (D-06/D-07/D-13)
 
 **Wave 2** _(blocked on Wave 1 completion)_
@@ -209,6 +209,6 @@ must be TRUE):
 | 1. Role Model & Resolver                    | 3/3            | Complete    | 2026-06-03 |
 | 2. Operation Policy (Deny-Deletes & Gating) | 3/3            | Complete    | 2026-06-04 |
 | 3. RoleGate & Agent Read Paths              | 4/4            | Complete    | 2026-06-05 |
-| 4. HTTP Edge Hardening                      | 1/4            | In Progress |            |
+| 4. HTTP Edge Hardening                      | 3/4            | In Progress |            |
 | 5. Write-Verifier                           | 0/TBD          | Not started | -          |
 | 6. launchd Deployment & ADR                 | 0/TBD          | Not started | -          |
