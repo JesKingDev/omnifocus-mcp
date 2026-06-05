@@ -16,6 +16,7 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { ListToolsRequestSchema, CallToolRequestSchema } from '@modelcontextprotocol/sdk/types.js';
 import { CacheManager } from '../../../src/cache/CacheManager.js';
 import { registerTools } from '../../../src/tools/index.js';
+import { OmniFocusWriteTool } from '../../../src/tools/unified/OmniFocusWriteTool.js';
 
 // ---------------------------------------------------------------------------
 // FakeServer — captures handlers without needing a real MCP Server instance
@@ -118,6 +119,67 @@ describe('GATE-01: ListTools AGENT — operation enum trimmed', () => {
     expect(opEnum).toContain('delete');
     expect(opEnum).toContain('bulk_delete');
     expect(opEnum).toContain('create');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// WR-01/WR-02: advertised enum ⊆ base Zod schema enum
+//
+// allowedOperations() includes forward-declared/inert policy entries ('drop',
+// 'perspective_delete') that the write Zod schema has no literal for. Those must
+// NOT leak into the ListTools-advertised enum, or the agent sees an op/action it
+// can never actually call (advertise⟺validate mismatch).
+// ---------------------------------------------------------------------------
+
+describe('WR-01/WR-02: advertised write enum has no phantom (non-Zod) ops/actions', () => {
+  function baseWriteEnums() {
+    const base = new OmniFocusWriteTool(createMockCache()).inputSchema as {
+      properties: {
+        mutation: { properties: { operation: { enum: string[] }; action?: { enum: string[] } } };
+      };
+    };
+    const props = base.properties.mutation.properties;
+    return { operation: props.operation.enum, action: props.action?.enum ?? [] };
+  }
+
+  async function advertisedWriteEnums(role: 'agent' | 'owner') {
+    const server = makeServer(role);
+    const listHandler = server.handlers.get(ListToolsRequestSchema) as () => Promise<{
+      tools: Array<{ name: string; inputSchema: unknown }>;
+    }>;
+    const result = await listHandler();
+    const writeTool = result.tools.find((t) => t.name === 'omnifocus_write')!;
+    const props = (
+      writeTool.inputSchema as {
+        properties: { mutation: { properties: { operation: { enum: string[] }; action?: { enum: string[] } } } };
+      }
+    ).properties.mutation.properties;
+    return { operation: props.operation.enum, action: props.action?.enum ?? [] };
+  }
+
+  it('AGENT advertised operation enum is a subset of the base Zod enum (no phantom drop)', async () => {
+    const base = baseWriteEnums();
+    const adv = await advertisedWriteEnums('agent');
+    for (const op of adv.operation) expect(base.operation).toContain(op);
+    expect(adv.operation).not.toContain('drop');
+    // sanity: real allowed ops survive the intersection
+    expect(adv.operation).toContain('create');
+    expect(adv.operation).toContain('complete');
+  });
+
+  it('OWNER advertised operation enum is a subset of the base Zod enum (no phantom drop)', async () => {
+    const base = baseWriteEnums();
+    const adv = await advertisedWriteEnums('owner');
+    for (const op of adv.operation) expect(base.operation).toContain(op);
+    expect(adv.operation).not.toContain('drop');
+    expect(adv.operation).toContain('delete');
+  });
+
+  it('AGENT advertised action enum is a subset of the base Zod enum (no phantom perspective_delete)', async () => {
+    const base = baseWriteEnums();
+    const adv = await advertisedWriteEnums('agent');
+    for (const action of adv.action) expect(base.action).toContain(action);
+    expect(adv.action).not.toContain('perspective_delete');
   });
 });
 

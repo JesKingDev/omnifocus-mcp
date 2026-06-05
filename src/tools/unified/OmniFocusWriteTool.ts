@@ -334,17 +334,23 @@ OPERATION POLICY (agent role):
 
     const mutationProps = { ...base.properties.mutation.properties };
 
-    // Trim operation enum to the role-allowed set
+    // The base inputSchema enums are the Zod-literal source of truth. allowedOps
+    // (from allowedOperations(role)) can include forward-declared/inert policy
+    // entries ('drop', 'perspective_delete') that the schema has no literal for.
+    // Intersect with the base enum so the advertised surface never offers an
+    // op/action the schema would reject (WR-01/WR-02 advertise⟺validate parity).
+    const baseOpEnum = (mutationProps['operation'] as { enum?: string[] } | undefined)?.enum ?? [];
     mutationProps['operation'] = {
       type: 'string',
-      enum: allowedOps,
+      enum: allowedOps.filter((op) => baseOpEnum.includes(op)),
     };
 
-    // Trim action enum if present
+    // Trim action enum if present (same intersection guard)
     if (mutationProps['action']) {
+      const baseActionEnum = (mutationProps['action'] as { enum?: string[] }).enum ?? [];
       mutationProps['action'] = {
         type: 'string',
-        enum: allowedTagActions,
+        enum: allowedTagActions.filter((action) => baseActionEnum.includes(action)),
       };
     }
 
