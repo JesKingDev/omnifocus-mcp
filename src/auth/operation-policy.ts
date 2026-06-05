@@ -156,11 +156,22 @@ export function normalizeArgsToPolicy(args: Record<string, unknown>): PolicyItem
   if (!op) return [];
 
   if (op === 'batch') {
-    const operations = (mutation['operations'] as Array<Record<string, unknown>>) ?? [];
-    return operations.map((sub) => ({
-      operation: sub['operation'] as string,
-      target: (sub['target'] as string | undefined) ?? 'task',
-    }));
+    const rawOperations = mutation['operations'];
+    // Malformed batch (operations is not an array): emit a single unrecognized
+    // item so decide() fail-closes to deny at the gate, rather than throwing a
+    // TypeError that surfaces as an opaque McpError InternalError (WR-03).
+    if (!Array.isArray(rawOperations)) {
+      return [{ operation: '', target: 'task' }];
+    }
+    return rawOperations.map((sub) => {
+      const subRecord = (sub ?? {}) as Record<string, unknown>;
+      // Coerce non-string sub-operation to '' so it resolves to deny via
+      // decide() (AGENT_POLICY[''] is undefined → fail-closed) instead of
+      // feeding a non-string into the policy lookup.
+      const subOp = typeof subRecord['operation'] === 'string' ? subRecord['operation'] : '';
+      const subTarget = typeof subRecord['target'] === 'string' ? subRecord['target'] : 'task';
+      return { operation: subOp, target: subTarget };
+    });
   }
   if (op === 'bulk_delete') {
     return [{ operation: 'bulk_delete', target: (mutation['target'] as string | undefined) ?? 'task' }];

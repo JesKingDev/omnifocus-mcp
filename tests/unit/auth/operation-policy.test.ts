@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { decide, allowedOperations } from '../../../src/auth/operation-policy.js';
+import { decide, allowedOperations, normalizeArgsToPolicy } from '../../../src/auth/operation-policy.js';
 import type { PolicyOutcome, Role } from '../../../src/contracts/roles.js';
 import { buildDeleteScript } from '../../../src/contracts/ast/mutation-script-builder.js';
 import { buildDeleteTagScript, buildMergeTagsScript } from '../../../src/contracts/ast/tag-mutation-script-builder.js';
@@ -320,5 +320,76 @@ describe('advertise⟺enforce parity (D-06)', () => {
     const { operations } = allowedOperations('owner');
     expect(operations).toContain('delete');
     expect(operations).toContain('bulk_delete');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// WR-03: normalizeArgsToPolicy robustness on malformed batch payloads
+//
+// A malformed batch (operations not an array, or a sub-op that is not a string)
+// must NOT throw — a thrown TypeError surfaces as an opaque McpError
+// InternalError instead of a structured policy response. The gate must
+// fail-CLOSED: emit items that decide() denies, never crash and never
+// silently allow.
+// ---------------------------------------------------------------------------
+
+describe('WR-03: normalizeArgsToPolicy fail-closes on malformed batch', () => {
+  it('non-array operations does not throw and yields a deny-forcing item', () => {
+    const args = { mutation: { operation: 'batch', operations: 'not-an-array' } };
+    let items: ReturnType<typeof normalizeArgsToPolicy> = [];
+    expect(() => {
+      items = normalizeArgsToPolicy(args);
+    }).not.toThrow();
+    // At least one item, and every item denies for the agent role (fail-closed)
+    expect(items.length).toBeGreaterThan(0);
+    for (const item of items) {
+      expect(decide('agent', item.operation, item.target)).toBe('deny');
+    }
+  });
+
+  it('missing operations key does not throw and fail-closes', () => {
+    const args = { mutation: { operation: 'batch' } };
+    let items: ReturnType<typeof normalizeArgsToPolicy> = [];
+    expect(() => {
+      items = normalizeArgsToPolicy(args);
+    }).not.toThrow();
+    expect(items.length).toBeGreaterThan(0);
+    for (const item of items) {
+      expect(decide('agent', item.operation, item.target)).toBe('deny');
+    }
+  });
+
+  it('non-string sub-operation coerces to a deny outcome, not a crash', () => {
+    const args = {
+      mutation: {
+        operation: 'batch',
+        operations: [{ operation: 42, target: 'task' }, { operation: { nested: true } }],
+      },
+    };
+    let items: ReturnType<typeof normalizeArgsToPolicy> = [];
+    expect(() => {
+      items = normalizeArgsToPolicy(args);
+    }).not.toThrow();
+    expect(items.length).toBe(2);
+    for (const item of items) {
+      expect(decide('agent', item.operation, item.target)).toBe('deny');
+    }
+  });
+
+  it('a well-formed batch of allowed sub-ops still resolves to non-deny', () => {
+    const args = {
+      mutation: {
+        operation: 'batch',
+        operations: [
+          { operation: 'create', target: 'task' },
+          { operation: 'complete', target: 'task' },
+        ],
+      },
+    };
+    const items = normalizeArgsToPolicy(args);
+    expect(items).toHaveLength(2);
+    for (const item of items) {
+      expect(decide('agent', item.operation, item.target)).not.toBe('deny');
+    }
   });
 });
