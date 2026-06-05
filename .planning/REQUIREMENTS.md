@@ -50,7 +50,11 @@ Requirements for this hardening milestone. Each maps to a roadmap phase.
 - [ ] **HTTP-03**: DNS-rebinding protection is explicitly enabled with host/origin allowlists.
 - [ ] **HTTP-04**: Remote access is reachable only via Tailscale `serve` (never `funnel`); a bearer token is still
       required per request, in addition to tailnet reachability.
-- [ ] **HTTP-05**: An HTTP connection's role is derived from its token (agent-scoped).
+- [ ] **HTTP-05**: An HTTP connection's role is derived from its bearer token; both `agent` and `owner` are reachable
+      over HTTP, each producing the same allow/deny outcomes as the matching stdio role (owner-token → owner,
+      agent-token → agent). Distinct per-role tokens; unknown/missing token is rejected (does not fall back to a role).
+      _(Amended Phase 4: was "agent-scoped" — superseded by Phase 4 CONTEXT D-01/D-02, owner-over-HTTP with full
+      parity.)_
 
 > **Consideration (not a committed v1 requirement):** `jessicaking.com` is hosted on Cloudflare. When Phase 4 (HTTP
 > edge) is planned, evaluate whether any Cloudflare capabilities (Tunnel, Access / Zero Trust) could simplify or

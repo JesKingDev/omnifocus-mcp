@@ -143,8 +143,10 @@ Criteria** (what must be TRUE):
 2. The HTTP server binds to `127.0.0.1` and a startup assertion fails closed (refuses to start) if it would bind to any
    open interface; a foreign Origin/Host is refused via DNS-rebinding protection with explicit allowlists.
 
-3. An authenticated HTTP connection's role is derived from its token and is agent-scoped — the same allow/deny outcomes
-   as the stdio agent apply.
+3. An authenticated HTTP connection's role is derived from its bearer token; both `agent` and `owner` are reachable over
+   HTTP, each producing the same allow/deny outcomes as the matching stdio role (owner-token → owner outcomes including
+   destructive deletes, agent-token → agent outcomes). _(Amended Phase 4: was "agent-scoped" — superseded by Phase 4
+   CONTEXT D-01/D-02/D-03.)_
 
 4. Remote reachability works only via `tailscale serve` (never `funnel`), and a bearer token is still required per
    request in addition to tailnet reachability. **Plans**: TBD **UI hint**: yes
