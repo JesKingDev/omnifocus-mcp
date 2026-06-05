@@ -771,7 +771,10 @@ gap.
 
 ---
 
-## Open Questions
+## Open Questions (RESOLVED)
+
+> All three resolved during planning: Q1 → Plan 04-03/T1 (alias with deprecation warning), Q2 → Plan 04-04/T1 (call-site
+> audit + removal), Q3 → Plan 04-01/T1 (stub-contract test update).
 
 1. **`MCP_AUTH_TOKEN` alias vs retire (D-11 — Claude's discretion)**
    - What we know: `MCP_AUTH_TOKEN` is read in `cli.ts:75`. Aliasing it to agent preserves backward-compat for existing
