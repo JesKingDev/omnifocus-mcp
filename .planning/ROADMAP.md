@@ -26,8 +26,8 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 2: Operation Policy (Deny-Deletes & Gating)** - The agent cannot hard-delete or bulk-delete; structural
       (completed 2026-06-04) destructive ops are gated, enforced at the single mutation funnel.
 
-- [ ] **Phase 3: RoleGate & Agent Read Paths** - Role-aware tool advertisement and dispatch ship a fully usable
-      least-privilege stdio agent with its core read surface.
+- [x] **Phase 3: RoleGate & Agent Read Paths** - Role-aware tool advertisement and dispatch ship a fully usable
+      (completed 2026-06-05) least-privilege stdio agent with its core read surface.
 
 - [ ] **Phase 4: HTTP Edge Hardening** - The HTTP/Tailscale remote path matches the stdio path's guarantees: bearer
       auth, loopback bind, DNS-rebinding protection, Serve-only.
@@ -127,7 +127,7 @@ Criteria** (what must be TRUE):
 
 **Wave 4** _(blocked on Wave 3 completion)_
 
-- [ ] 03-04-PLAN.md — READ-01/02/03 read-path confirmation + integration test role-aware extension + end-to-end human
+- [x] 03-04-PLAN.md — READ-01/02/03 read-path confirmation + integration test role-aware extension + end-to-end human
       verify
 
 ### Phase 4: HTTP Edge Hardening
@@ -189,7 +189,7 @@ must be TRUE):
 | ------------------------------------------- | -------------- | ----------- | ---------- |
 | 1. Role Model & Resolver                    | 3/3            | Complete    | 2026-06-03 |
 | 2. Operation Policy (Deny-Deletes & Gating) | 3/3            | Complete    | 2026-06-04 |
-| 3. RoleGate & Agent Read Paths              | 3/4            | In Progress |            |
+| 3. RoleGate & Agent Read Paths              | 4/4            | Complete    | 2026-06-05 |
 | 4. HTTP Edge Hardening                      | 0/TBD          | Not started | -          |
 | 5. Write-Verifier                           | 0/TBD          | Not started | -          |
 | 6. launchd Deployment & ADR                 | 0/TBD          | Not started | -          |

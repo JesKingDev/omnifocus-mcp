@@ -3,13 +3,13 @@ gsd_state_version: 1.0
 milestone: hardening
 milestone_name: Hardening
 status: ready_to_plan
-last_updated: '2026-06-05T01:07:29.609Z'
+last_updated: '2026-06-05T15:00:00.000Z'
 progress:
   total_phases: 6
-  completed_phases: 1
-  total_plans: 3
-  completed_plans: 6
-  percent: 17
+  completed_phases: 2
+  total_plans: 4
+  completed_plans: 7
+  percent: 33
 ---
 
 # Project State
@@ -19,11 +19,11 @@ progress:
 See: .planning/PROJECT.md (updated 2026-06-03)
 
 **Core value:** The agent can read and write OmniFocus tasks safely — no silent write failures, no destructive deletes —
-so JessOS can trust OmniFocus as the source of truth. **Current focus:** Phase 03 — rolegate-agent-read-paths
+so JessOS can trust OmniFocus as the source of truth. **Current focus:** Phase 04 — HTTP Edge Hardening (next)
 
 ## Current Position
 
-Phase: 03 (rolegate-agent-read-paths) — EXECUTING Plan: 3 of 4
+Phase: 03 (rolegate-agent-read-paths) — COMPLETE (4 of 4 plans done)
 
 Progress: [░░░░░░░░░░] 0%
 
@@ -50,7 +50,8 @@ _Updated after each plan completion_ | Phase 01-role-model-resolver P01 | 190s |
 plan completion_ | Phase 01-role-model-resolver P02 | 180s | 2 tasks | 2 files | | Phase 02 P01 | 540s | 3 tasks | 3
 files | | Phase 02 P02 | 480s | 2 tasks | 5 files | | Phase 02 P03 | 900s | 2 tasks | 7 files | | Phase
 03-rolegate-agent-read-paths P01 | 350 | 2 tasks | 4 files | | Phase 03-rolegate-agent-read-paths P02 | 523 | 2 tasks |
-7 files | | Phase 03-rolegate-agent-read-paths P03 | 250 | 1 tasks | 3 files |
+7 files | | Phase 03-rolegate-agent-read-paths P03 | 250 | 1 tasks | 3 files | | Phase 03-rolegate-agent-read-paths P04
+| 2700s | 2 tasks | 5 files |
 
 ## Accumulated Context
 
@@ -84,6 +85,11 @@ Decisions are logged in PROJECT.md Key Decisions table. Recent decisions affecti
 
 - [Phase ?]: whoami op complete with dual-schema parity
 - [Phase ?]: SystemTool whoami op
+- [Phase 03-04]: withCorrelation override required for any tool that repurposes BaseTool constructor arg 2 (e.g. for
+  context: ResolvedContext); base reconstruction new ctor(cache, correlationId) silently drops the context slot —
+  override must thread both args in the correct positions
+- [Phase 03-04]: Regression tests for withCorrelation should drive whoami through the reconstruction path
+  (tool.withCorrelation(...).call(...)), not direct construction, to catch this class of failure
 
 ### Pending Todos
 
@@ -108,4 +114,4 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-06-05T01:07:12.200Z
+Last session: 2026-06-05T15:00:00.000Z Stopped at: Completed 03-04-PLAN.md — Phase 3 complete; ready to plan Phase 4
