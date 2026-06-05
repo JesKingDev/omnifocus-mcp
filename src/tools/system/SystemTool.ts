@@ -10,6 +10,7 @@ import {
   StandardResponseV2,
 } from '../../utils/response-format.js';
 import { getSystemMetrics, getMetricsSummary } from '../../utils/metrics.js';
+import type { ResolvedContext } from '../../contracts/roles.js';
 
 // Consolidated schema for all system operations.
 //
@@ -163,10 +164,14 @@ export class SystemTool extends BaseTool<typeof SystemToolSchema> {
   }
 
   private diagnosticOmni: DiagnosticOmniAutomation;
+  // context threaded from registerTools for whoami op (Plan 03); stored now so Plan 03 can use it
 
-  constructor(cache: import('../../cache/CacheManager.js').CacheManager) {
+  protected readonly _context?: ResolvedContext;
+
+  constructor(cache: import('../../cache/CacheManager.js').CacheManager, context?: ResolvedContext) {
     super(cache);
     this.diagnosticOmni = new DiagnosticOmniAutomation();
+    this._context = context;
   }
 
   async executeValidated(args: z.infer<typeof SystemToolSchema>): Promise<SystemResponse> {

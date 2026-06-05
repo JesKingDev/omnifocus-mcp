@@ -3,6 +3,8 @@ import { Server } from '@modelcontextprotocol/sdk/server/index.js';
 import { CallToolRequestSchema, ListToolsRequestSchema, McpError, ErrorCode } from '@modelcontextprotocol/sdk/types.js';
 import { CacheManager } from '../cache/CacheManager.js';
 import { createLogger, createCorrelatedLogger, redactArgs, generateCorrelationId } from '../utils/logger.js';
+import type { Role, ResolvedContext } from '../contracts/roles.js';
+import { allowedOperations } from '../auth/operation-policy.js';
 
 // v3.0.0 Unified Builder API - 3 tools + system diagnostics
 import { OmniFocusReadTool } from './unified/OmniFocusReadTool.js';
@@ -32,8 +34,14 @@ function supportsCorrelation(tool: Tool): tool is Tool & CorrelationCapable {
   return 'withCorrelation' in tool && typeof (tool as Tool & Record<string, unknown>).withCorrelation === 'function';
 }
 
-// eslint-disable-next-line sonarjs/deprecation
-export function registerTools(server: Server, cache: CacheManager, pendingOperations?: Set<Promise<unknown>>): void {
+
+export function registerTools(
+  server: Server,
+  cache: CacheManager,
+  pendingOperations?: Set<Promise<unknown>>,
+  role: Role = 'agent',
+  context?: ResolvedContext,
+): void {
   logger.info(
     'OmniFocus MCP v3.0.0 - Unified Builder API: 4 tools (omnifocus_read, omnifocus_write, omnifocus_analyze, system)',
   );
@@ -43,17 +51,24 @@ export function registerTools(server: Server, cache: CacheManager, pendingOperat
     new OmniFocusReadTool(cache), // 'omnifocus_read' - Query tasks, projects, tags, perspectives, folders
     new OmniFocusWriteTool(cache), // 'omnifocus_write' - Create, update, complete, delete operations
     new OmniFocusAnalyzeTool(cache), // 'omnifocus_analyze' - All analytics and analysis operations
-    new SystemTool(cache), // 'system' - Version info and diagnostics
+    new SystemTool(cache, context), // 'system' - Version info and diagnostics
   ];
 
   // Register handlers
   server.setRequestHandler(ListToolsRequestSchema, () => {
+    const { operations, tagManageActions } = allowedOperations(role);
     return {
       tools: tools.map((t) => {
+        // Build role-trimmed schema per request — never mutate t.inputSchema in place (Pitfall 5)
+        const tWithRole = t as Tool & {
+          getRoleAwareSchema?: (r: Role, ops: string[], tagActions: string[]) => Record<string, unknown>;
+          getRoleAwareDescription?: (r: Role) => string;
+        };
+        const schema = tWithRole.getRoleAwareSchema?.(role, operations, tagManageActions) ?? t.inputSchema;
         const toolDef: Record<string, unknown> = {
           name: t.name,
-          description: t.description,
-          inputSchema: t.inputSchema,
+          description: tWithRole.getRoleAwareDescription?.(role) ?? t.description,
+          inputSchema: schema,
         };
         // Include meta fields if the tool provides them
         if ('meta' in t && t.meta) {

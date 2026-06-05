@@ -59,7 +59,8 @@ import { localToUTC } from '../../utils/timezone.js';
 import { parsingError, formatErrorWithRecovery, invalidDateError } from '../../utils/error-messages.js';
 import { sanitizeTaskUpdates } from './utils/task-sanitizer.js';
 import { flattenBatchResults } from './batch-response-flatten.js';
-import { decide } from '../../auth/operation-policy.js';
+import { decide, normalizeArgsToPolicy } from '../../auth/operation-policy.js';
+import type { Role } from '../../contracts/roles.js';
 import { parseRole } from '../../auth/role-resolver.js';
 
 // Convert string IDs to branded types for type safety (compile-time only, no runtime validation)
@@ -306,6 +307,58 @@ OPERATION POLICY (agent role):
     };
   }
 
+  /**
+   * Returns a role-trimmed copy of inputSchema for ListTools advertisement.
+   *
+   * Deep-copies (using spread) the base inputSchema and trims:
+   * - mutation.properties.operation.enum to allowedOps
+   * - mutation.properties.action.enum to allowedTagActions (if present)
+   *
+   * Never mutates this.inputSchema in place (Pitfall 5 — per-request new object).
+   * The Zod schema (server-side validation) is intentionally unchanged (D-02).
+   */
+  getRoleAwareSchema(role: Role, allowedOps: string[], allowedTagActions: string[]): Record<string, unknown> {
+    // Use role only for its side-effect on the enum arrays (allowedOps/allowedTagActions come from allowedOperations(role))
+    void role;
+    const base = this.inputSchema as {
+      type: string;
+      properties: {
+        mutation: {
+          type: string;
+          properties: Record<string, unknown>;
+          required: string[];
+        };
+      };
+      required: string[];
+    };
+
+    const mutationProps = { ...base.properties.mutation.properties };
+
+    // Trim operation enum to the role-allowed set
+    mutationProps['operation'] = {
+      type: 'string',
+      enum: allowedOps,
+    };
+
+    // Trim action enum if present
+    if (mutationProps['action']) {
+      mutationProps['action'] = {
+        type: 'string',
+        enum: allowedTagActions,
+      };
+    }
+
+    return {
+      ...base,
+      properties: {
+        mutation: {
+          ...base.properties.mutation,
+          properties: mutationProps,
+        },
+      },
+    };
+  }
+
   meta = {
     category: 'Task Management' as const,
     stability: 'stable' as const,
@@ -341,30 +394,11 @@ OPERATION POLICY (agent role):
     {
       const role = parseRole();
 
-      // Build normalized item list from the compiled mutation
-      type PolicyItem = { operation: string; target: string };
-      let policyItems: PolicyItem[];
-
-      if (compiled.operation === 'batch') {
-        // Walk each sub-operation in the batch
-        policyItems = (compiled.operations as Array<{ operation: string; target?: string }>).map((op) => ({
-          operation: op.operation,
-          target: op.target ?? 'task',
-        }));
-      } else if (compiled.operation === 'bulk_delete') {
-        // bulk_delete is a single operation-level check (not per-ID)
-        policyItems = [{ operation: 'bulk_delete', target: (compiled as { target?: string }).target ?? 'task' }];
-      } else if (compiled.operation === 'tag_manage') {
-        // tag_manage gate target is the action (delete/merge/create/etc.)
-        policyItems = [{ operation: 'tag_manage', target: (compiled as { action?: string }).action ?? '' }];
-      } else {
-        policyItems = [
-          {
-            operation: compiled.operation,
-            target: (compiled as { target?: string }).target ?? 'task',
-          },
-        ];
-      }
+      // Build normalized item list using shared helper (D-11 — OMN-119 drift guard).
+      // normalizeArgsToPolicy operates on args.mutation (WriteInput has a mutation key),
+      // equivalent to the inline compiled-mutation path because the compiler's operation
+      // discriminator mirrors args.mutation.operation exactly.
+      const policyItems = normalizeArgsToPolicy(args as unknown as Record<string, unknown>);
 
       // Evaluate each item; short-circuit on first deny or gate
       for (const item of policyItems) {
