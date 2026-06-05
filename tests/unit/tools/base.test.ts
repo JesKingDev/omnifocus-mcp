@@ -548,7 +548,7 @@ describe('BaseTool', () => {
         properties: {
           operation: {
             type: 'string',
-            enum: ['version', 'diagnostics', 'metrics', 'cache'],
+            enum: ['version', 'diagnostics', 'metrics', 'cache', 'whoami'],
           },
           testScript: { type: 'string' },
           metricsType: {

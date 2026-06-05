@@ -23,10 +23,10 @@ import type { ResolvedContext } from '../../contracts/roles.js';
 export const SystemToolSchema = z
   .object({
     operation: z
-      .enum(['version', 'diagnostics', 'metrics', 'cache'])
+      .enum(['version', 'diagnostics', 'metrics', 'cache', 'whoami'])
       .default('version')
       .describe(
-        'Operation to perform: get version info, run diagnostics, get performance metrics, or get cache statistics',
+        'Operation to perform: get version info, run diagnostics, get performance metrics, get cache statistics, or get role/identity information',
       ),
 
     // Diagnostics operation parameters
@@ -99,7 +99,7 @@ type SystemResponse = StandardResponseV2<VersionInfo | DiagnosticsResult | Metri
 export class SystemTool extends BaseTool<typeof SystemToolSchema> {
   name = 'system';
   description =
-    'System utilities for OmniFocus MCP: get version information, run diagnostics, view performance metrics, or get cache statistics. Use operation="version" for version info, operation="diagnostics" to test OmniFocus connection, operation="metrics" for performance analytics, operation="cache" for cache statistics.';
+    'System utilities for OmniFocus MCP: get version information, run diagnostics, view performance metrics, get cache statistics, or get role/identity information. Use operation="version" for version info, operation="diagnostics" to test OmniFocus connection, operation="metrics" for performance analytics, operation="cache" for cache statistics. Use operation="whoami" to confirm the current connection role and identity context.';
   schema = SystemToolSchema;
   meta = {
     // Phase 1: Essential metadata
@@ -141,9 +141,9 @@ export class SystemTool extends BaseTool<typeof SystemToolSchema> {
       properties: {
         operation: {
           type: 'string',
-          enum: ['version', 'diagnostics', 'metrics', 'cache'],
+          enum: ['version', 'diagnostics', 'metrics', 'cache', 'whoami'],
           description:
-            'Operation to perform: get version info, run diagnostics, get performance metrics, or get cache statistics',
+            'Operation to perform: get version info, run diagnostics, get performance metrics, get cache statistics, or get role/identity information',
         },
         testScript: {
           type: 'string',
@@ -186,6 +186,8 @@ export class SystemTool extends BaseTool<typeof SystemToolSchema> {
         return this.getMetrics(args);
       case 'cache':
         return this.handleCacheOperation(args);
+      case 'whoami':
+        return this.getWhoami();
       default:
         return createErrorResponseV2(
           'system',
@@ -627,5 +629,36 @@ export class SystemTool extends BaseTool<typeof SystemToolSchema> {
         ),
       );
     }
+  }
+
+  private getWhoami(): Promise<SystemResponse> {
+    const role = this._context?.role ?? 'agent';
+    const roleSource = this._context?.identity.roleSource ?? 'fail-safe-default';
+
+    if (role === 'agent') {
+      // AGENT path: omit identity and principal entirely (D-13/D-15)
+      return Promise.resolve(
+        createSuccessResponseV2('system', { role, roleSource }, undefined, {
+          operation: 'whoami',
+        }),
+      );
+    }
+
+    // OWNER path: full identity block (principal null until Phase 4)
+    return Promise.resolve(
+      createSuccessResponseV2(
+        'system',
+        {
+          role,
+          identity: {
+            transport: this._context?.identity.transport ?? 'stdio',
+            roleSource,
+            principal: this._context?.identity.principal ?? null,
+          },
+        },
+        undefined,
+        { operation: 'whoami' },
+      ),
+    );
   }
 }
