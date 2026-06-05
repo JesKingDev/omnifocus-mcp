@@ -3,7 +3,7 @@ gsd_state_version: 1.0
 milestone: hardening
 milestone_name: Hardening
 status: ready_to_plan
-last_updated: '2026-06-05T20:50:39.476Z'
+last_updated: '2026-06-05T21:17:05.774Z'
 progress:
   total_phases: 3
   completed_phases: 0
@@ -19,11 +19,11 @@ progress:
 See: .planning/PROJECT.md (updated 2026-06-03)
 
 **Core value:** The agent can read and write OmniFocus tasks safely — no silent write failures, no destructive deletes —
-so JessOS can trust OmniFocus as the source of truth. **Current focus:** Phase 4 — http edge hardening
+so JessOS can trust OmniFocus as the source of truth. **Current focus:** Phase 04 — http-edge-hardening
 
 ## Current Position
 
-Phase: 4 of 4 (http edge hardening)
+Phase: 04 (http-edge-hardening) — EXECUTING Plan: 1 of 4
 
 Progress: [░░░░░░░░░░] 0%
 

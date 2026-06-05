@@ -153,7 +153,7 @@ Criteria** (what must be TRUE):
 
 **Wave 0**
 
-- [ ] 04-01-PLAN.md — Failing test contracts: token-registry.test.ts (new), cli.test.ts (new), http-server.test.ts
+- [x] 04-01-PLAN.md — Failing test contracts: token-registry.test.ts (new), cli.test.ts (new), http-server.test.ts
       (new), role-resolver stub test update
 
 **Wave 1** _(blocked on Wave 0 completion — plans 02 and 03 run in parallel)_
@@ -209,6 +209,6 @@ must be TRUE):
 | 1. Role Model & Resolver                    | 3/3            | Complete    | 2026-06-03 |
 | 2. Operation Policy (Deny-Deletes & Gating) | 3/3            | Complete    | 2026-06-04 |
 | 3. RoleGate & Agent Read Paths              | 4/4            | Complete    | 2026-06-05 |
-| 4. HTTP Edge Hardening                      | 0/4            | Not started | -          |
+| 4. HTTP Edge Hardening                      | 1/4            | In Progress |            |
 | 5. Write-Verifier                           | 0/TBD          | Not started | -          |
 | 6. launchd Deployment & ADR                 | 0/TBD          | Not started | -          |
