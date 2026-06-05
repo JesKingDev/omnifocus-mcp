@@ -15,7 +15,8 @@ import { SessionManager } from './session-manager.js';
 import { HttpServerManager } from './http-server.js';
 import { StartupTimer } from './utils/startup-timer.js';
 import { assertSandboxGuardAtStartup } from './utils/sandbox-guard.js';
-import { parseRole, resolveStdioIdentity, resolveHttpIdentity } from './auth/role-resolver.js';
+import { parseRole, resolveStdioIdentity } from './auth/role-resolver.js';
+import { buildTokenRegistry } from './auth/token-registry.js';
 import type { ResolvedIdentity, ResolvedContext, Role } from './contracts/roles.js';
 
 // First executable statement: performance.now() here ≈ Node bootstrap + ESM
@@ -140,15 +141,14 @@ export async function runServer() {
   }
   startupTimer.mark('warmEnd');
 
-  // Phase 1: resolve identity and role before any tool dispatch (ROLE-01, ROLE-02, ROLE-03)
-  const identity = cliConfig.httpMode ? resolveHttpIdentity() : resolveStdioIdentity();
-  const role = parseRole();
-  logger.info(`resolved role=${role.toUpperCase()} source=${identity.roleSource}`);
-
-  // Check if we're running in HTTP mode
+  // HTTP mode: identity/role are resolved per-request from bearer tokens (D-10, D-12)
+  // stdio mode: identity/role are resolved once at startup from env
   if (cliConfig.httpMode) {
-    await runHttpServer(cacheManager, cliConfig, identity, role);
+    await runHttpServer(cacheManager, cliConfig);
   } else {
+    const identity = resolveStdioIdentity();
+    const role = parseRole();
+    logger.info(`resolved role=${role.toUpperCase()} source=${identity.roleSource}`);
     await runStdioServer(cacheManager, identity, role);
   }
 }
@@ -246,19 +246,13 @@ async function runStdioServer(cacheManager: CacheManager, identity: ResolvedIden
 /**
  * Runs the server in HTTP mode
  */
-async function runHttpServer(
-  cacheManager: CacheManager,
-  cliConfig: CLIConfig,
-  _identity: ResolvedIdentity,
-  _role: Role,
-) {
+async function runHttpServer(cacheManager: CacheManager, cliConfig: CLIConfig) {
   logger.info('Starting server in HTTP mode', {
     port: cliConfig.port,
     host: cliConfig.host,
-    authEnabled: !!cliConfig.authToken,
   });
 
-  // Validate CLI configuration
+  // Validate CLI configuration (fail-closed: throws before any socket bind on bad config)
   try {
     validateCLIConfig(cliConfig);
   } catch (error) {
@@ -268,12 +262,24 @@ async function runHttpServer(
     process.exit(1);
   }
 
-  // Create session manager
-  const sessionManager = new SessionManager(cacheManager, cliConfig.authToken);
+  // Build token registry from config (D-09) — passed to HttpServerManager
+  const tokenRegistry = buildTokenRegistry({
+    MCP_AGENT_TOKEN: cliConfig.agentToken,
+    MCP_OWNER_TOKEN: cliConfig.ownerToken,
+  });
+
+  // Create session manager (no longer takes authToken — auth is per-request)
+  const sessionManager = new SessionManager(cacheManager);
   sessionManager.startCleanupInterval();
 
-  // Create HTTP server manager
-  const httpServerManager = new HttpServerManager(sessionManager, cliConfig.port, cliConfig.host, cliConfig.authToken);
+  // Create HTTP server manager with registry and allowed hosts
+  const httpServerManager = new HttpServerManager(
+    sessionManager,
+    cliConfig.port,
+    cliConfig.host,
+    tokenRegistry,
+    cliConfig.allowedHosts ?? [],
+  );
 
   // Start HTTP server
   try {
