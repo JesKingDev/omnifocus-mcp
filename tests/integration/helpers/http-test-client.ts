@@ -80,7 +80,7 @@ export class HTTPTestClient {
    * Start the HTTP server
    */
   async startServer(): Promise<void> {
-    const env: NodeJS.ProcessEnv = {
+    const env: Record<string, string | undefined> = {
       ...process.env,
       NODE_ENV: 'test',
     };
@@ -89,9 +89,14 @@ export class HTTPTestClient {
       env.ENABLE_CACHE_WARMING = 'true';
     }
 
-    if (this.options.authToken) {
-      env.MCP_AUTH_TOKEN = this.options.authToken;
-    }
+    // Phase 4: HTTP mode now requires MCP_AGENT_TOKEN (validateCLIConfig assertion D-07).
+    // Always set a test agent token. If an explicit authToken was provided, use it as the
+    // agent token (backward-compat); otherwise generate a fixed test token so the server
+    // can start and the client can send authenticated requests.
+    const testAgentToken = this.options.authToken ?? 'test-agent-token-for-integration-tests-do-not-use-in-prod';
+    env.MCP_AGENT_TOKEN = testAgentToken;
+    // Update the effective authToken used by getAuthHeaders() to match
+    this.options.authToken = testAgentToken;
 
     this.server = spawn(
       'node',
