@@ -187,3 +187,91 @@ d('MCP Protocol Compliance Tests', () => {
     });
   });
 });
+
+// ---------------------------------------------------------------------------
+// GATE-01 integration: Role-aware ListTools surface (AGENT trimmed / OWNER full)
+//
+// These tests spawn short-lived stdio server processes with explicit role env
+// and immediately issue tools/list. OmniFocus does not need to be reachable —
+// tools/list is served from in-process schema construction only.
+//
+// AGENT spawn: no OMNIFOCUS_MCP_ROLE set → fail-safe 'agent' default.
+//              omnifocus_write operation enum must NOT include 'delete'/'bulk_delete'.
+// OWNER spawn: OMNIFOCUS_MCP_ROLE=owner set.
+//              omnifocus_write operation enum MUST include 'delete' and 'bulk_delete'.
+// ---------------------------------------------------------------------------
+
+(RUN_INTEGRATION_TESTS ? describe : describe.skip)('Role-aware ListTools — AGENT trimmed surface (GATE-01)', () => {
+  let agentClient: MCPTestClient;
+
+  beforeAll(async () => {
+    // Spawn without OMNIFOCUS_MCP_ROLE → agent fail-safe default
+    agentClient = new MCPTestClient({ extraEnv: {} });
+    await agentClient.startServer();
+  }, 30000);
+
+  afterAll(async () => {
+    await agentClient.stop();
+  });
+
+  it('AGENT ListTools — delete and bulk_delete absent from omnifocus_write enum', { timeout: 30000 }, async () => {
+    const result = await agentClient.sendRequest({
+      jsonrpc: '2.0',
+      id: agentClient.nextId(),
+      method: 'tools/list',
+    });
+
+    expect(result.result).toBeDefined();
+    const tools: Array<{ name: string; inputSchema: unknown }> = result.result.tools;
+    const writeTool = tools.find((t) => t.name === 'omnifocus_write');
+    expect(writeTool).toBeDefined();
+
+    const opEnum = (
+      writeTool!.inputSchema as {
+        properties: { mutation: { properties: { operation: { enum: string[] } } } };
+      }
+    ).properties.mutation.properties.operation.enum;
+
+    expect(opEnum).not.toContain('delete');
+    expect(opEnum).not.toContain('bulk_delete');
+    expect(opEnum).toContain('create');
+    expect(opEnum).toContain('complete');
+  });
+});
+
+(RUN_INTEGRATION_TESTS ? describe : describe.skip)('Role-aware ListTools — OWNER full surface (GATE-01)', () => {
+  let ownerClient: MCPTestClient;
+
+  beforeAll(async () => {
+    // Spawn with OMNIFOCUS_MCP_ROLE=owner
+    ownerClient = new MCPTestClient({ extraEnv: { OMNIFOCUS_MCP_ROLE: 'owner' } });
+    await ownerClient.startServer();
+  }, 30000);
+
+  afterAll(async () => {
+    await ownerClient.stop();
+  });
+
+  it('OWNER ListTools — delete and bulk_delete present in omnifocus_write enum', { timeout: 30000 }, async () => {
+    const result = await ownerClient.sendRequest({
+      jsonrpc: '2.0',
+      id: ownerClient.nextId(),
+      method: 'tools/list',
+    });
+
+    expect(result.result).toBeDefined();
+    const tools: Array<{ name: string; inputSchema: unknown }> = result.result.tools;
+    const writeTool = tools.find((t) => t.name === 'omnifocus_write');
+    expect(writeTool).toBeDefined();
+
+    const opEnum = (
+      writeTool!.inputSchema as {
+        properties: { mutation: { properties: { operation: { enum: string[] } } } };
+      }
+    ).properties.mutation.properties.operation.enum;
+
+    expect(opEnum).toContain('delete');
+    expect(opEnum).toContain('bulk_delete');
+    expect(opEnum).toContain('create');
+  });
+});

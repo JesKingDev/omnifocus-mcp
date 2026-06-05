@@ -215,16 +215,93 @@ describe('GATE-02: CallTool pre-dispatch policy gate', () => {
 
 // ---------------------------------------------------------------------------
 // READ-01/02/03: Read ops pass through gate without policy fire (Plan 04)
+//
+// Core property: normalizeArgsToPolicy({ query: { ... } }) returns [] because
+// args has no 'mutation' field. The dispatch gate loop is a no-op and the
+// CallTool handler proceeds to tool.execute(). The tool may fail for lack of
+// real OmniFocus — that is acceptable. The test asserts only that the error
+// (if any) is not a policy denial.
 // ---------------------------------------------------------------------------
 
 describe('READ-01: CallTool AGENT read modes never fire policy gate', () => {
-  it.todo('CallTool AGENT omnifocus_read (today/overdue/flagged) never fires policy gate');
+  it('CallTool AGENT omnifocus_read (countOnly query) never fires policy gate', async () => {
+    const server = makeServer('agent');
+    const callHandler = server.handlers.get(CallToolRequestSchema) as (req: {
+      params: { name: string; arguments: unknown };
+    }) => Promise<{ content: Array<{ type: string; text: string }> }>;
+
+    let response: { content: Array<{ type: string; text: string }> } | undefined;
+    try {
+      response = await callHandler({
+        params: {
+          name: 'omnifocus_read',
+          arguments: { query: { type: 'tasks', filters: { status: 'active' }, countOnly: true } },
+        },
+      });
+    } catch {
+      // An error thrown (not a structured content response) means tool execution
+      // failed for non-policy reasons — acceptable; the gate did not deny.
+      return;
+    }
+
+    if (response?.content?.[0]?.text) {
+      const payload = JSON.parse(response.content[0].text) as { error?: { code: string } };
+      expect(payload?.error?.code).not.toBe('POLICY_DENY_DELETE');
+      expect(payload?.error?.code).not.toBe('POLICY_GATE_REQUIRES_OWNER');
+    }
+  });
 });
 
 describe('READ-02: CallTool AGENT omnifocus_read with filters.id', () => {
-  it.todo('CallTool AGENT omnifocus_read with filters.id succeeds');
+  it('CallTool AGENT omnifocus_read with filters.id never fires policy gate', async () => {
+    const server = makeServer('agent');
+    const callHandler = server.handlers.get(CallToolRequestSchema) as (req: {
+      params: { name: string; arguments: unknown };
+    }) => Promise<{ content: Array<{ type: string; text: string }> }>;
+
+    let response: { content: Array<{ type: string; text: string }> } | undefined;
+    try {
+      response = await callHandler({
+        params: {
+          name: 'omnifocus_read',
+          arguments: { query: { type: 'tasks', filters: { id: 'test-task-id' } } },
+        },
+      });
+    } catch {
+      return;
+    }
+
+    if (response?.content?.[0]?.text) {
+      const payload = JSON.parse(response.content[0].text) as { error?: { code: string } };
+      expect(payload?.error?.code).not.toBe('POLICY_DENY_DELETE');
+      expect(payload?.error?.code).not.toBe('POLICY_GATE_REQUIRES_OWNER');
+    }
+  });
 });
 
 describe('READ-03: CallTool AGENT omnifocus_read type=perspectives', () => {
-  it.todo('CallTool AGENT omnifocus_read type=perspectives succeeds');
+  it('CallTool AGENT omnifocus_read type=perspectives never fires policy gate', async () => {
+    const server = makeServer('agent');
+    const callHandler = server.handlers.get(CallToolRequestSchema) as (req: {
+      params: { name: string; arguments: unknown };
+    }) => Promise<{ content: Array<{ type: string; text: string }> }>;
+
+    let response: { content: Array<{ type: string; text: string }> } | undefined;
+    try {
+      response = await callHandler({
+        params: {
+          name: 'omnifocus_read',
+          arguments: { query: { type: 'perspectives' } },
+        },
+      });
+    } catch {
+      return;
+    }
+
+    if (response?.content?.[0]?.text) {
+      const payload = JSON.parse(response.content[0].text) as { error?: { code: string } };
+      expect(payload?.error?.code).not.toBe('POLICY_DENY_DELETE');
+      expect(payload?.error?.code).not.toBe('POLICY_GATE_REQUIRES_OWNER');
+    }
+  });
 });

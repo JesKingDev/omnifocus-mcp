@@ -51,6 +51,8 @@ interface CleanupMetrics {
 export interface MCPTestClientOptions {
   /** Enable cache warming for realistic integration test behavior (default: false) */
   enableCacheWarming?: boolean;
+  /** Extra environment variables to pass to the spawned server process */
+  extraEnv?: Record<string, string>;
 }
 
 export class MCPTestClient {
@@ -94,6 +96,11 @@ export class MCPTestClient {
     // Enable cache warming for integration tests that want realistic behavior
     if (this.options.enableCacheWarming) {
       env.ENABLE_CACHE_WARMING = 'true';
+    }
+
+    // Apply any extra env overrides (e.g. OMNIFOCUS_MCP_ROLE for role-aware tests)
+    if (this.options.extraEnv) {
+      Object.assign(env, this.options.extraEnv);
     }
 
     this.server = spawn('node', ['./dist/index.js'], {
