@@ -116,6 +116,29 @@ export function validateCLIConfig(config: CLIConfig): void {
     if (!config.host || config.host.trim() === '') {
       throw new Error('Host cannot be empty in HTTP mode.');
     }
+
+    // D-13: loopback-only bind
+    if (config.host !== '127.0.0.1' && config.host !== 'localhost') {
+      throw new Error(
+        `HTTP mode requires loopback bind. Got host="${config.host}". ` +
+          'Set to 127.0.0.1 (default). Remote access is via Tailscale Serve proxying to loopback.',
+      );
+    }
+    // D-07: mandatory agent token
+    if (!config.agentToken) {
+      throw new Error('MCP_AGENT_TOKEN is required in HTTP mode. Generate one with: openssl rand -hex 32');
+    }
+    // D-06: distinct tokens
+    if (config.ownerToken && config.agentToken === config.ownerToken) {
+      throw new Error(
+        'MCP_AGENT_TOKEN and MCP_OWNER_TOKEN must be different. ' +
+          'Generate distinct tokens with: openssl rand -hex 32',
+      );
+    }
+    // D-06: non-blank owner token
+    if (config.ownerToken !== undefined && config.ownerToken.trim() === '') {
+      throw new Error('MCP_OWNER_TOKEN must not be empty or whitespace-only.');
+    }
   }
 }
 
