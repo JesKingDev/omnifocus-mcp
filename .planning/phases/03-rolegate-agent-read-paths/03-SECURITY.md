@@ -51,8 +51,8 @@ The review found 0 critical / 0 authorization-bypass findings. The 3 warnings we
 - **WR-03 (`normalizeArgsToPolicy` throws on malformed non-array `operations`):** Confirmed at
   `src/auth/operation-policy.ts:159` — the `?? []` guards only null/undefined, so a non-array `operations` payload
   throws a TypeError that the SDK coerces to `McpError InternalError`. The gate fails **open-to-error, not
-  open-to-execute** — no operation reaches `tool.execute()`. T-3-mangle (POLICY_DENY payload integrity) is about
-  _denied_ ops producing the correct structured code; a malformed batch is a robustness/DoS-shaped gap, not an
+  open-to-execute** — no operation reaches `tool.execute()`. T-3-mangle (POLICY*DENY payload integrity) is about
+  \_denied* ops producing the correct structured code; a malformed batch is a robustness/DoS-shaped gap, not an
   authorization bypass. Not a BLOCKER. Logged below.
 
 ## Unregistered Flags
@@ -62,15 +62,17 @@ None. No net-new attack surface beyond the registered threats; WR-01/02/03 map t
 
 ## Informational Follow-Ups (non-blocking)
 
-These do not reopen any registered threat and do not block the phase under `block_on: high`. Recommend tracking for a
-hardening pass:
+These do not reopen any registered threat and do not block the phase under `block_on: high`. Both were resolved in a
+post-audit hardening pass:
 
-1. **Advertised-enum vs Zod-literal parity (WR-01/WR-02).** Extend the D-06 parity test to assert every advertised
-   op/action is a valid Zod literal, and intersect the advertised enum with the base schema enum in
-   `getRoleAwareSchema`. Closes the phantom `drop` / `perspective_delete` advertisement leak.
-2. **Defensive type-check in `normalizeArgsToPolicy` (WR-03).** Guard `mutation['operations']` with `Array.isArray(...)`
-   before `.map`, and coerce non-string sub-`operation` to `''` so it fail-closes through `decide()` to `deny` rather
-   than throwing InternalError.
+1. **Advertised-enum vs Zod-literal parity (WR-01/WR-02).** ✅ RESOLVED (commit `16e3b8d`). `getRoleAwareSchema` now
+   intersects the role-allowed set with the base inputSchema enum, so the advertised `operation`/`action` enums never
+   include the phantom `drop` / `perspective_delete` entries. A regression test asserts the advertised enum is a subset
+   of the base Zod enum.
+2. **Defensive type-check in `normalizeArgsToPolicy` (WR-03).** ✅ RESOLVED (commit `fb67fd3`). `mutation['operations']`
+   is now guarded with `Array.isArray(...)` (malformed batch emits a single deny-forcing item), and non-string
+   sub-`operation`/`target` are coerced so they fail-close through `decide()` to `deny` rather than throwing
+   InternalError. Malformed-batch regression tests added.
 
 ## Verdict
 
