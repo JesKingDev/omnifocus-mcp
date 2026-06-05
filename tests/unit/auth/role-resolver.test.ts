@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { parseRole, resolveStdioIdentity, resolveHttpIdentity } from '../../../src/auth/role-resolver.js';
 import type { ResolvedIdentity } from '../../../src/contracts/roles.js';
+import type { TokenEntry } from '../../../src/auth/token-registry.js';
 
 // ---------------------------------------------------------------------------
 // parseRole — default-deny parse matrix
@@ -96,20 +97,30 @@ describe('resolveStdioIdentity', () => {
 });
 
 // ---------------------------------------------------------------------------
-// resolveHttpIdentity — Phase 4 stub contract
+// resolveHttpIdentity — Phase 4 implementation
 //
-// Asserts the exact stub shape that Phase 4 must not change at the type
-// boundary. Any fill-in of the body must preserve these field names and the
-// 'http' transport value.
+// Verifies the filled implementation: resolveHttpIdentity now accepts a
+// TokenEntry (resolved from the bearer token) and returns a ResolvedIdentity
+// with roleSource='http-token' and the entry's principal. The old zero-argument
+// stub form is gone; these tests will be RED on Wave 0 because the source
+// still has the stub signature and src/auth/token-registry.js does not exist.
 // ---------------------------------------------------------------------------
 
-describe('resolveHttpIdentity — Phase 4 stub contract', () => {
-  it('returns the Phase 4 stub shape: transport=http, roleSource=fail-safe-default, principal=null', () => {
-    const identity: ResolvedIdentity = resolveHttpIdentity();
+describe('resolveHttpIdentity — Phase 4 implementation', () => {
+  it('returns transport=http, roleSource=http-token, principal from agent TokenEntry (HTTP-05)', () => {
+    const entry: TokenEntry = { role: 'agent', principal: 'http-agent' };
+    const identity: ResolvedIdentity = resolveHttpIdentity(entry);
     expect(identity).toStrictEqual({
       transport: 'http',
-      roleSource: 'fail-safe-default',
-      principal: null,
+      roleSource: 'http-token',
+      principal: 'http-agent',
     });
+  });
+
+  it('returns roleSource=http-token, principal=http-owner for owner TokenEntry (HTTP-05)', () => {
+    const entry: TokenEntry = { role: 'owner', principal: 'http-owner' };
+    const identity = resolveHttpIdentity(entry);
+    expect(identity.roleSource).toBe('http-token');
+    expect(identity.principal).toBe('http-owner');
   });
 });
