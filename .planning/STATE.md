@@ -3,7 +3,7 @@ gsd_state_version: 1.0
 milestone: hardening
 milestone_name: Hardening
 status: ready_to_plan
-last_updated: '2026-06-05T00:46:17.442Z'
+last_updated: '2026-06-05T01:00:20.135Z'
 progress:
   total_phases: 6
   completed_phases: 1
@@ -23,9 +23,9 @@ so JessOS can trust OmniFocus as the source of truth. **Current focus:** Phase 0
 
 ## Current Position
 
-Phase: 03 (rolegate-agent-read-paths) — EXECUTING Plan: 2 of 4
+Phase: 03 (rolegate-agent-read-paths) — EXECUTING Plan: 3 of 4
 
-Progress: [░░░░░░░░░░] 0%
+Progress: [██░░░░░░░░] 20%
 
 ## Performance Metrics
 
@@ -49,7 +49,8 @@ Progress: [░░░░░░░░░░] 0%
 _Updated after each plan completion_ | Phase 01-role-model-resolver P01 | 190s | 2 tasks | 4 files | _Updated after each
 plan completion_ | Phase 01-role-model-resolver P02 | 180s | 2 tasks | 2 files | | Phase 02 P01 | 540s | 3 tasks | 3
 files | | Phase 02 P02 | 480s | 2 tasks | 5 files | | Phase 02 P03 | 900s | 2 tasks | 7 files | | Phase
-03-rolegate-agent-read-paths P01 | 350 | 2 tasks | 4 files |
+03-rolegate-agent-read-paths P01 | 350 | 2 tasks | 4 files | | Phase 03-rolegate-agent-read-paths P02 | 523 | 2 tasks |
+7 files |
 
 ## Accumulated Context
 
@@ -78,6 +79,9 @@ Decisions are logged in PROJECT.md Key Decisions table. Recent decisions affecti
 - [Phase 02-03]: Pre-existing builder tests updated to owner role — same pattern as Plan 02 for JXA-dispatch tests vs.
   policy tests
 
+- [Phase ?]: OWNER test for dispatch gate sets OMNIFOCUS_MCP_ROLE=owner env var: dispatch gate uses closure-captured
+  role but Write tool funnel still calls parseRole() from env (Phase 4 D-10 deferred item)
+
 ### Pending Todos
 
 None yet.
@@ -101,4 +105,4 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-06-05T00:46:17.436Z
+Last session: 2026-06-05T01:00:11.571Z

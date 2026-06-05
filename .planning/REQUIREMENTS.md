@@ -35,11 +35,11 @@ Requirements for this hardening milestone. Each maps to a roadmap phase.
 
 ### Role Gate
 
-- [ ] **GATE-01**: Tool/operation advertisement (`ListTools`) reflects the connection's role — the agent is shown only
+- [x] **GATE-01**: Tool/operation advertisement (`ListTools`) reflects the connection's role — the agent is shown only
       its allowed operations.
-- [ ] **GATE-02**: A disallowed operation requested by the AGENT role is rejected at the dispatch point with a clear
+- [x] **GATE-02**: A disallowed operation requested by the AGENT role is rejected at the dispatch point with a clear
       error, even if it was never advertised.
-- [ ] **GATE-03**: The AGENT role can create, complete, drop, defer/reschedule, tag, move, and flag tasks.
+- [x] **GATE-03**: The AGENT role can create, complete, drop, defer/reschedule, tag, move, and flag tasks.
 
 ### HTTP Edge & Remote Access
 
@@ -133,9 +133,9 @@ confirms the research's strict bottom-up dependency order; no coverage gap found
 | POLICY-05   | Phase 2 — Operation Policy (Deny-Deletes & Gating) | Complete |
 | POLICY-06   | Phase 2 — Operation Policy (Deny-Deletes & Gating) | Complete |
 | POLICY-07   | Phase 2 — Operation Policy (Deny-Deletes & Gating) | Complete |
-| GATE-01     | Phase 3 — RoleGate & Agent Read Paths              | Pending  |
-| GATE-02     | Phase 3 — RoleGate & Agent Read Paths              | Pending  |
-| GATE-03     | Phase 3 — RoleGate & Agent Read Paths              | Pending  |
+| GATE-01     | Phase 3 — RoleGate & Agent Read Paths              | Complete |
+| GATE-02     | Phase 3 — RoleGate & Agent Read Paths              | Complete |
+| GATE-03     | Phase 3 — RoleGate & Agent Read Paths              | Complete |
 | READ-01     | Phase 3 — RoleGate & Agent Read Paths              | Pending  |
 | READ-02     | Phase 3 — RoleGate & Agent Read Paths              | Pending  |
 | READ-03     | Phase 3 — RoleGate & Agent Read Paths              | Pending  |
