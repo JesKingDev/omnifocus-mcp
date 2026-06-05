@@ -4,21 +4,65 @@ import { createLogger } from './utils/logger.js';
 import { SessionManager } from './session-manager.js';
 import { randomUUID } from 'node:crypto';
 import { getVersionInfo } from './utils/version.js';
+import { validateTokenSet } from './auth/token-registry.js';
+import type { TokenEntry } from './auth/token-registry.js';
+import { resolveHttpIdentity } from './auth/role-resolver.js';
+import type { ResolvedContext } from './contracts/roles.js';
 
 const logger = createLogger('http-server');
+
+// ---------------------------------------------------------------------------
+// Exported pure functions for DNS-rebinding protection (HTTP-03, D-14, D-15)
+// Exported so unit tests can validate without a live HTTP server instance.
+// ---------------------------------------------------------------------------
+
+/**
+ * Builds the set of allowed Host/Origin values for a given port and optional
+ * extra hostnames. Always includes bare and port-suffixed loopback entries.
+ */
+export function buildAllowedHostSet(port: number, allowedHosts: string[]): Set<string> {
+  const set = new Set<string>();
+  // Loopback entries are always allowed (D-15)
+  set.add('localhost');
+  set.add('127.0.0.1');
+  set.add(`localhost:${port}`);
+  set.add(`127.0.0.1:${port}`);
+  // Caller-supplied extra hosts (MCP_ALLOWED_HOSTS entries)
+  for (const h of allowedHosts) {
+    if (h) set.add(h);
+  }
+  return set;
+}
+
+/**
+ * Returns true if the given Host header value is present in the allowlist.
+ * Returns false when the host is undefined (missing Host header).
+ */
+export function isHostAllowed(host: string | undefined, allowedSet: Set<string>): boolean {
+  if (!host) return false;
+  return allowedSet.has(host);
+}
 
 export class HttpServerManager {
   private httpServer: HttpServer;
   private sessionManager: SessionManager;
   private port: number;
   private host: string;
-  private authToken?: string;
+  private readonly tokenRegistry: ReadonlyMap<string, TokenEntry>;
+  private readonly allowedHosts: string[];
 
-  constructor(sessionManager: SessionManager, port: number, host: string, authToken?: string) {
+  constructor(
+    sessionManager: SessionManager,
+    port: number,
+    host: string,
+    tokenRegistry: ReadonlyMap<string, TokenEntry>,
+    allowedHosts: string[] = [],
+  ) {
     this.sessionManager = sessionManager;
     this.port = port;
     this.host = host;
-    this.authToken = authToken;
+    this.tokenRegistry = tokenRegistry;
+    this.allowedHosts = allowedHosts;
 
     // Create HTTP server
     this.httpServer = createServer(this.handleRequest.bind(this));
@@ -95,6 +139,59 @@ export class HttpServerManager {
   }
 
   /**
+   * Returns true if the request's Host and Origin headers are in the allowlist.
+   * Both must pass when present. Options requests are also gated (Pitfall 4 guard).
+   */
+  private validateHostOrigin(req: IncomingMessage): boolean {
+    const allowedSet = buildAllowedHostSet(this.port, this.allowedHosts);
+
+    // Validate Host header
+    const host = req.headers['host'];
+    if (!isHostAllowed(host, allowedSet)) {
+      return false;
+    }
+
+    // Validate Origin header when present
+    const origin = req.headers['origin'];
+    if (origin) {
+      let originHost: string;
+      try {
+        originHost = new URL(origin).host;
+      } catch {
+        // Malformed Origin → deny (D-14)
+        return false;
+      }
+      if (!isHostAllowed(originHost, allowedSet)) {
+        return false;
+      }
+    }
+
+    return true;
+  }
+
+  /**
+   * Builds the CORS Access-Control-Allow-Origin header value.
+   * Reflects the request Origin if it is in the allowlist, otherwise
+   * defaults to 'http://localhost' for loopback-only deployments.
+   * This avoids a wildcard '*' for credentialed contexts (D-15 commentary).
+   */
+  private buildCorsOriginHeader(req: IncomingMessage): string {
+    const origin = req.headers['origin'];
+    if (origin) {
+      try {
+        const originHost = new URL(origin).host;
+        const allowedSet = buildAllowedHostSet(this.port, this.allowedHosts);
+        if (isHostAllowed(originHost, allowedSet)) {
+          return origin;
+        }
+      } catch {
+        // Malformed Origin — fall through to default
+      }
+    }
+    return 'http://localhost';
+  }
+
+  /**
    * Handles incoming HTTP requests
    */
   private async handleRequest(req: IncomingMessage, res: ServerResponse): Promise<void> {
@@ -109,17 +206,26 @@ export class HttpServerManager {
         headers: this.getSafeHeaders(req.headers),
       });
 
+      // DNS-rebinding protection: validate Host/Origin before any other processing
+      // (Pitfall 4: OPTIONS is also gated here, before the OPTIONS check below)
+      if (!this.validateHostOrigin(req)) {
+        res.writeHead(400, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: 'Bad Request', message: 'Host/Origin not in allowlist' }));
+        return;
+      }
+
       // Handle CORS preflight requests
       if (req.method === 'OPTIONS') {
         this.handleOptionsRequest(req, res);
         return;
       }
 
-      // Validate authentication if required
-      if (this.authToken && !this.validateAuthentication(req)) {
+      // Unconditional bearer auth (D-07): every request must carry a valid token
+      const tokenEntry = this.resolveTokenFromHeader(req);
+      if (!tokenEntry) {
         logger.warn('Unauthorized request', { requestId });
         res.writeHead(401, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({ error: 'Unauthorized', message: 'Authentication required' }));
+        res.end(JSON.stringify({ error: 'Unauthorized', message: 'Valid bearer token required' }));
         return;
       }
 
@@ -130,7 +236,7 @@ export class HttpServerManager {
       // Route requests based on pathname
       switch (pathname) {
         case '/mcp':
-          await this.handleMcpRequest(req, res, requestId);
+          await this.handleMcpRequest(req, res, requestId, tokenEntry);
           break;
         case '/health':
           this.handleHealthRequest(req, res);
@@ -164,9 +270,9 @@ export class HttpServerManager {
   /**
    * Handles OPTIONS requests for CORS
    */
-  private handleOptionsRequest(_req: IncomingMessage, res: ServerResponse): void {
+  private handleOptionsRequest(req: IncomingMessage, res: ServerResponse): void {
     res.writeHead(200, {
-      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Origin': this.buildCorsOriginHeader(req),
       'Access-Control-Allow-Methods': 'GET, POST, DELETE, OPTIONS',
       'Access-Control-Allow-Headers': 'Content-Type, Authorization, MCP-Session-Id, MCP-Protocol-Version',
       'Access-Control-Max-Age': '86400',
@@ -176,38 +282,33 @@ export class HttpServerManager {
   }
 
   /**
-   * Validates authentication token from Authorization header
+   * Extracts and validates the bearer token from the Authorization header.
+   * Returns the matched TokenEntry on success, or null if the header is absent,
+   * malformed, or the token does not match any configured entry (constant-time, D-04).
    */
-  private validateAuthentication(_req: IncomingMessage): boolean {
-    if (!this.authToken) {
-      return true; // No auth required
-    }
-
-    const authHeader = _req.headers['authorization'];
-    if (!authHeader) {
-      return false;
-    }
-
-    // Extract bearer token
+  private resolveTokenFromHeader(req: IncomingMessage): TokenEntry | null {
+    const authHeader = req.headers['authorization'];
+    if (!authHeader) return null;
     const match = /^Bearer\s+(\S+)$/i.exec(authHeader);
-    if (!match || !match[1]) {
-      return false;
-    }
-
-    const token = match[1];
-    return this.sessionManager.validateAuthToken(token);
+    if (!match?.[1]) return null;
+    return validateTokenSet(match[1], this.tokenRegistry);
   }
 
   /**
    * Handles MCP endpoint requests
    */
-  private async handleMcpRequest(_req: IncomingMessage, res: ServerResponse, requestId: string): Promise<void> {
+  private async handleMcpRequest(
+    _req: IncomingMessage,
+    res: ServerResponse,
+    requestId: string,
+    tokenEntry: TokenEntry,
+  ): Promise<void> {
     const sessionId = _req.headers['mcp-session-id'] as string | undefined;
 
     // Handle different HTTP methods for MCP endpoint
     switch (_req.method) {
       case 'POST':
-        await this.handleMcpPostRequest(_req, res, sessionId, requestId);
+        await this.handleMcpPostRequest(_req, res, sessionId, requestId, tokenEntry);
         break;
       case 'GET':
         await this.handleMcpGetRequest(_req, res, sessionId, requestId);
@@ -230,6 +331,7 @@ export class HttpServerManager {
     res: ServerResponse,
     sessionId: string | undefined,
     requestId: string,
+    tokenEntry: TokenEntry,
   ): Promise<void> {
     try {
       // Parse request body
@@ -256,7 +358,10 @@ export class HttpServerManager {
       // Create new session if no session ID provided or session doesn't exist
       if (!session) {
         const newSessionId = randomUUID();
-        session = await this.sessionManager.createSession(newSessionId);
+        // Wire per-session role from the validated token entry (D-12, D-10)
+        const identity = resolveHttpIdentity(tokenEntry);
+        const context: ResolvedContext = { identity, role: tokenEntry.role };
+        session = await this.sessionManager.createSession(newSessionId, tokenEntry.role, context);
         logger.info('Created new session for request', { requestId, sessionId: newSessionId });
       }
 
