@@ -16,7 +16,7 @@ import { HttpServerManager } from './http-server.js';
 import { StartupTimer } from './utils/startup-timer.js';
 import { assertSandboxGuardAtStartup } from './utils/sandbox-guard.js';
 import { parseRole, resolveStdioIdentity, resolveHttpIdentity } from './auth/role-resolver.js';
-import type { ResolvedIdentity, Role } from './contracts/roles.js';
+import type { ResolvedIdentity, ResolvedContext, Role } from './contracts/roles.js';
 
 // First executable statement: performance.now() here ≈ Node bootstrap + ESM
 // import-graph load (the cold-`npm ci` FS cost). Must precede parseCLIArgs.
@@ -156,7 +156,7 @@ export async function runServer() {
 /**
  * Runs the server in stdio mode (original behavior)
  */
-async function runStdioServer(cacheManager: CacheManager, _identity: ResolvedIdentity, _role: Role) {
+async function runStdioServer(cacheManager: CacheManager, identity: ResolvedIdentity, role: Role) {
   logger.info('Starting server in stdio mode');
 
   // Create server instance with MCP 2025-11-25 metadata
@@ -179,7 +179,8 @@ async function runStdioServer(cacheManager: CacheManager, _identity: ResolvedIde
   );
 
   // Register all tools and prompts AFTER server creation but BEFORE connection
-  await registerTools(stdioServer, cacheManager, pendingOperations);
+  const context: ResolvedContext = { identity, role };
+  await registerTools(stdioServer, cacheManager, pendingOperations, role, context);
   registerPrompts(stdioServer);
   startupTimer.mark('registerEnd');
 

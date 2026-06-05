@@ -182,13 +182,16 @@ describe('GATE-02: CallTool pre-dispatch policy gate', () => {
   });
 
   it('CallTool OWNER delete passes dispatch — no POLICY_DENY_DELETE in response', async () => {
+    // Set env var so the Write tool's Phase 2 funnel also sees owner role.
+    // The dispatch gate uses the closure-captured 'owner' role from registerTools.
+    // The Write tool's funnel still calls parseRole() from env (Phase 4 deferred item — D-10).
+    process.env['OMNIFOCUS_MCP_ROLE'] = 'owner';
     const server = makeServer('owner');
     const callHandler = server.handlers.get(CallToolRequestSchema) as (req: {
       params: { name: string; arguments: unknown };
     }) => Promise<{ content: Array<{ type: string; text: string }> }>;
 
-    // Mock execJson so JXA doesn't fire; owner passes the gate
-    // The tool may return an error for other reasons (no real OmniFocus), but not policy denial
+    // Owner passes the gate; the tool may error for other reasons (no real OmniFocus)
     let response: { content: Array<{ type: string; text: string }> };
     try {
       response = await callHandler({

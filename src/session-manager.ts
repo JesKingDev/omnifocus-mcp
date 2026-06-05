@@ -7,6 +7,8 @@ import { registerTools } from './tools/index.js';
 import { registerPrompts } from './prompts/index.js';
 import { setPendingOperationsTracker } from './omnifocus/OmniAutomation.js';
 import { getVersionInfo } from './utils/version.js';
+import { parseRole, resolveStdioIdentity } from './auth/role-resolver.js';
+import type { Role, ResolvedContext } from './contracts/roles.js';
 
 const logger = createLogger('session-manager');
 
@@ -31,6 +33,10 @@ export class SessionManager {
   private authToken?: string;
   private sessionTimeout: number;
   private cleanupInterval?: ReturnType<typeof setInterval>;
+  // Phase 3 seam: startup-resolved role and context passed to each session.
+  // Phase 4 will replace these with per-token values resolved from bearer tokens.
+  private readonly role: Role;
+  private readonly context: ResolvedContext;
 
   constructor(cacheManager: CacheManager, authToken?: string, sessionTimeout: number = 30 * 60 * 1000) {
     this.sessions = new Map();
@@ -38,6 +44,11 @@ export class SessionManager {
     this.pendingOperations = new Set();
     this.authToken = authToken;
     this.sessionTimeout = sessionTimeout;
+
+    // Resolve role and identity at construction time (Phase 4 seam — D-10).
+    const identity = resolveStdioIdentity();
+    this.role = parseRole();
+    this.context = { identity, role: this.role };
 
     // Initialize pending operations tracking
     setPendingOperationsTracker(this.pendingOperations);
@@ -112,7 +123,8 @@ export class SessionManager {
     );
 
     // Register tools and prompts for this session
-    await registerTools(server, this.cacheManager, this.pendingOperations);
+    // Phase 3: passes startup-resolved role; Phase 4 will replace with per-token role (D-10 seam)
+    await registerTools(server, this.cacheManager, this.pendingOperations, this.role, this.context);
     registerPrompts(server);
 
     // Connect the server to the transport

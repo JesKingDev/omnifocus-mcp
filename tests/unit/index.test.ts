@@ -73,9 +73,11 @@ const getVersionInfoMock = vi.fn(() => ({
 
 const registerPromptsMock = vi.fn();
 let lastRegisteredPendingOps: Set<Promise<unknown>> | undefined;
-const registerToolsMock = vi.fn(async (_server, _cache, pendingOps: Set<Promise<unknown>>) => {
-  lastRegisteredPendingOps = pendingOps;
-});
+const registerToolsMock = vi.fn(
+  async (_server, _cache, pendingOps: Set<Promise<unknown>>, _role?: unknown, _context?: unknown) => {
+    lastRegisteredPendingOps = pendingOps;
+  },
+);
 
 const setPendingOperationsTrackerMock = vi.fn();
 
@@ -148,9 +150,11 @@ describe('server entrypoint', () => {
     cacheWarmerInstances.length = 0;
     CacheWarmerMock.mockClear();
     registerToolsMock.mockClear();
-    registerToolsMock.mockImplementation(async (_server, _cache, pendingOps: Set<Promise<unknown>>) => {
-      lastRegisteredPendingOps = pendingOps;
-    });
+    registerToolsMock.mockImplementation(
+      async (_server, _cache, pendingOps: Set<Promise<unknown>>, _role?: unknown, _context?: unknown) => {
+        lastRegisteredPendingOps = pendingOps;
+      },
+    );
     registerPromptsMock.mockClear();
     setPendingOperationsTrackerMock.mockClear();
     getPermissionCheckerMock.mockClear();
@@ -188,7 +192,13 @@ describe('server entrypoint', () => {
     expect(registerPromptsMock).toHaveBeenCalledTimes(1);
     expect(registerToolsMock).toHaveBeenCalledTimes(1);
     expect(lastRegisteredPendingOps).toBeInstanceOf(Set);
-    expect(registerToolsMock).toHaveBeenCalledWith(expect.any(Object), cacheManager, lastRegisteredPendingOps);
+    expect(registerToolsMock).toHaveBeenCalledWith(
+      expect.any(Object),
+      cacheManager,
+      lastRegisteredPendingOps,
+      expect.any(String), // role: 'agent' | 'owner'
+      expect.any(Object), // context: ResolvedContext
+    );
     expect(cacheWarmer.options.enabled).toBe(true);
     expect(cacheWarmer.warmCache).toHaveBeenCalledTimes(1);
     expect(cacheManager.getStats).toHaveBeenCalledTimes(1);
@@ -283,9 +293,11 @@ describe('server entrypoint', () => {
     // vitest-inherited NODE_ENV='test' would trip assertSandboxGuardAtStartup().
     resetEnv({ MCP_SKIP_AUTO_START: 'true', NODE_ENV: 'development' });
     const deferred = createDeferred<void>();
-    registerToolsMock.mockImplementation(async (_server, _cache, pendingOps: Set<Promise<unknown>>) => {
-      lastRegisteredPendingOps = pendingOps;
-    });
+    registerToolsMock.mockImplementation(
+      async (_server, _cache, pendingOps: Set<Promise<unknown>>, _role?: unknown, _context?: unknown) => {
+        lastRegisteredPendingOps = pendingOps;
+      },
+    );
     const { runServer } = await importEntry();
     const exitSpy = vi.spyOn(process, 'exit').mockImplementation(() => undefined as never);
 

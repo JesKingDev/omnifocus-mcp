@@ -4,7 +4,8 @@ import { CallToolRequestSchema, ListToolsRequestSchema, McpError, ErrorCode } fr
 import { CacheManager } from '../cache/CacheManager.js';
 import { createLogger, createCorrelatedLogger, redactArgs, generateCorrelationId } from '../utils/logger.js';
 import type { Role, ResolvedContext } from '../contracts/roles.js';
-import { allowedOperations } from '../auth/operation-policy.js';
+import { allowedOperations, decide, normalizeArgsToPolicy } from '../auth/operation-policy.js';
+import { createErrorResponseV2 } from '../utils/response-format.js';
 
 // v3.0.0 Unified Builder API - 3 tools + system diagnostics
 import { OmniFocusReadTool } from './unified/OmniFocusReadTool.js';
@@ -33,7 +34,6 @@ interface Tool {
 function supportsCorrelation(tool: Tool): tool is Tool & CorrelationCapable {
   return 'withCorrelation' in tool && typeof (tool as Tool & Record<string, unknown>).withCorrelation === 'function';
 }
-
 
 export function registerTools(
   server: Server,
@@ -102,6 +102,47 @@ export function registerTools(
       correlatedLogger.error(`Tool not found: ${name}`);
       throw new McpError(ErrorCode.MethodNotFound, `Tool not found: ${name}`);
     }
+
+    // ─── Pre-dispatch policy gate (GATE-02, D-07/D-08/D-09) ────────────────
+    // Universal gate — fires for any tool with a mutation field, no-op for reads.
+    // Uses closure-captured role (D-10: never re-calls parseRole() inside handler).
+    // Returns structured payload in MCP content envelope (Pitfall 2 — not thrown).
+    {
+      const items = normalizeArgsToPolicy((args as Record<string, unknown>) ?? {});
+      for (const item of items) {
+        const outcome = decide(role, item.operation, item.target);
+        if (outcome === 'deny' || outcome === 'gate') {
+          const isKnownDelete = item.operation === 'delete' || item.operation === 'bulk_delete';
+          const errorPayload =
+            outcome === 'deny'
+              ? createErrorResponseV2(
+                  name,
+                  isKnownDelete ? 'POLICY_DENY_DELETE' : 'POLICY_DENY',
+                  isKnownDelete
+                    ? 'Delete operations are not permitted for the agent role.'
+                    : `Operation '${item.operation}' is not permitted for the agent role.`,
+                  isKnownDelete
+                    ? "Use 'complete', or update the task with status 'dropped', instead of delete."
+                    : 'Re-run from an owner connection.',
+                  { role, operation: item.operation, target: item.target },
+                )
+              : createErrorResponseV2(
+                  name,
+                  'POLICY_GATE_REQUIRES_OWNER',
+                  'This structural operation requires owner approval before execution.',
+                  'Re-run from an owner connection using the ownerCommand below.',
+                  { dryRun: true, ownerCommand: { mutation: args ?? {} } },
+                );
+          correlatedLogger.info(`Policy gate fired: ${outcome} for op=${item.operation}`, {
+            role,
+            operation: item.operation,
+            target: item.target,
+          });
+          return { content: [{ type: 'text' as const, text: JSON.stringify(errorPayload, null, 2) }] };
+        }
+      }
+    }
+    // ────────────────────────────────────────────────────────────────────────
 
     // Enhanced logging with correlation ID
     correlatedLogger.info(`Executing tool: ${name}`);
