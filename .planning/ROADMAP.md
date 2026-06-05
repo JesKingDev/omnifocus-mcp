@@ -122,7 +122,7 @@ Criteria** (what must be TRUE):
 
 **Wave 3** _(blocked on Wave 2 completion)_
 
-- [ ] 03-03-PLAN.md — system whoami op: dual-schema (Zod + inputSchema + description) + owner-only identity redaction
+- [x] 03-03-PLAN.md — system whoami op: dual-schema (Zod + inputSchema + description) + owner-only identity redaction
       (D-12/D-13/D-15)
 
 **Wave 4** _(blocked on Wave 3 completion)_
@@ -189,7 +189,7 @@ must be TRUE):
 | ------------------------------------------- | -------------- | ----------- | ---------- |
 | 1. Role Model & Resolver                    | 3/3            | Complete    | 2026-06-03 |
 | 2. Operation Policy (Deny-Deletes & Gating) | 3/3            | Complete    | 2026-06-04 |
-| 3. RoleGate & Agent Read Paths              | 2/4            | In Progress |            |
+| 3. RoleGate & Agent Read Paths              | 3/4            | In Progress |            |
 | 4. HTTP Edge Hardening                      | 0/TBD          | Not started | -          |
 | 5. Write-Verifier                           | 0/TBD          | Not started | -          |
 | 6. launchd Deployment & ADR                 | 0/TBD          | Not started | -          |

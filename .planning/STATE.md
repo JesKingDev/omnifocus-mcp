@@ -3,7 +3,7 @@ gsd_state_version: 1.0
 milestone: hardening
 milestone_name: Hardening
 status: ready_to_plan
-last_updated: '2026-06-05T01:00:20.135Z'
+last_updated: '2026-06-05T01:07:29.609Z'
 progress:
   total_phases: 6
   completed_phases: 1
@@ -25,7 +25,7 @@ so JessOS can trust OmniFocus as the source of truth. **Current focus:** Phase 0
 
 Phase: 03 (rolegate-agent-read-paths) — EXECUTING Plan: 3 of 4
 
-Progress: [██░░░░░░░░] 20%
+Progress: [░░░░░░░░░░] 0%
 
 ## Performance Metrics
 
@@ -50,7 +50,7 @@ _Updated after each plan completion_ | Phase 01-role-model-resolver P01 | 190s |
 plan completion_ | Phase 01-role-model-resolver P02 | 180s | 2 tasks | 2 files | | Phase 02 P01 | 540s | 3 tasks | 3
 files | | Phase 02 P02 | 480s | 2 tasks | 5 files | | Phase 02 P03 | 900s | 2 tasks | 7 files | | Phase
 03-rolegate-agent-read-paths P01 | 350 | 2 tasks | 4 files | | Phase 03-rolegate-agent-read-paths P02 | 523 | 2 tasks |
-7 files |
+7 files | | Phase 03-rolegate-agent-read-paths P03 | 250 | 1 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -82,6 +82,9 @@ Decisions are logged in PROJECT.md Key Decisions table. Recent decisions affecti
 - [Phase ?]: OWNER test for dispatch gate sets OMNIFOCUS_MCP_ROLE=owner env var: dispatch gate uses closure-captured
   role but Write tool funnel still calls parseRole() from env (Phase 4 D-10 deferred item)
 
+- [Phase ?]: whoami op complete with dual-schema parity
+- [Phase ?]: SystemTool whoami op
+
 ### Pending Todos
 
 None yet.
@@ -105,4 +108,4 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-06-05T01:00:11.571Z
+Last session: 2026-06-05T01:07:12.200Z
