@@ -88,6 +88,45 @@ describe('whoami OWNER: full identity block returned', () => {
 });
 
 // ---------------------------------------------------------------------------
+// Regression: whoami survives the CallTool correlation path (withCorrelation)
+//
+// BaseTool.withCorrelation reconstructs the tool via `new ctor(cache, correlationId)`,
+// assuming constructor arg 2 is the correlationId. SystemTool repurposed arg 2 as
+// `context`, so a correlated SystemTool received the correlationId string in the
+// context slot and lost its ResolvedContext — whoami then threw
+// "Cannot read properties of undefined (reading 'roleSource')" at runtime even though
+// every direct-construction unit test passed. This guards the integration seam.
+// ---------------------------------------------------------------------------
+
+describe('whoami survives the correlation path (withCorrelation preserves context)', () => {
+  it('correlated AGENT tool: whoami still returns role/roleSource and omits identity', async () => {
+    const tool = new SystemTool(createMockCache(), agentContext);
+    const correlated = tool.withCorrelation('test-correlation-id');
+    const result = await correlated.execute({ operation: 'whoami' });
+    const data = (result as { data: Record<string, unknown> }).data;
+
+    expect((result as { success: boolean }).success).toBe(true);
+    expect(data.role).toBe('agent');
+    expect(data.roleSource).toBe('fail-safe-default');
+    expect(data.identity).toBeUndefined();
+  });
+
+  it('correlated OWNER tool: whoami still returns the full identity block', async () => {
+    const tool = new SystemTool(createMockCache(), ownerContext);
+    const correlated = tool.withCorrelation('test-correlation-id');
+    const result = await correlated.execute({ operation: 'whoami' });
+    const data = (result as { data: Record<string, unknown> }).data;
+
+    expect((result as { success: boolean }).success).toBe(true);
+    expect(data.role).toBe('owner');
+    const identity = data.identity as Record<string, unknown>;
+    expect(identity.transport).toBe('stdio');
+    expect(identity.roleSource).toBe('explicit-env');
+    expect(identity.principal).toBeNull();
+  });
+});
+
+// ---------------------------------------------------------------------------
 // D-15: dual-schema parity for whoami
 // ---------------------------------------------------------------------------
 

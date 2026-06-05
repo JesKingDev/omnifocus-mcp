@@ -168,10 +168,31 @@ export class SystemTool extends BaseTool<typeof SystemToolSchema> {
 
   protected readonly _context?: ResolvedContext;
 
-  constructor(cache: import('../../cache/CacheManager.js').CacheManager, context?: ResolvedContext) {
-    super(cache);
+  constructor(
+    cache: import('../../cache/CacheManager.js').CacheManager,
+    context?: ResolvedContext,
+    correlationId?: string,
+  ) {
+    super(cache, correlationId);
     this.diagnosticOmni = new DiagnosticOmniAutomation();
     this._context = context;
+  }
+
+  /**
+   * Override BaseTool.withCorrelation to preserve _context across reconstruction.
+   *
+   * BaseTool's implementation rebuilds via `new ctor(cache, correlationId)`, which
+   * assumes constructor arg 2 is the correlationId. SystemTool's arg 2 is `context`,
+   * so the base behavior would drop the ResolvedContext (and shove the correlationId
+   * string into the context slot), breaking whoami. Thread both through explicitly.
+   */
+  override withCorrelation(correlationId: string): this {
+    const ctor = this.constructor as new (
+      cache: import('../../cache/CacheManager.js').CacheManager,
+      context?: ResolvedContext,
+      correlationId?: string,
+    ) => this;
+    return new ctor(this.cache, this._context, correlationId);
   }
 
   async executeValidated(args: z.infer<typeof SystemToolSchema>): Promise<SystemResponse> {
@@ -633,7 +654,7 @@ export class SystemTool extends BaseTool<typeof SystemToolSchema> {
 
   private getWhoami(): Promise<SystemResponse> {
     const role = this._context?.role ?? 'agent';
-    const roleSource = this._context?.identity.roleSource ?? 'fail-safe-default';
+    const roleSource = this._context?.identity?.roleSource ?? 'fail-safe-default';
 
     if (role === 'agent') {
       // AGENT path: omit identity and principal entirely (D-13/D-15)
@@ -651,9 +672,9 @@ export class SystemTool extends BaseTool<typeof SystemToolSchema> {
         {
           role,
           identity: {
-            transport: this._context?.identity.transport ?? 'stdio',
+            transport: this._context?.identity?.transport ?? 'stdio',
             roleSource,
-            principal: this._context?.identity.principal ?? null,
+            principal: this._context?.identity?.principal ?? null,
           },
         },
         undefined,
