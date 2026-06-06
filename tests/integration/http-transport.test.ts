@@ -409,4 +409,46 @@ d('HTTP Transport Phase 4 Hardening', () => {
     });
     expect(exitCode).not.toBe(0);
   }, 30000);
+
+  // Regression: CR-01 — a session is bound to the token that created it. Reusing an
+  // owner's session ID with a different (agent) token must NOT inherit owner privileges.
+  it('rejects reuse of a session by a different token (no privilege escalation)', async () => {
+    const initRes = await fetch(`http://127.0.0.1:${PORT}/mcp`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${OWNER_TOKEN}`,
+        Accept: ACCEPT,
+        'Content-Type': 'application/json',
+      },
+      body: INIT_BODY,
+    });
+    const ownerSid = initRes.headers.get('mcp-session-id');
+    expect(ownerSid).toBeTruthy();
+
+    const hijack = await fetch(`http://127.0.0.1:${PORT}/mcp`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${AGENT_TOKEN}`,
+        Accept: ACCEPT,
+        'Content-Type': 'application/json',
+        'Mcp-Session-Id': ownerSid as string,
+      },
+      body: JSON.stringify({ jsonrpc: '2.0', id: 9, method: 'tools/list' }),
+    });
+    expect(hijack.status).toBe(403);
+  });
+
+  // Regression: CR-02 — /sessions leaks live session IDs (the secret CR-01 needs).
+  // It must be restricted to the owner role.
+  it('restricts /sessions to the owner role', async () => {
+    const agentRes = await fetch(`http://127.0.0.1:${PORT}/sessions`, {
+      headers: { Authorization: `Bearer ${AGENT_TOKEN}` },
+    });
+    expect(agentRes.status).toBe(403);
+
+    const ownerRes = await fetch(`http://127.0.0.1:${PORT}/sessions`, {
+      headers: { Authorization: `Bearer ${OWNER_TOKEN}` },
+    });
+    expect(ownerRes.status).toBe(200);
+  });
 });

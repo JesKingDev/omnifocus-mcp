@@ -2,6 +2,7 @@ import { createServer, IncomingMessage, ServerResponse, Server as HttpServer } f
 import { URL } from 'node:url';
 import { createLogger } from './utils/logger.js';
 import { SessionManager } from './session-manager.js';
+import type { SessionConfig } from './session-manager.js';
 import { randomUUID } from 'node:crypto';
 import { getVersionInfo } from './utils/version.js';
 import { validateTokenSet } from './auth/token-registry.js';
@@ -242,7 +243,7 @@ export class HttpServerManager {
           this.handleHealthRequest(req, res);
           break;
         case '/sessions':
-          this.handleSessionsRequest(req, res);
+          this.handleSessionsRequest(req, res, tokenEntry);
           break;
         default:
           this.handleNotFoundRequest(req, res);
@@ -295,6 +296,27 @@ export class HttpServerManager {
   }
 
   /**
+   * CR-01 guard: a session's tool set is registered for the role of the token that
+   * created it. Any later request on that session must present the same principal,
+   * or a lower-privileged token could ride a higher-privileged session. Returns
+   * true (and writes a 403) when the principals differ.
+   */
+  private rejectSessionPrincipalMismatch(
+    session: SessionConfig,
+    tokenEntry: TokenEntry,
+    res: ServerResponse,
+    requestId: string,
+  ): boolean {
+    if (session.principal !== tokenEntry.principal) {
+      logger.warn('Rejected cross-token session reuse', { requestId, sessionId: session.sessionId });
+      res.writeHead(403, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: 'Forbidden', message: 'Session does not belong to this token' }));
+      return true;
+    }
+    return false;
+  }
+
+  /**
    * Handles MCP endpoint requests
    */
   private async handleMcpRequest(
@@ -311,10 +333,10 @@ export class HttpServerManager {
         await this.handleMcpPostRequest(_req, res, sessionId, requestId, tokenEntry);
         break;
       case 'GET':
-        await this.handleMcpGetRequest(_req, res, sessionId, requestId);
+        await this.handleMcpGetRequest(_req, res, sessionId, requestId, tokenEntry);
         break;
       case 'DELETE':
-        await this.handleMcpDeleteRequest(_req, res, sessionId, requestId);
+        await this.handleMcpDeleteRequest(_req, res, sessionId, requestId, tokenEntry);
         break;
       default:
         res.writeHead(405, { 'Content-Type': 'application/json' });
@@ -355,6 +377,11 @@ export class HttpServerManager {
 
       let session = sessionId ? this.sessionManager.getSession(sessionId) : undefined;
 
+      // CR-01: an existing session may only be used by the token that created it.
+      if (session && this.rejectSessionPrincipalMismatch(session, tokenEntry, res, requestId)) {
+        return;
+      }
+
       // Create new session if no session ID provided or session doesn't exist
       if (!session) {
         const newSessionId = randomUUID();
@@ -389,6 +416,7 @@ export class HttpServerManager {
     res: ServerResponse,
     sessionId: string | undefined,
     requestId: string,
+    tokenEntry: TokenEntry,
   ): Promise<void> {
     if (!sessionId) {
       res.writeHead(400, { 'Content-Type': 'application/json' });
@@ -400,6 +428,11 @@ export class HttpServerManager {
     if (!session) {
       res.writeHead(404, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify({ error: 'Not Found', message: 'Session not found' }));
+      return;
+    }
+
+    // CR-01: an existing session may only be used by the token that created it.
+    if (this.rejectSessionPrincipalMismatch(session, tokenEntry, res, requestId)) {
       return;
     }
 
@@ -426,6 +459,7 @@ export class HttpServerManager {
     res: ServerResponse,
     sessionId: string | undefined,
     requestId: string,
+    tokenEntry: TokenEntry,
   ): Promise<void> {
     if (!sessionId) {
       res.writeHead(400, { 'Content-Type': 'application/json' });
@@ -437,6 +471,11 @@ export class HttpServerManager {
     if (!session) {
       res.writeHead(404, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify({ error: 'Not Found', message: 'Session not found' }));
+      return;
+    }
+
+    // CR-01: an existing session may only be terminated by the token that created it.
+    if (this.rejectSessionPrincipalMismatch(session, tokenEntry, res, requestId)) {
       return;
     }
 
@@ -482,10 +521,18 @@ export class HttpServerManager {
   /**
    * Handles sessions info requests
    */
-  private handleSessionsRequest(_req: IncomingMessage, res: ServerResponse): void {
+  private handleSessionsRequest(_req: IncomingMessage, res: ServerResponse, tokenEntry: TokenEntry): void {
     if (_req.method !== 'GET') {
       res.writeHead(405, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify({ error: 'Method Not Allowed', message: 'Only GET is supported' }));
+      return;
+    }
+
+    // CR-02: session IDs are the secret a privilege-escalation attempt needs.
+    // Only the owner role may enumerate live sessions.
+    if (tokenEntry.role !== 'owner') {
+      res.writeHead(403, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: 'Forbidden', message: 'Owner role required' }));
       return;
     }
 

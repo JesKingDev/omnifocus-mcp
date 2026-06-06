@@ -20,6 +20,14 @@ export interface SessionConfig {
   server: Server; // eslint-disable-line sonarjs/deprecation
   createdAt: Date;
   lastActivity: Date;
+  /**
+   * Principal of the bearer token that created this session (e.g. 'http-agent',
+   * 'http-owner'). The session's tool set is registered for this principal's role,
+   * so every later request on this session MUST present the same principal —
+   * otherwise a lower-privileged token could ride a higher-privileged session
+   * (CR-01 privilege escalation). Enforced in HttpServerManager before dispatch.
+   */
+  principal: string | null;
 }
 
 /**
@@ -123,6 +131,8 @@ export class SessionManager {
       server,
       createdAt: new Date(),
       lastActivity: new Date(),
+      // Bind the session to the creating token's principal (CR-01 guard).
+      principal: context.identity.principal,
     };
 
     this.sessions.set(sessionId, session);
