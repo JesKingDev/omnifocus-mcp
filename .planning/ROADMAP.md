@@ -180,7 +180,29 @@ diff, surfacing a verification status so JessOS can trust that writes persisted.
 2. The read-back performs a field-level diff against the intended change and fails explicitly on mismatch (a silent
    no-op write surfaces as a failure, not a false success).
 
-3. Each mutation response reports a verification status of `verified | unverified | skipped`. **Plans**: TBD
+3. Each mutation response reports a verification status of `verified | unverified | skipped`. **Plans**: 5 plans
+
+**Wave 0**
+
+- [ ] 05-01-PLAN.md — Wave 0 test stubs (WriteVerifier.test.ts, field-comparator.test.ts, write-verifier.test.ts) +
+      module stubs (WriteVerifier.ts, field-comparator.ts, intent-extractor.ts)
+
+**Wave 1** _(blocked on Wave 0 — plans 02 and 03 run in parallel)_
+
+- [ ] 05-02-PLAN.md — field-comparator.ts (D-05/D-08: date ±60s, tags Set, scalars, absent-field hard fail) +
+      intent-extractor.ts + error code constants in response-format.ts
+- [ ] 05-03-PLAN.md — read-schema.ts ids[] filter + OmniFocusReadTool.ts dual-schema update + buildTasksByIdSetScript in
+      script-builder.ts
+
+**Wave 2** _(blocked on Wave 1 completion)_
+
+- [ ] 05-04-PLAN.md — WriteVerifier.ts full implementation (role guard, skip guard, batched read-back, per-field diff,
+      status injection)
+
+**Wave 3** _(blocked on Wave 2 completion)_
+
+- [ ] 05-05-PLAN.md — Wire WriteVerifier into OmniFocusWriteTool.executeValidated() + integration test GREEN + human
+      verify
 
 ### Phase 6: launchd Deployment & ADR
 
@@ -210,5 +232,5 @@ must be TRUE):
 | 2. Operation Policy (Deny-Deletes & Gating) | 3/3            | Complete    | 2026-06-04 |
 | 3. RoleGate & Agent Read Paths              | 4/4            | Complete    | 2026-06-05 |
 | 4. HTTP Edge Hardening                      | 4/4            | Complete    | 2026-06-06 |
-| 5. Write-Verifier                           | 0/TBD          | Not started | -          |
+| 5. Write-Verifier                           | 0/5            | Not started | -          |
 | 6. launchd Deployment & ADR                 | 0/TBD          | Not started | -          |
