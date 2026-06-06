@@ -545,7 +545,7 @@ function buildTasksByIdSetScript(ids: string[]): string {
 
 ---
 
-## Open Questions
+## Open Questions (RESOLVED)
 
 1. **Should `tag_manage create/rename/nest/unnest/reparent` be in the skipped set or verifiable?**
    - What we know: tag-assign to tasks is verifiable (relationship extractor). tag_manage ops (creating/renaming a tag
@@ -554,6 +554,11 @@ function buildTasksByIdSetScript(ids: string[]): string {
    - Recommendation: include a simple name-existence check for `tag_manage create` and `tag_manage rename`; mark
      `tag_manage nest/unnest/reparent` as having relationship-shaped extractors like task move. If the tag read-back is
      too expensive, fall back to `skipped` for `tag_manage` with a logged audit entry.
+   - **RESOLVED:** tag_manage create, rename, nest, and reparent are ALL verifiable via relationship-shaped read-backs
+     and are NOT in the skipped set (per D-09 and the plan revision). create/rename: verify tag name existence in the
+     tag list. nest/reparent: verify tag parent in the tag hierarchy. tag_manage delete and merge are OWNER-only
+     (policy-gated for agent) and fall under D-12 owner `unverified`, not `skipped`. The closed-skip set does not
+     include any tag_manage action.
 
 2. **For `folder create`, what does the read-back verify?**
    - What we know: `handleFolderCreate` does not return a folder id in a predictable metadata field (it returns
@@ -561,11 +566,20 @@ function buildTasksByIdSetScript(ids: string[]): string {
    - What's unclear: what id format the create-folder script returns.
    - Recommendation: inspect `buildCreateFolderScript` result shape in Wave 0. If no stable id is returned,
      `folder create` goes in the logged-`skipped` set.
+   - **RESOLVED:** determination deferred to Wave 0 inspection (Plan 05-01 Task 1). The executor reads
+     `buildCreateFolderScript` and `handleFolderCreate` return path and records a one-line finding in the
+     WriteVerifier.ts stub comment (`FOLDER_CREATE_ID_FINDING`). If a stable id is returned, folder_create is verified
+     via id lookup. If no stable id is returned, folder_create is placed in the logged-skipped set per D-11. The Plan
+     05-04 executor reads this comment before making the skip-vs-verify decision.
 
 3. **Chunking threshold: should it be a config value or a constant?**
    - What we know: 500 ids is conservatively safe based on script-size estimates.
    - Recommendation: start as a named constant `VERIFY_READBACK_CHUNK_SIZE = 500` in `WriteVerifier.ts`. Make it a
      config value only if integration tests reveal the threshold needs tuning.
+   - **RESOLVED:** implemented as the constant `VERIFY_READBACK_CHUNK_SIZE = 200` in `WriteVerifier.ts`, aligned with
+     the Zod `ids` array max bound of 200 already adopted in read-schema.ts (Plan 05-03). The value 200 is more
+     conservative than the 500 estimate and stays well within both the OmniJS 261KB and JXA 523KB script-size limits.
+     Promote to a config value only if integration tests show the threshold needs tuning.
 
 ---
 
