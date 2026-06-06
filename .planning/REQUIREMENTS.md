@@ -43,14 +43,14 @@ Requirements for this hardening milestone. Each maps to a roadmap phase.
 
 ### HTTP Edge & Remote Access
 
-- [ ] **HTTP-01**: Every HTTP request is authenticated with a bearer token using a constant-time comparison before
+- [x] **HTTP-01**: Every HTTP request is authenticated with a bearer token using a constant-time comparison before
       dispatch; unauthenticated requests are rejected.
-- [ ] **HTTP-02**: The HTTP server binds to `127.0.0.1` with a fail-closed startup assertion; it never binds to an open
+- [x] **HTTP-02**: The HTTP server binds to `127.0.0.1` with a fail-closed startup assertion; it never binds to an open
       interface.
-- [ ] **HTTP-03**: DNS-rebinding protection is explicitly enabled with host/origin allowlists.
-- [ ] **HTTP-04**: Remote access is reachable only via Tailscale `serve` (never `funnel`); a bearer token is still
+- [x] **HTTP-03**: DNS-rebinding protection is explicitly enabled with host/origin allowlists.
+- [x] **HTTP-04**: Remote access is reachable only via Tailscale `serve` (never `funnel`); a bearer token is still
       required per request, in addition to tailnet reachability.
-- [ ] **HTTP-05**: An HTTP connection's role is derived from its bearer token; both `agent` and `owner` are reachable
+- [x] **HTTP-05**: An HTTP connection's role is derived from its bearer token; both `agent` and `owner` are reachable
       over HTTP, each producing the same allow/deny outcomes as the matching stdio role (owner-token → owner,
       agent-token → agent). Distinct per-role tokens; unknown/missing token is rejected (does not fall back to a role).
       _(Amended Phase 4: was "agent-scoped" — superseded by Phase 4 CONTEXT D-01/D-02, owner-over-HTTP with full
@@ -143,11 +143,11 @@ confirms the research's strict bottom-up dependency order; no coverage gap found
 | READ-01     | Phase 3 — RoleGate & Agent Read Paths              | Complete |
 | READ-02     | Phase 3 — RoleGate & Agent Read Paths              | Complete |
 | READ-03     | Phase 3 — RoleGate & Agent Read Paths              | Complete |
-| HTTP-01     | Phase 4 — HTTP Edge Hardening                      | Pending  |
-| HTTP-02     | Phase 4 — HTTP Edge Hardening                      | Pending  |
-| HTTP-03     | Phase 4 — HTTP Edge Hardening                      | Pending  |
-| HTTP-04     | Phase 4 — HTTP Edge Hardening                      | Pending  |
-| HTTP-05     | Phase 4 — HTTP Edge Hardening                      | Pending  |
+| HTTP-01     | Phase 4 — HTTP Edge Hardening                      | Complete |
+| HTTP-02     | Phase 4 — HTTP Edge Hardening                      | Complete |
+| HTTP-03     | Phase 4 — HTTP Edge Hardening                      | Complete |
+| HTTP-04     | Phase 4 — HTTP Edge Hardening                      | Complete |
+| HTTP-05     | Phase 4 — HTTP Edge Hardening                      | Complete |
 | VERIFY-01   | Phase 5 — Write-Verifier                           | Pending  |
 | VERIFY-02   | Phase 5 — Write-Verifier                           | Pending  |
 | VERIFY-03   | Phase 5 — Write-Verifier                           | Pending  |
