@@ -42,8 +42,10 @@ export interface HTTPTestClientOptions {
   port?: number;
   /** Host to bind to (default: 127.0.0.1) */
   host?: string;
-  /** Authentication token (optional) */
+  /** Authentication token — sent as the agent bearer token (optional) */
   authToken?: string;
+  /** Owner bearer token — exported as MCP_OWNER_TOKEN when starting the server (optional) */
+  ownerToken?: string;
   /** Enable cache warming (default: false for faster tests) */
   enableCacheWarming?: boolean;
 }
@@ -56,7 +58,10 @@ export class HTTPTestClient {
   private createdTaskIds: string[] = [];
   private createdProjectIds: string[] = [];
   private testSessionId: string = generateSessionId();
-  private options: Required<Omit<HTTPTestClientOptions, 'authToken'>> & { authToken?: string };
+  private options: Required<Omit<HTTPTestClientOptions, 'authToken' | 'ownerToken'>> & {
+    authToken?: string;
+    ownerToken?: string;
+  };
   private baseUrl: string;
 
   constructor(options: HTTPTestClientOptions = {}) {
@@ -64,6 +69,7 @@ export class HTTPTestClient {
       port: options.port ?? 3099,
       host: options.host ?? '127.0.0.1',
       authToken: options.authToken,
+      ownerToken: options.ownerToken,
       enableCacheWarming: options.enableCacheWarming ?? false,
     };
     this.baseUrl = `http://${this.options.host}:${this.options.port}`;
@@ -97,6 +103,11 @@ export class HTTPTestClient {
     env.MCP_AGENT_TOKEN = testAgentToken;
     // Update the effective authToken used by getAuthHeaders() to match
     this.options.authToken = testAgentToken;
+
+    // Optional owner token — enables per-session role-parity testing (HTTP-05, D-12).
+    if (this.options.ownerToken) {
+      env.MCP_OWNER_TOKEN = this.options.ownerToken;
+    }
 
     this.server = spawn(
       'node',
@@ -414,6 +425,27 @@ export class HTTPTestClient {
     }
 
     const result = response.result as { tools: Array<{ name: string; description: string }> };
+    return result.tools;
+  }
+
+  /**
+   * List available tools with their full advertised inputSchema (role-aware).
+   * Used to assert per-session role trimming over HTTP (HTTP-05).
+   */
+  async listToolsRaw(): Promise<Array<{ name: string; description: string; inputSchema?: unknown }>> {
+    const response = await this.sendRequest({
+      jsonrpc: '2.0',
+      id: this.nextId(),
+      method: 'tools/list',
+    });
+
+    if (response.error) {
+      throw new Error(`List tools error: ${response.error.message}`);
+    }
+
+    const result = response.result as {
+      tools: Array<{ name: string; description: string; inputSchema?: unknown }>;
+    };
     return result.tools;
   }
 
