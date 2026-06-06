@@ -14,127 +14,88 @@ files_reviewed_list:
   - tests/integration/helpers/http-test-client.ts
   - scripts/smoke-http-auth.sh
 findings:
-  critical: 2
-  warning: 6
+  critical: 0
+  warning: 5
   info: 4
-  total: 12
+  total: 9
 status: issues_found
 ---
 
 # Phase 4: Code Review Report
 
-**Reviewed:** 2026-06-05 **Depth:** standard **Files Reviewed:** 9 **Status:** issues_found
+**Reviewed:** 2026-06-05 **Depth:** standard **Status:** issues_found
 
 ## Summary
 
-Phase 4 builds the HTTP edge: a bearer-token registry with constant-time comparison, a DNS-rebinding Host/Origin
-allowlist, a loopback-only fail-closed bind, and per-session role propagation from the token. The token-registry
-constant-time logic, the loopback assertion in `validateCLIConfig`, and the auth-gate ordering in `handleRequest` are
-all sound and well-tested.
+Re-review after the fix for the two blocking findings from the prior pass. Scope was the three changed files
+(`src/http-server.ts`, `src/session-manager.ts`, `tests/integration/http-transport.test.ts`), with cross-checks against
+`src/auth/role-resolver.ts` and `src/auth/token-registry.ts` to confirm principal semantics.
 
-The serious gap is in **session role binding**. The role is attached to a session at creation time and is never
-re-checked against the authenticating token on later requests. Combined with the `/sessions` endpoint advertising every
-live session ID to any authenticated caller, an agent-token holder can drive an owner-created session and execute
-owner-only operations. The per-session role test passes because each test client only ever uses its own session — it
-never crosses a session ID from one token to another, so it cannot catch this class of defect. That is the headline
-finding.
+Both critical findings are closed. The session is now bound to its creating token's principal, and all three /mcp method
+handlers enforce the principal check before any transport dispatch or session-state mutation. `/sessions` is gated to
+the owner role. The two new regression tests are genuine — each would fail if its guard were removed. The fix introduced
+no new bug: legitimate same-token reuse still works, the principal values are server-controlled literals (not
+spoofable), and the null-principal edge case cannot arise on the HTTP path.
 
-## Critical Issues
+The remaining open warnings live in files outside this fix's scope (`token-registry.ts`, `cli.ts`, and a residual
+ambiguity in `parseRequestBody`). They are carried forward unchanged.
 
-### CR-01: Session role is not re-validated per request — agent can hijack an owner session for privilege escalation
+## Resolved (was Critical)
 
-**File:** `src/http-server.ts:356-369` (with `src/session-manager.ts:79-132`, `getSession` at `137-143`) **Issue:** A
-session is created with a role derived from the token that first opened it:
+### CR-01 — RESOLVED: cross-token session reuse / privilege escalation
 
-```ts
-const identity = resolveHttpIdentity(tokenEntry);
-const context: ResolvedContext = { identity, role: tokenEntry.role };
-session = await this.sessionManager.createSession(newSessionId, tokenEntry.role, context);
-```
+The session now carries the creating token's `principal` on `SessionConfig` (`src/session-manager.ts:30`, set at
+`src/session-manager.ts:135` from `context.identity.principal`). All three method handlers call
+`rejectSessionPrincipalMismatch` before dispatch:
 
-On every subsequent POST/GET/DELETE the session is resolved **only** by the `MCP-Session-Id` header:
+- POST — `src/http-server.ts:381`, before the create-or-dispatch branch.
+- GET — `src/http-server.ts:435`, after lookup, before `transport.handleRequest`.
+- DELETE — `src/http-server.ts:478`, after lookup, before `transport.handleRequest`.
 
-```ts
-let session = sessionId ? this.sessionManager.getSession(sessionId) : undefined;
-...
-await session.transport.handleRequest(_req, res, body);
-```
+No path reaches `session.transport.handleRequest` without the guard. The comparison
+(`session.principal !== tokenEntry.principal`, `src/http-server.ts:310`) is against hardcoded literals (`http-agent` /
+`http-owner`) sourced from the registry, so it is not spoofable by a client. WR-01 (the GET/DELETE corollary of CR-01)
+is closed by the same change — `tokenEntry` is now plumbed through `handleMcpRequest` into all three handlers.
 
-The current request's `tokenEntry.role` is never compared to the role the session was created with, and the session is
-not bound to the originating principal/token. An agent-token holder who knows an owner session's ID can send requests
-with `Authorization: Bearer <agent-token>` plus `MCP-Session-Id: <owner-session>` and the request executes inside the
-owner-privileged server instance — including `delete` / `bulk_delete`, which the agent role is explicitly meant to be
-denied. This defeats the per-session role design (HTTP-05, D-12) entirely. CR-02 makes the owner session ID trivially
-discoverable.
+### CR-02 — RESOLVED: /sessions session-ID disclosure
 
-**Fix:** Bind each session to its creating principal/role and reject cross-token reuse. Store the owning token's
-principal (or role) on `SessionConfig` and check it on every request before dispatching:
+`handleSessionsRequest` now takes `tokenEntry` and returns 403 unless `tokenEntry.role === 'owner'`
+(`src/http-server.ts:533-537`) before reaching `getStats()`. An agent token resolves to role `agent` and is denied, so
+the live session-ID list is no longer disclosed to a lower-privileged principal.
 
-```ts
-// when creating:
-const session: SessionConfig = { ...rest, ownerPrincipal: tokenEntry.principal, role: tokenEntry.role };
+## Verification of the fix
 
-// in handleMcpRequest / handleMcpPostRequest, after lookup:
-if (session && session.ownerPrincipal !== tokenEntry.principal) {
-  res.writeHead(403, { 'Content-Type': 'application/json' });
-  res.end(JSON.stringify({ error: 'Forbidden', message: 'Session does not belong to this principal' }));
-  return;
-}
-```
-
-Apply the same guard in `handleMcpGetRequest` and `handleMcpDeleteRequest` (both currently take no `tokenEntry` and
-dispatch on session ID alone — see CR-01 corollary below).
-
-### CR-02: `/sessions` discloses every live session ID to any authenticated caller
-
-**File:** `src/http-server.ts:485-503` (data from `src/session-manager.ts:264-274`) **Issue:** `/sessions` returns
-`getStats()`, which includes `sessionIds: Array.from(this.sessions.keys())`. The endpoint is gated by the unconditional
-bearer auth, but it is not gated by role — an **agent** token can read it. That hands the agent every owner session ID,
-which is exactly the secret needed to mount CR-01. Session IDs are bearer-grade capabilities here; exposing the full
-list to a lower-privileged principal is an information-disclosure that directly enables privilege escalation.
-
-**Fix:** Restrict `/sessions` to the owner role (pass `tokenEntry` into the handler and check
-`tokenEntry.role === 'owner'`), and/or stop returning raw session IDs:
-
-```ts
-case '/sessions':
-  if (tokenEntry.role !== 'owner') { res.writeHead(403, ...); res.end(...); return; }
-  this.handleSessionsRequest(req, res);
-  break;
-```
-
-At minimum drop `sessionIds` from the public payload and return only counts/timeouts.
+1. **All session-by-id paths guarded.** Confirmed for POST/GET/DELETE (see CR-01 above). The guard precedes both
+   transport dispatch and `updateSessionActivity`.
+2. **No new regression.** Same-token reuse: identical token → identical principal → guard passes. Null-principal: the
+   `principal` field is typed `string | null`, but HTTP sessions always set it from a non-null `TokenEntry.principal`,
+   so a null can never reach the comparison on this path. Comparison is value-equality on server-side literals.
+3. **Tests are genuine.**
+   - CR-01 test (`tests/integration/http-transport.test.ts:415-439`) opens an owner session via raw `fetch`, captures
+     the `mcp-session-id`, then POSTs `tools/list` with the agent token + owner SID and asserts 403. Removing the guard
+     would let that request reuse the owner session and return 200 — the assertion would fail. Genuine.
+   - CR-02 test (`tests/integration/http-transport.test.ts:443-453`) asserts agent → 403 and owner → 200 on `/sessions`.
+     Removing the role gate would return 200 for the agent — the assertion would fail. Genuine.
 
 ## Warnings
 
-### WR-01: GET/DELETE `/mcp` dispatch on session ID with no principal binding
-
-**File:** `src/http-server.ts:300-318, 387-456` **Issue:** `handleMcpRequest` validated a token in `handleRequest`, but
-only forwards `tokenEntry` to the POST handler. The GET and DELETE handlers receive only `sessionId` and call
-`getSession(sessionId)` directly. Even after CR-01 is fixed for POST, an agent could terminate (DELETE) or attach to the
-SSE stream (GET) of an owner session by ID. This is the same root cause as CR-01 and must be fixed in the same change —
-plumbing `tokenEntry` through all three method handlers and enforcing the principal check uniformly. **Fix:** Pass
-`tokenEntry` into `handleMcpGetRequest` and `handleMcpDeleteRequest` and apply the CR-01 principal/role guard before
-`session.transport.handleRequest(...)`.
-
 ### WR-02: `parseRequestBody` swallows JSON parse errors and reports them as "body required"
 
-**File:** `src/http-server.ts:540-549` **Issue:** On `JSON.parse` failure the catch logs at debug and `resolve(null)`.
-The caller then hits `if (!body)` and returns `400 "Request body is required"`. A client that sent a non-empty but
-malformed body gets a misleading error, and the actual parse failure is invisible above debug level. It also makes the
-smoke/e2e "missing body -> 400" assertion ambiguous: a malformed body produces the same 400, so the test cannot
-distinguish the two. **Fix:** Distinguish empty body from malformed JSON — reject malformed JSON with an explicit
-`400 "Invalid JSON"` (or a JSON-RPC parse error) rather than collapsing both to the same path.
+**File:** `src/http-server.ts:587-595` **Issue:** On `JSON.parse` failure the catch logs at debug and `resolve(null)`.
+The caller hits `if (!body)` (`src/http-server.ts:372`) and returns `400 "Request body is required"`. A non-empty but
+malformed body therefore produces the same 400 as an empty body, and the parse failure is invisible above debug level.
+The new "rejects an authenticated POST with no body (400)" test cannot distinguish the two cases. **Fix:** Reject
+malformed JSON with an explicit `400 "Invalid JSON"` (or a JSON-RPC parse error) instead of collapsing both to the
+empty-body path.
 
 ### WR-03: `buildTokenRegistry` Map keying lets a duplicate token silently collapse to one entry
 
 **File:** `src/auth/token-registry.ts:110-124` **Issue:** The registry is a `Map` keyed by the raw token string. If
 `MCP_AGENT_TOKEN === MCP_OWNER_TOKEN`, the owner `set()` overwrites the agent entry and a single token resolves to
 `owner` — a privilege escalation. `validateCLIConfig` (D-06) blocks equal tokens in HTTP mode, so the live path is
-currently safe, but `buildTokenRegistry` is an exported public function with no such guard of its own. The safety
-property depends entirely on a check living in a different module that callers may forget. **Fix:** Defend in depth —
-have `buildTokenRegistry` throw (or refuse to overwrite) if the same token maps to two roles, so the invariant holds
-regardless of caller:
+currently safe, but `buildTokenRegistry` is an exported public function with no guard of its own; the safety property
+lives in a different module callers may forget. **Fix:** Defend in depth — have `buildTokenRegistry` throw (or refuse to
+overwrite) when the same token maps to two roles:
 
 ```ts
 if (registry.has(ownerToken)) {
@@ -144,24 +105,21 @@ if (registry.has(ownerToken)) {
 
 ### WR-04: Constant-time guarantee weakened by empty-registry / candidate fast-path and per-request rehash
 
-**File:** `src/auth/token-registry.ts:75-94` **Issue:** Two timing channels remain despite the constant-time intent.
-First, `if (!candidate || registry.size === 0) return null` returns before any hashing — an attacker probing a server
-with an empty registry, or sending an empty token, gets a distinguishably faster response. Second,
-`configuredHash = tokenHash(configuredToken)` is recomputed inside the loop on every request; the work scales with
-registry size, so response time leaks the number of configured tokens. Neither is high-severity (the registry has at
-most two entries and the token values are not the secret being probed by size), but both undercut the "no observable
-timing difference" claim in the module header. **Fix:** Precompute the configured hashes once at registry-build time and
-store them on the entry; keep the candidate-empty guard but document that it is an availability guard, not a secrecy
-guard.
+**File:** `src/auth/token-registry.ts:75-94` **Issue:** Two timing channels remain.
+`if (!candidate || registry.size === 0) return null` returns before any hashing — an empty registry or empty token
+yields a distinguishably faster response. And `configuredHash = tokenHash(configuredToken)` is recomputed inside the
+loop on every request, so response time scales with registry size. Neither is high-severity (≤2 entries; token values
+are not the secret being size-probed), but both undercut the module's "no observable timing difference" claim. **Fix:**
+Precompute the configured hashes once at registry-build time; keep the candidate-empty guard but document it as an
+availability guard, not a secrecy guard.
 
 ### WR-05: `validateCLIConfig` does not reject a blank/whitespace agent token
 
 **File:** `src/utils/cli.ts:127-141` **Issue:** The owner token is checked for blank/whitespace
 (`config.ownerToken.trim() === ''` → throw), but the agent token is only checked for falsiness
-(`if (!config.agentToken)`). A value of `" "` (single space, e.g. `MCP_AGENT_TOKEN=" "`) is truthy, passes the
-required-token gate, and becomes a live agent credential — a trivially guessable token. Given the agent token is
-mandatory in HTTP mode, it deserves the stronger check the owner token already gets. **Fix:** Mirror the owner-token
-check for the agent token:
+(`if (!config.agentToken)`). A value of `" "` is truthy, passes the required-token gate, and becomes a live, trivially
+guessable agent credential. Given the agent token is mandatory in HTTP mode, it deserves the stronger check. **Fix:**
+Mirror the owner-token check:
 
 ```ts
 if (!config.agentToken || config.agentToken.trim() === '') {
@@ -169,48 +127,44 @@ if (!config.agentToken || config.agentToken.trim() === '') {
 }
 ```
 
-### WR-06: Per-session role e2e test cannot catch the CR-01 hijack — false sense of coverage
+### WR-06: Per-session role parity e2e test still does not cross a token against another session
 
-**File:** `tests/integration/http-transport.test.ts:368-400` **Issue:** The "applies per-session role" test initializes
-an agent session and an owner session and asserts each one's advertised `omnifocus_write` enum. Each client only ever
-uses its own session ID with its own token, so the test confirms the happy-path role trim but never crosses a token
-against another session's ID. It therefore green-lights the role design while the actual enforcement gap (CR-01) goes
-undetected. The smoke script (`scripts/smoke-http-auth.sh:60-85`) has the same blind spot. **Fix:** Add a negative test:
-open an owner session, capture its `MCP-Session-Id`, then issue a `tools/call` with `operation: delete` using the
-**agent** token and the **owner** session ID. Assert it is rejected (403/denied), not executed. This test should fail
-against the current code and pass once CR-01/WR-01 are fixed.
+**File:** `tests/integration/http-transport.test.ts:368-400` **Issue:** The "applies per-session role" test still uses
+each client only against its own session/token, so it confirms the happy-path role trim but does not itself exercise
+cross-token reuse. This is no longer a _coverage gap_ for CR-01 — the new dedicated test at lines 415-439 now covers the
+hijack case directly — but this older test's name still implies enforcement it does not assert. **Fix:** Rename it to
+reflect that it verifies advertised-schema parity only, and treat the lines 415-439 test as the enforcement test.
+Downgraded from the prior pass: the enforcement gap is closed; this is now a naming/clarity nit, kept as a warning only
+because the test title overstates what it checks.
 
 ## Info
 
 ### IN-01: `cli.ts` sets `config.authToken` even when `agentToken` already came from `MCP_AUTH_TOKEN`
 
-**File:** `src/utils/cli.ts:80-91` **Issue:** Lines 80-84 map `MCP_AUTH_TOKEN` → `agentToken` (with a deprecation
-warning), then line 91 unconditionally also sets `config.authToken = process.env.MCP_AUTH_TOKEN`. `authToken` is never
-consumed downstream in HTTP mode (the registry is built from `agentToken`/`ownerToken` in `index.ts:266-269`), so it is
-dead state that duplicates the alias and can drift. **Fix:** Drop the redundant `config.authToken` assignment, or
+**File:** `src/utils/cli.ts:80-91` **Issue:** `MCP_AUTH_TOKEN` is mapped to `agentToken` (with a deprecation warning),
+then `config.authToken` is also set unconditionally. `authToken` is not consumed downstream in HTTP mode (the registry
+is built from `agentToken`/`ownerToken`), so it is dead state that can drift. **Fix:** Drop the redundant assignment, or
 document why both fields are retained.
 
 ### IN-02: `buildCorsOriginHeader` default ignores configured port
 
-**File:** `src/http-server.ts:178-192` **Issue:** The fallback origin is the literal `'http://localhost'` with no port,
-while the server binds an arbitrary port. For loopback-only, non-credentialed use this is cosmetic, but the value is
-inconsistent with the allowlist the function otherwise enforces. **Fix:** Either return a port-correct default
-(`http://localhost:${this.port}`) or omit the header on the no-match fallback.
+**File:** `src/http-server.ts:179-193` **Issue:** The fallback origin is the literal `'http://localhost'` with no port,
+while the server binds an arbitrary port. Cosmetic for loopback-only, non-credentialed use, but inconsistent with the
+allowlist the function otherwise enforces. **Fix:** Return a port-correct default (`http://localhost:${this.port}`) or
+omit the header on the no-match fallback.
 
 ### IN-03: `index.ts` global handlers swallow all uncaught errors and keep serving
 
 **File:** `src/index.ts:33-50` **Issue:** `uncaughtException`/`unhandledRejection` log and intentionally do not exit. In
-long-lived HTTP mode this can leave the process serving from a corrupted state after a fatal error. This predates Phase
-4 and the comment is deliberate, so it is informational, but the HTTP path raises the stakes versus stdio. **Fix:**
-Consider a crash-only strategy for HTTP mode (log, then exit non-zero so a supervisor restarts cleanly), distinct from
-the stdio leniency.
+long-lived HTTP mode this can leave the process serving from a corrupted state after a fatal error. Predates Phase 4 and
+the comment is deliberate, so informational. **Fix:** Consider a crash-only strategy for HTTP mode (log, then exit
+non-zero so a supervisor restarts cleanly), distinct from the stdio leniency.
 
 ### IN-04: `initialize()` returns a hardcoded stale version in the cached-response branch
 
 **File:** `tests/integration/helpers/http-test-client.ts:304-313` **Issue:** The idempotent early-return fabricates
 `serverInfo.version: '3.0.0'`. No current test asserts on it, but a future version-parity test would silently read the
-stale literal instead of the real server response. **Fix:** Return the captured real initialize response, or drop
-`serverInfo` from the synthetic object so it cannot be mistaken for live data.
+stale literal. **Fix:** Return the captured real initialize response, or drop `serverInfo` from the synthetic object.
 
 ---
 
