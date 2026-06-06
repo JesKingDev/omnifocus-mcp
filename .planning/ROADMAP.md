@@ -29,8 +29,8 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 3: RoleGate & Agent Read Paths** - Role-aware tool advertisement and dispatch ship a fully usable
       (completed 2026-06-05) least-privilege stdio agent with its core read surface.
 
-- [ ] **Phase 4: HTTP Edge Hardening** - The HTTP/Tailscale remote path matches the stdio path's guarantees: bearer
-      auth, loopback bind, DNS-rebinding protection, Serve-only.
+- [x] **Phase 4: HTTP Edge Hardening** - The HTTP/Tailscale remote path matches the stdio path's guarantees: bearer
+      (completed 2026-06-06) auth, loopback bind, DNS-rebinding protection, Serve-only.
 
 - [ ] **Phase 5: Write-Verifier** - Every agent mutation is confirmed by an independent post-mutation read-back with a
       field-level diff and a reported verification status.
@@ -165,7 +165,7 @@ Criteria** (what must be TRUE):
 
 **Wave 2** _(blocked on Wave 1 completion)_
 
-- [ ] 04-04-PLAN.md — session-manager.ts per-session role, http-server.ts Host/Origin middleware + unconditional auth,
+- [x] 04-04-PLAN.md — session-manager.ts per-session role, http-server.ts Host/Origin middleware + unconditional auth,
       index.ts registry wiring + human verify
 
 ### Phase 5: Write-Verifier
@@ -209,6 +209,6 @@ must be TRUE):
 | 1. Role Model & Resolver                    | 3/3            | Complete    | 2026-06-03 |
 | 2. Operation Policy (Deny-Deletes & Gating) | 3/3            | Complete    | 2026-06-04 |
 | 3. RoleGate & Agent Read Paths              | 4/4            | Complete    | 2026-06-05 |
-| 4. HTTP Edge Hardening                      | 3/4            | In Progress |            |
+| 4. HTTP Edge Hardening                      | 4/4            | Complete    | 2026-06-06 |
 | 5. Write-Verifier                           | 0/TBD          | Not started | -          |
 | 6. launchd Deployment & ADR                 | 0/TBD          | Not started | -          |
