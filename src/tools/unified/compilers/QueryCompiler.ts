@@ -130,6 +130,10 @@ export class QueryCompiler {
 
     // ID/folder passthrough
     if (input.id) result.id = input.id;
+    // D-13: batch id set for write-verification read-back
+    if (Array.isArray(input.ids)) {
+      result.ids = input.ids;
+    }
     // OMN-96: `folder: null` means "top-level projects only" (the model's
     // natural guess); a string is a folder-name substring filter. Distinguish
     // them explicitly — `null` is falsy, so the old `if (input.folder)` truthy

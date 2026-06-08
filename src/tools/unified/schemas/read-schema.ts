@@ -42,6 +42,8 @@ const NumberFilterSchema = z.union([
 // Shared filter field shape (used by both FlatFilterSchema and FilterSchema)
 const filterFields = {
   id: z.string().optional(), // Exact task ID lookup
+  // Batch read-back by id set (write verification). Max 200 per chunk (D-16).
+  ids: z.array(z.string()).min(1).max(200).optional(),
   status: z.enum(['active', 'completed', 'dropped', 'on_hold']).optional(),
   // OMN-72: `completed` boolean is the documented GTD idiom in CLAUDE.md/memory
   // (`completed: false` = only active). Accepted as a direct alias for the

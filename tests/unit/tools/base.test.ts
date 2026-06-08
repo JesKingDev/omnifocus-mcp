@@ -531,12 +531,17 @@ describe('BaseTool', () => {
       const queryProps = querySchema.properties as Record<string, Record<string, unknown>>;
       expect(queryProps.type.enum).toEqual(['tasks', 'projects', 'tags', 'perspectives', 'folders', 'export']);
 
-      // filters should be a loose { type: "object" } — no recursive AND/OR/NOT expansion
-      expect(queryProps.filters).toEqual({ type: 'object' });
+      // filters should be a flat object — id and ids are advertised, no recursive AND/OR/NOT expansion
+      expect(queryProps.filters).toMatchObject({ type: 'object' });
+      const filterProps = (queryProps.filters as Record<string, unknown>).properties as
+        | Record<string, unknown>
+        | undefined;
+      // ids[] must be advertised for write-verification batch read-back (D-13)
+      expect(filterProps?.ids).toMatchObject({ type: 'array', items: { type: 'string' } });
 
-      // Schema should be small — under 3KB pretty-printed (was 3.2 MB before)
+      // Schema should be small — under 4KB pretty-printed (was 3.2 MB before; ids[] adds ~200 bytes)
       const schemaSize = JSON.stringify(jsonSchema, null, 2).length;
-      expect(schemaSize).toBeLessThan(3000);
+      expect(schemaSize).toBeLessThan(4000);
     });
 
     it('should use minimal hand-crafted inputSchema for SystemTool', () => {

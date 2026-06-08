@@ -61,6 +61,7 @@ export type DateOperator = 'BETWEEN' | '<' | '<=' | '>' | '>=';
 export interface TaskFilter {
   // --- Identification ---
   id?: string; // Exact task ID lookup
+  ids?: string[]; // Batch id set lookup — write verification read-back (D-13). Max 200 per chunk.
 
   // --- Completion Status ---
   /**
@@ -348,6 +349,7 @@ export function createFilter(filter: TaskFilter): TaskFilter {
  */
 export const FILTER_PROPERTY_NAMES = [
   'id',
+  'ids', // Batch id set lookup — write verification read-back (D-13)
   'completed',
   'tags',
   'tagsOperator',

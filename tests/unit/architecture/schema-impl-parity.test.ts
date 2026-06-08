@@ -72,6 +72,7 @@ describe('Parity: TaskFieldEnum ↔ generateFieldProjection (OMN-45 class)', () 
 // beyond "this is a syntactically valid value for this field".
 const FILTER_SAMPLES: Record<string, unknown> = {
   id: 'sample-id',
+  ids: ['sample-id-1', 'sample-id-2'], // D-13: batch id set for write-verification read-back
   status: 'active',
   completed: false, // OMN-72
   tags: { any: ['@home'] },

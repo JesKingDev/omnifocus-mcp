@@ -251,7 +251,17 @@ PERFORMANCE:
                 'smart_suggest',
               ],
             },
-            filters: { type: 'object' },
+            filters: {
+              type: 'object',
+              properties: {
+                id: { type: 'string', description: 'Exact single task ID lookup' },
+                ids: {
+                  type: 'array',
+                  items: { type: 'string' },
+                  description: 'Fetch multiple tasks by id (for write verification batch read-back). Max 200 per call.',
+                },
+              },
+            },
             sort: {
               type: 'array',
               items: {
