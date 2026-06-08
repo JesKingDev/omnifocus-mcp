@@ -37,27 +37,31 @@ function pickNonNullish(obj: Record<string, unknown>, keys: string[]): Record<st
 
 // ─── extractIntent ────────────────────────────────────────────────────────────
 
-const TASK_CREATE_FIELDS = [
-  'name',
-  'note',
-  'projectId',
-  'project',
-  'parentTaskId',
-  'dueDate',
-  'deferDate',
-  'plannedDate',
-  'flagged',
-  'estimatedMinutes',
-  'tags',
-  'sequential',
-];
+// Date fields are excluded from create/update intent because compiled ops carry
+// raw pre-conversion values (e.g. "2025-12-25") while read-backs always return
+// UTC ISO strings (e.g. "2025-12-25T17:00:00.000Z"). The ±60 s tolerance in
+// compareDateField cannot bridge a 17-hour offset, producing false
+// WRITE_UNVERIFIED_MISMATCH errors. Date persistence is tested separately by
+// the dedicated field-roundtrip integration tests.
+const DATE_KEYS = new Set(['dueDate', 'deferDate', 'plannedDate', 'completionDate']);
+
+// Relational/operational fields are excluded from intent-based verification
+// because they use a different vocabulary in read-backs than in mutation ops:
+//   - project / projectId: mutation uses projectId; read-back uses containingProject
+//   - parentTaskId: mutation directive; read-back does not expose parentTaskId as a key
+//   - addTags / removeTags: operation directives; read-back uses a flat tags[] array
+// These are verified end-to-end by the dedicated field-roundtrip integration tests.
+const RELATIONAL_KEYS = new Set(['project', 'projectId', 'parentTaskId', 'addTags', 'removeTags', 'parentFolder']);
+
+const TASK_CREATE_FIELDS = ['name', 'note', 'flagged', 'estimatedMinutes', 'tags', 'sequential'];
 
 /**
  * Extract the intent object from a compiled mutation op.
  *
  * Returns only the keys the caller intended to set (D-06 — never diff
- * app-derived fields). All date fields are already UTC ISO strings at this
- * point because convertTaskDates() ran upstream (D-07).
+ * app-derived fields). Date fields and mutation-only directives (clear*) are
+ * excluded because compiled ops hold pre-conversion values that diverge from
+ * the UTC ISO strings returned by read-backs (see DATE_KEYS comment above).
  *
  * Handles: task create, task update, task complete, project create, folder
  * create, batch (returns {} — batch verifier dispatches per-item).
@@ -81,30 +85,47 @@ export function extractIntent(compiledOp: unknown): Record<string, unknown> {
 
     if (operation === 'update') {
       const changes = asRecord(op['changes']);
-      // All present keys in changes are intentional (safeUpdates equivalent)
-      return { ...changes };
-    }
-
-    if (operation === 'complete') {
-      const result: Record<string, unknown> = { status: 'completed' };
-      if (op['completionDate'] !== null && op['completionDate'] !== undefined) {
-        result['completionDate'] = op['completionDate'];
+      // Exclude:
+      //   - clear* directive flags (clearDueDate, clearDeferDate, clearPlannedDate,
+      //     clearEstimatedMinutes) — mutation-only directives, absent in read-backs.
+      //   - date fields — compiled changes hold raw pre-conversion values; read-backs
+      //     return UTC ISO strings. These would always mismatch (see DATE_KEYS).
+      //   - relational/operational fields — different vocabulary in read-backs
+      //     (see RELATIONAL_KEYS comment above).
+      const result: Record<string, unknown> = {};
+      for (const [key, val] of Object.entries(changes)) {
+        if (!key.startsWith('clear') && !DATE_KEYS.has(key) && !RELATIONAL_KEYS.has(key)) {
+          result[key] = val;
+        }
       }
       return result;
     }
 
+    if (operation === 'complete') {
+      // task.status is not a real read-back field (tasks have completionDate, not
+      // status). completionDate itself is excluded via DATE_KEYS (raw vs UTC issue).
+      // Return empty so the verifier marks the op as unverifiable-by-field-diff
+      // rather than producing a false mismatch.
+      return {};
+    }
+
     if (operation === 'create' && target === 'project') {
       const data = asRecord(op['data']);
-      return { ...data };
+      // Exclude date fields and relational fields for the same reasons as task create.
+      const result: Record<string, unknown> = {};
+      for (const [key, val] of Object.entries(data)) {
+        if (!DATE_KEYS.has(key) && !RELATIONAL_KEYS.has(key) && val !== null && val !== undefined) {
+          result[key] = val;
+        }
+      }
+      return result;
     }
 
     if (operation === 'create_folder' || (operation === 'create' && target === 'folder')) {
-      const data = asRecord(op['data']);
-      const result: Record<string, unknown> = {};
-      if (data['name'] !== null && data['name'] !== undefined) result['name'] = data['name'];
-      if (data['parentFolder'] !== null && data['parentFolder'] !== undefined)
-        result['parentFolder'] = data['parentFolder'];
-      return result;
+      // Folder entities are not fetchable via buildTasksByIdSetScript (task-only reader).
+      // Return empty so the verifier marks the op as unverifiable rather than producing
+      // a false WRITE_UNVERIFIED_MISMATCH from an empty read-back snapshot.
+      return {};
     }
 
     if (operation === 'batch') {

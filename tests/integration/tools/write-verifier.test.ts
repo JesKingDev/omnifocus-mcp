@@ -21,8 +21,8 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { spawn, ChildProcess } from 'child_process';
 import path from 'path';
-import { ensureSandboxFolder, fullCleanup } from '../../helpers/sandbox-manager.js';
-import { runScopedName } from '../../helpers/run-id.js';
+import { ensureSandboxFolder, fullCleanup } from '../helpers/sandbox-manager.js';
+import { runScopedName } from '../helpers/run-id.js';
 
 describe('WriteVerifier integration: task create response includes verification_status', () => {
   let serverProcess: ChildProcess;
