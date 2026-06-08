@@ -10,6 +10,8 @@
  * crashing (T-05-02-02).
  */
 
+import { localToUTC } from '../../../utils/timezone.js';
+
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 function asRecord(val: unknown): Record<string, unknown> {
@@ -37,13 +39,39 @@ function pickNonNullish(obj: Record<string, unknown>, keys: string[]): Record<st
 
 // ─── extractIntent ────────────────────────────────────────────────────────────
 
-// Date fields are excluded from create/update intent because compiled ops carry
-// raw pre-conversion values (e.g. "2025-12-25") while read-backs always return
-// UTC ISO strings (e.g. "2025-12-25T17:00:00.000Z"). The ±60 s tolerance in
-// compareDateField cannot bridge a 17-hour offset, producing false
-// WRITE_UNVERIFIED_MISMATCH errors. Date persistence is tested separately by
-// the dedicated field-roundtrip integration tests.
-const DATE_KEYS = new Set(['dueDate', 'deferDate', 'plannedDate', 'completionDate']);
+// Verifiable date fields (D-06/D-07): the compiled op carries the agent's RAW
+// date string (e.g. "2025-12-25") while read-backs return UTC ISO strings
+// (e.g. "2025-12-25T17:00:00.000Z"). Rather than EXCLUDE these from verification,
+// we canonicalize the intent value to UTC with the SAME localToUTC conversion
+// (and default-time rules) the mutation applied, so compareDateField's ±60 s
+// tolerance matches the read-back. This catches silent date-write failures at
+// runtime — the core value of the verifier.
+const DATE_CONTEXT: Record<string, 'due' | 'defer' | 'planned'> = {
+  dueDate: 'due',
+  deferDate: 'defer',
+  plannedDate: 'planned',
+};
+
+// completionDate is excluded: the `complete` op lets OmniFocus stamp the
+// completion time (≈ now), so there is no agent-supplied value to verify against.
+const EXCLUDED_DATE_KEYS = new Set(['completionDate']);
+
+/**
+ * Canonicalize a raw intent date to the UTC ISO form the read-back will hold,
+ * using the same localToUTC conversion the mutation applied (D-06/D-07).
+ * Idempotent on already-UTC strings. On a malformed value (localToUTC throws),
+ * returns undefined so the key is omitted rather than producing a false
+ * WRITE_UNVERIFIED_MISMATCH from a raw-vs-UTC diff.
+ */
+function canonicalizeDate(key: string, value: unknown): string | undefined {
+  const context = DATE_CONTEXT[key];
+  if (context === undefined || typeof value !== 'string') return undefined;
+  try {
+    return localToUTC(value, context);
+  } catch {
+    return undefined;
+  }
+}
 
 // Relational/operational fields are excluded from intent-based verification
 // because they use a different vocabulary in read-backs than in mutation ops:
@@ -59,9 +87,10 @@ const TASK_CREATE_FIELDS = ['name', 'note', 'flagged', 'estimatedMinutes', 'tags
  * Extract the intent object from a compiled mutation op.
  *
  * Returns only the keys the caller intended to set (D-06 — never diff
- * app-derived fields). Date fields and mutation-only directives (clear*) are
- * excluded because compiled ops hold pre-conversion values that diverge from
- * the UTC ISO strings returned by read-backs (see DATE_KEYS comment above).
+ * app-derived fields). Verifiable date fields (due/defer/planned) are
+ * canonicalized to UTC via localToUTC so they match read-backs (D-06/D-07).
+ * Mutation-only directives (clear*), completionDate, and relational fields are
+ * excluded (see EXCLUDED_DATE_KEYS / RELATIONAL_KEYS comments above).
  *
  * Handles: task create, task update, task complete, project create, folder
  * create, batch (returns {} — batch verifier dispatches per-item).
@@ -80,7 +109,12 @@ export function extractIntent(compiledOp: unknown): Record<string, unknown> {
 
     if (operation === 'create' && target === 'task') {
       const data = asRecord(op['data']);
-      return pickNonNullish(data, TASK_CREATE_FIELDS);
+      const result = pickNonNullish(data, TASK_CREATE_FIELDS);
+      for (const key of Object.keys(DATE_CONTEXT)) {
+        const canonical = canonicalizeDate(key, data[key]);
+        if (canonical !== undefined) result[key] = canonical;
+      }
+      return result;
     }
 
     if (operation === 'update') {
@@ -88,22 +122,28 @@ export function extractIntent(compiledOp: unknown): Record<string, unknown> {
       // Exclude:
       //   - clear* directive flags (clearDueDate, clearDeferDate, clearPlannedDate,
       //     clearEstimatedMinutes) — mutation-only directives, absent in read-backs.
-      //   - date fields — compiled changes hold raw pre-conversion values; read-backs
-      //     return UTC ISO strings. These would always mismatch (see DATE_KEYS).
+      //   - completionDate — app-stamped, no agent-supplied value (EXCLUDED_DATE_KEYS).
       //   - relational/operational fields — different vocabulary in read-backs
       //     (see RELATIONAL_KEYS comment above).
+      // Verifiable date fields (due/defer/planned) are canonicalized to UTC (D-06/D-07).
       const result: Record<string, unknown> = {};
       for (const [key, val] of Object.entries(changes)) {
-        if (!key.startsWith('clear') && !DATE_KEYS.has(key) && !RELATIONAL_KEYS.has(key)) {
-          result[key] = val;
+        if (key.startsWith('clear') || EXCLUDED_DATE_KEYS.has(key) || RELATIONAL_KEYS.has(key)) {
+          continue;
         }
+        if (key in DATE_CONTEXT) {
+          const canonical = canonicalizeDate(key, val);
+          if (canonical !== undefined) result[key] = canonical;
+          continue;
+        }
+        result[key] = val;
       }
       return result;
     }
 
     if (operation === 'complete') {
       // task.status is not a real read-back field (tasks have completionDate, not
-      // status). completionDate itself is excluded via DATE_KEYS (raw vs UTC issue).
+      // status). completionDate is app-stamped (EXCLUDED_DATE_KEYS), not agent intent.
       // Return empty so the verifier marks the op as unverifiable-by-field-diff
       // rather than producing a false mismatch.
       return {};
@@ -111,12 +151,19 @@ export function extractIntent(compiledOp: unknown): Record<string, unknown> {
 
     if (operation === 'create' && target === 'project') {
       const data = asRecord(op['data']);
-      // Exclude date fields and relational fields for the same reasons as task create.
+      // Verifiable date fields canonicalized to UTC (D-06/D-07); completionDate and
+      // relational fields excluded for the same reasons as task create.
       const result: Record<string, unknown> = {};
       for (const [key, val] of Object.entries(data)) {
-        if (!DATE_KEYS.has(key) && !RELATIONAL_KEYS.has(key) && val !== null && val !== undefined) {
-          result[key] = val;
+        if (EXCLUDED_DATE_KEYS.has(key) || RELATIONAL_KEYS.has(key) || val === null || val === undefined) {
+          continue;
         }
+        if (key in DATE_CONTEXT) {
+          const canonical = canonicalizeDate(key, val);
+          if (canonical !== undefined) result[key] = canonical;
+          continue;
+        }
+        result[key] = val;
       }
       return result;
     }
