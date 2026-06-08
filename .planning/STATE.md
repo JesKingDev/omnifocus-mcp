@@ -1,15 +1,16 @@
 ---
 gsd_state_version: 1.0
 milestone: hardening
-milestone_name: Hardening
-status: ready_to_plan
-last_updated: '2026-06-07T03:22:38.183Z'
+milestone_name:
+  '**Goal**: The HTTP/Tailscale remote path enforces the same guarantees as stdio — per-request bearer auth with'
+status: Phase 05 complete
+last_updated: '2026-06-08T22:37:35.714Z'
 progress:
-  total_phases: 3
-  completed_phases: 1
-  total_plans: 9
-  completed_plans: 4
-  percent: 33
+  total_phases: 6
+  completed_phases: 5
+  total_plans: 19
+  completed_plans: 19
+  percent: 83
 ---
 
 # Project State
@@ -23,7 +24,7 @@ so JessOS can trust OmniFocus as the source of truth. **Current focus:** Phase 0
 
 ## Current Position
 
-Phase: 05 (write-verifier) — EXECUTING Plan: 1 of 5
+Phase: 05 — COMPLETE
 
 Progress: [▓▓▓▓▓▓▓░░░] 67%
 
