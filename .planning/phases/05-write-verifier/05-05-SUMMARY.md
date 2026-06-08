@@ -16,7 +16,8 @@ tech_stack:
   added: []
   patterns:
     - 'verifier.verify(result, {}, compiled, parseRole()) at every mutation return path'
-    - 'intent exclusion sets (DATE_KEYS, RELATIONAL_KEYS) prevent false WRITE_UNVERIFIED_MISMATCH'
+    - 'verifiable dates (due/defer/planned) canonicalized to UTC via localToUTC (D-06/D-07); RELATIONAL_KEYS +
+      completionDate excluded'
     - 'empty intent ({}) falls back to extractIntent(compiledOp) inside WriteVerifier'
 key_files:
   created: []
@@ -27,8 +28,9 @@ key_files:
 decisions:
   - 'Pass {} as intent to verifier.verify() everywhere — lets WriteVerifier call extractIntent(compiledOp) as fallback
     rather than duplicating extraction logic at each call site'
-  - 'Exclude DATE_KEYS from intent extraction — compiled ops hold raw pre-conversion dates; read-backs use UTC ISO
-    strings; ±60s tolerance cannot bridge ~17h offset'
+  - 'Canonicalize verifiable dates (dueDate/deferDate/plannedDate) to UTC via localToUTC — the same converter the
+    mutation applies — so compareDateField matches the read-back (D-06/D-07). Silent date-write failures are caught at
+    runtime. Only completionDate stays excluded (app-stamped, no agent intent).'
   - 'Exclude RELATIONAL_KEYS (project, projectId, parentTaskId, addTags, removeTags, parentFolder) from intent —
     mutation vocabulary differs from OmniFocus read-back vocabulary; verified by field-roundtrip tests'
   - 'Exclude clear* directive flags from update intent — mutation-only directives absent in read-backs'
@@ -57,16 +59,19 @@ persisted.
 4. `handleTagManage` call — tag_manage passes through verifier
 5. `handleFolderCreate` call — folder create passes through verifier
 
-**`src/tools/unified/verifier/intent-extractor.ts`** — exclusion sets added to prevent false `WRITE_UNVERIFIED_MISMATCH`
-errors:
+**`src/tools/unified/verifier/intent-extractor.ts`** — date canonicalization + targeted exclusions:
 
-- `DATE_KEYS`: `dueDate`, `deferDate`, `plannedDate`, `completionDate` — excluded because compiled ops hold raw
-  pre-conversion values (e.g. `"2025-12-25"`) while read-backs always return UTC ISO strings (e.g.
-  `"2025-12-25T17:00:00.000Z"`). The ±60 s date tolerance cannot bridge a ~17-hour timezone offset.
+- **Verifiable dates** (`dueDate`, `deferDate`, `plannedDate`) are **canonicalized to UTC** via
+  `localToUTC(value, context)` — the same converter `OmniFocusWriteTool` applies at mutation time, so the agent's raw
+  value (e.g. `"2025-12-25"`) becomes the same UTC ISO the read-back returns (e.g. `"2025-12-25T17:00:00.000Z"`) and
+  `compareDateField`'s ±60 s tolerance matches. This satisfies D-06/D-07 and catches silent date-write failures at
+  runtime. Conversion is per-field and guarded — a malformed date omits that one key rather than failing the whole op.
+- `completionDate` (`EXCLUDED_DATE_KEYS`) — excluded: app-stamped at completion (≈ now), no agent-supplied value to
+  verify against.
 - `RELATIONAL_KEYS`: `project`, `projectId`, `parentTaskId`, `addTags`, `removeTags`, `parentFolder` — excluded because
   these are mutation DSL vocabulary that OmniFocus represents differently in read-backs (`containingProject`, `tags[]`,
-  etc.).
-- `clear*` directive flags — already filtered; these are mutation-only directives.
+  etc.). (Tags on _create_ ARE verified — `tags` is in `TASK_CREATE_FIELDS` and set-compared.)
+- `clear*` directive flags — mutation-only directives, absent in read-backs.
 - `complete` op: returns `{}` (task.status is not a real read-back field).
 - `create_folder` op: returns `{}` (folders not queryable via task-reader).
 
@@ -90,7 +95,7 @@ All three target test suites GREEN. Pre-existing failures (4 tests) are unrelate
 - `POLICY_DENY_DELETE` for agent role — Phase 01/02 security policy, by design
 - HTTP session auth tests — env-specific token configuration, pre-existing
 
-Unit tests: 2367/2367 GREEN throughout.
+Unit tests: 2372/2372 GREEN (2367 + 5 new date-canonicalization tests).
 
 ## Deviations from Plan
 
@@ -102,10 +107,15 @@ Unit tests: 2367/2367 GREEN throughout.
 - **Issue:** `extractIntent` for task create included `dueDate`, `deferDate`, `plannedDate` from `compiled.data` — raw
   pre-conversion values. After `convertTaskDates()`, OmniFocus stores UTC ISO strings. The ±60 s compareDateField
   tolerance cannot bridge a ~17-hour gap.
-- **Fix:** Added `DATE_KEYS` exclusion set; removed date fields from `TASK_CREATE_FIELDS`; added `DATE_KEYS` exclusion
-  to update intent loop.
+- **Initial fix (52f621e):** Excluded all date keys from intent extraction. This made the test pass but dropped runtime
+  date verification — a deviation from locked decisions D-06/D-07.
+- **Superseding fix (4e75cce):** Per owner review at the human-verify checkpoint, replaced the exclusion with proper
+  canonicalization: verifiable dates are converted to UTC via `localToUTC` (reusing the mutation's converter and
+  default-time rules), then compared. Dates are now verified at runtime; only `completionDate` remains excluded. Added
+  `tests/unit/tools/unified/verifier/intent-extractor-dates.test.ts` (5 tests, RED→GREEN). Live `field-roundtrip` +
+  `write-verifier` integration tests confirm no false `WRITE_UNVERIFIED_MISMATCH`.
 - **Files modified:** `src/tools/unified/verifier/intent-extractor.ts`
-- **Commit:** `52f621e`
+- **Commits:** `52f621e` (initial exclusion), `4e75cce` (canonicalization — final)
 
 **2. [Rule 1 - Bug] complete intent returned `{ status: "completed" }` causing mismatch**
 
