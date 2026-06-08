@@ -482,6 +482,13 @@ export function createAnalyticsResponseV2<T>(
   return createSuccessResponseV2(operation, data, summary, metadata);
 }
 
+// ─── Verification error code constants (D-02) ────────────────────────────────
+/** Write claimed success but read-back proves field(s) did not persist. Do NOT retry blindly. */
+export const WRITE_UNVERIFIED_MISMATCH = 'WRITE_UNVERIFIED_MISMATCH';
+/** Post-mutation read-back round-trip could not complete (transport/timeout). Indeterminate — may be retryable. */
+export const VERIFY_READBACK_FAILED = 'VERIFY_READBACK_FAILED';
+// ─────────────────────────────────────────────────────────────────────────────
+
 /**
  * Create enhanced error response with suggestions
  */

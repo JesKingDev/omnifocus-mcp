@@ -1,36 +1,196 @@
 /**
- * intent-extractor — Wave 0 stub.
+ * intent-extractor — Wave 1A (Plan 05-02) implementation.
  *
- * Exports the function signatures the test suite imports against.
- * All function bodies throw 'not implemented' so tests fail RED.
- * Wave 1B (Plan 05-04) implements the production logic.
+ * Extracts:
+ *   - The intent object (fields the caller intended to set) from a compiled mutation op.
+ *   - The affected entity id(s) from a mutation result.
+ *
+ * Both functions use duck-typing and never throw — unknown shapes return empty
+ * object / empty array so the verifier marks them as unverifiable rather than
+ * crashing (T-05-02-02).
  */
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+
+function asRecord(val: unknown): Record<string, unknown> {
+  if (val !== null && val !== undefined && typeof val === 'object' && !Array.isArray(val)) {
+    return val as Record<string, unknown>;
+  }
+  return {};
+}
+
+function isString(val: unknown): val is string {
+  return typeof val === 'string' && val.length > 0;
+}
+
+/** Pick only keys whose values are non-null and non-undefined from an object. */
+function pickNonNullish(obj: Record<string, unknown>, keys: string[]): Record<string, unknown> {
+  const result: Record<string, unknown> = {};
+  for (const key of keys) {
+    const val = obj[key];
+    if (val !== null && val !== undefined) {
+      result[key] = val;
+    }
+  }
+  return result;
+}
+
+// ─── extractIntent ────────────────────────────────────────────────────────────
+
+const TASK_CREATE_FIELDS = [
+  'name',
+  'note',
+  'projectId',
+  'project',
+  'parentTaskId',
+  'dueDate',
+  'deferDate',
+  'plannedDate',
+  'flagged',
+  'estimatedMinutes',
+  'tags',
+  'sequential',
+];
 
 /**
  * Extract the intent object from a compiled mutation op.
  *
- * The intent is the normalized set of fields the caller intended to set.
- * Only keys present in the returned object are diffed against the read-back
- * (D-06 — never diff app-derived fields like id, modified-date, computed status).
+ * Returns only the keys the caller intended to set (D-06 — never diff
+ * app-derived fields). All date fields are already UTC ISO strings at this
+ * point because convertTaskDates() ran upstream (D-07).
  *
- * @param _compiledOp - The compiled mutation object from the write tool compiler.
+ * Handles: task create, task update, task complete, project create, folder
+ * create, batch (returns {} — batch verifier dispatches per-item).
+ *
+ * Returns {} for any unrecognized op class (T-05-02-02 — verifier marks as
+ * unverifiable, never falsely 'verified').
+ *
+ * @param compiledOp - The compiled mutation object from the write tool compiler.
  * @returns A Record mapping field names to their intended values.
  */
-export function extractIntent(_compiledOp: unknown): Record<string, unknown> {
-  throw new Error('extractIntent not implemented');
+export function extractIntent(compiledOp: unknown): Record<string, unknown> {
+  try {
+    const op = asRecord(compiledOp);
+    const operation = op['operation'];
+    const target = op['target'];
+
+    if (operation === 'create' && target === 'task') {
+      const data = asRecord(op['data']);
+      return pickNonNullish(data, TASK_CREATE_FIELDS);
+    }
+
+    if (operation === 'update') {
+      const changes = asRecord(op['changes']);
+      // All present keys in changes are intentional (safeUpdates equivalent)
+      return { ...changes };
+    }
+
+    if (operation === 'complete') {
+      const result: Record<string, unknown> = { status: 'completed' };
+      if (op['completionDate'] !== null && op['completionDate'] !== undefined) {
+        result['completionDate'] = op['completionDate'];
+      }
+      return result;
+    }
+
+    if (operation === 'create' && target === 'project') {
+      const data = asRecord(op['data']);
+      return { ...data };
+    }
+
+    if (operation === 'create_folder' || (operation === 'create' && target === 'folder')) {
+      const data = asRecord(op['data']);
+      const result: Record<string, unknown> = {};
+      if (data['name'] !== null && data['name'] !== undefined) result['name'] = data['name'];
+      if (data['parentFolder'] !== null && data['parentFolder'] !== undefined)
+        result['parentFolder'] = data['parentFolder'];
+      return result;
+    }
+
+    if (operation === 'batch') {
+      // Batch verifier dispatches per-item extractIntent from each item's individual op class
+      return {};
+    }
+
+    // Unrecognized op — return empty so verifier marks as unverifiable (T-05-02-02)
+    return {};
+  } catch {
+    return {};
+  }
 }
+
+// ─── extractAffectedIds ────────────────────────────────────────────────────────
 
 /**
  * Extract the affected entity id(s) from a mutation result.
  *
- * Handles the three result shapes:
- *  - Single task/project create: metadata.created_id
- *  - Single task update/complete: compiled.taskId
- *  - Batch: data.results id list + tempIdMapping resolution
+ * Duck-types the result shape to cover:
+ *   - Single task create: metadata.created_id
+ *   - Single task update: metadata.updated_id
+ *   - Single task complete: metadata.completed_id
+ *   - Project create: data.project.id
+ *   - Batch: data.tempIdMapping values + ids from data.results items
  *
- * @param _mutationResult - The raw result returned by the mutation handler.
+ * Returns [] for any shape that yields no ids. Never throws.
+ *
+ * @param mutationResult - The raw result returned by the mutation handler.
  * @returns Array of entity ids affected by the mutation (stable primaryKey strings).
  */
-export function extractAffectedIds(_mutationResult: unknown): string[] {
-  throw new Error('extractAffectedIds not implemented');
+export function extractAffectedIds(mutationResult: unknown): string[] {
+  try {
+    const result = asRecord(mutationResult);
+    const metadata = asRecord(result['metadata']);
+    const data = asRecord(result['data']);
+
+    const ids: string[] = [];
+
+    // Single task create
+    if (isString(metadata['created_id'])) {
+      ids.push(metadata['created_id']);
+    }
+
+    // Single task update
+    if (ids.length === 0 && isString(metadata['updated_id'])) {
+      ids.push(metadata['updated_id']);
+    }
+
+    // Single task complete
+    if (ids.length === 0 && isString(metadata['completed_id'])) {
+      ids.push(metadata['completed_id']);
+    }
+
+    // Project create: data.project.id
+    const project = asRecord(data['project']);
+    if (isString(project['id'])) {
+      if (!ids.includes(project['id'])) ids.push(project['id']);
+    }
+
+    // Folder create: data.folder.folderId or data.folder.id
+    const folder = asRecord(data['folder']);
+    const folderId = folder['folderId'] ?? folder['id'];
+    if (isString(folderId)) {
+      if (!ids.includes(folderId)) ids.push(folderId);
+    }
+
+    // Batch: collect from tempIdMapping values + data.results item ids
+    const tempIdMapping = asRecord(data['tempIdMapping']);
+    for (const realId of Object.values(tempIdMapping)) {
+      if (isString(realId) && !ids.includes(realId)) {
+        ids.push(realId);
+      }
+    }
+
+    const results = Array.isArray(data['results']) ? (data['results'] as unknown[]) : [];
+    for (const item of results) {
+      const itemRec = asRecord(item);
+      const itemId = itemRec['id'];
+      if (isString(itemId) && !ids.includes(itemId)) {
+        ids.push(itemId);
+      }
+    }
+
+    return ids;
+  } catch {
+    return [];
+  }
 }
