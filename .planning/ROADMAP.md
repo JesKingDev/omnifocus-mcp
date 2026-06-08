@@ -32,8 +32,8 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 4: HTTP Edge Hardening** - The HTTP/Tailscale remote path matches the stdio path's guarantees: bearer
       (completed 2026-06-06) auth, loopback bind, DNS-rebinding protection, Serve-only.
 
-- [ ] **Phase 5: Write-Verifier** - Every agent mutation is confirmed by an independent post-mutation read-back with a
-      field-level diff and a reported verification status.
+- [x] **Phase 5: Write-Verifier** - Every agent mutation is confirmed by an independent post-mutation read-back with a
+      (completed 2026-06-08) field-level diff and a reported verification status.
 
 - [ ] **Phase 6: launchd Deployment & ADR** - The hardened server runs as a least-privilege LaunchAgent with an
       Automation-only grant, a fail-fast probe, and a superseding ADR.
@@ -201,7 +201,7 @@ diff, surfacing a verification status so JessOS can trust that writes persisted.
 
 **Wave 3** _(blocked on Wave 2 completion)_
 
-- [ ] 05-05-PLAN.md — Wire WriteVerifier into OmniFocusWriteTool.executeValidated() + integration test GREEN + human
+- [x] 05-05-PLAN.md — Wire WriteVerifier into OmniFocusWriteTool.executeValidated() + integration test GREEN + human
       verify
 
 ### Phase 6: launchd Deployment & ADR
@@ -232,5 +232,5 @@ must be TRUE):
 | 2. Operation Policy (Deny-Deletes & Gating) | 3/3            | Complete    | 2026-06-04 |
 | 3. RoleGate & Agent Read Paths              | 4/4            | Complete    | 2026-06-05 |
 | 4. HTTP Edge Hardening                      | 4/4            | Complete    | 2026-06-06 |
-| 5. Write-Verifier                           | 4/5            | In Progress |            |
+| 5. Write-Verifier                           | 5/5            | Complete    | 2026-06-08 |
 | 6. launchd Deployment & ADR                 | 0/TBD          | Not started | -          |
