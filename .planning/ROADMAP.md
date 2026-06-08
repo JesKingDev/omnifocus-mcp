@@ -184,7 +184,7 @@ diff, surfacing a verification status so JessOS can trust that writes persisted.
 
 **Wave 0**
 
-- [ ] 05-01-PLAN.md — Wave 0 test stubs (WriteVerifier.test.ts, field-comparator.test.ts, write-verifier.test.ts) +
+- [x] 05-01-PLAN.md — Wave 0 test stubs (WriteVerifier.test.ts, field-comparator.test.ts, write-verifier.test.ts) +
       module stubs (WriteVerifier.ts, field-comparator.ts, intent-extractor.ts)
 
 **Wave 1** _(blocked on Wave 0 — plans 02 and 03 run in parallel)_
@@ -232,5 +232,5 @@ must be TRUE):
 | 2. Operation Policy (Deny-Deletes & Gating) | 3/3            | Complete    | 2026-06-04 |
 | 3. RoleGate & Agent Read Paths              | 4/4            | Complete    | 2026-06-05 |
 | 4. HTTP Edge Hardening                      | 4/4            | Complete    | 2026-06-06 |
-| 5. Write-Verifier                           | 0/5            | Not started | -          |
+| 5. Write-Verifier                           | 1/5            | In Progress |            |
 | 6. launchd Deployment & ADR                 | 0/TBD          | Not started | -          |
