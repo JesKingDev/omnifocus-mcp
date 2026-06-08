@@ -2051,3 +2051,80 @@ export function buildTaskCountScript(filter: TaskFilter = {}, options: TaskCount
     isEmptyFilter: isEmptyFilterValue,
   };
 }
+
+// =============================================================================
+// BATCH ID-SET LOOKUP SCRIPT BUILDER (D-13 — write verification read-back)
+// =============================================================================
+
+/**
+ * Build an OmniJS script that fetches multiple tasks by id in a single
+ * osascript spawn. Used by WriteVerifier for post-mutation read-back.
+ *
+ * Runs inside evaluateJavascript — ALL field accesses use OmniJS property
+ * syntax (no trailing parentheses). The id set is embedded as a JSON literal
+ * to prevent injection (T-05-03-02).
+ *
+ * @param ids - Array of task id strings. Must be non-empty; caller enforces
+ *              the Zod max-200 bound before calling this function (D-16).
+ * @returns A GeneratedScript whose `.script` is a JXA outer wrapper that
+ *          calls evaluateJavascript with the OmniJS id-set lookup body.
+ *          The OmniJS body returns `JSON.stringify({ tasks: [...] })`.
+ */
+export function buildTasksByIdSetScript(ids: string[]): GeneratedScript {
+  // Inline the id array as a JSON literal — no raw string interpolation (T-05-03-02).
+  const idsJson = JSON.stringify(ids);
+
+  const omniJsSource = `
+      (() => {
+        const targetIds = ${idsJson};
+        const results = [];
+
+        for (const id of targetIds) {
+          const task = Task.byIdentifier(id);
+          if (!task) continue;
+
+          // All accesses are OmniJS property syntax (no trailing parens).
+          // CRITICAL: task.tags is a property (not task.tags()) — use it directly.
+          results.push({
+            id: task.id.primaryKey,
+            name: task.name,
+            note: task.note,
+            flagged: task.flagged,
+            sequential: task.sequential,
+            estimatedMinutes: task.estimatedMinutes,
+            dueDate: task.dueDate ? task.dueDate.toISOString() : null,
+            deferDate: task.deferDate ? task.deferDate.toISOString() : null,
+            plannedDate: task.plannedDate ? task.plannedDate.toISOString() : null,
+            completionDate: task.completionDate ? task.completionDate.toISOString() : null,
+            tags: task.tags.map(function(t) { return t.name; }),
+            containingProject: task.containingProject ? task.containingProject.id.primaryKey : null
+          });
+        }
+
+        return JSON.stringify({ tasks: results });
+      })()
+    `;
+
+  const script = `
+(() => {
+  const app = Application('OmniFocus');
+
+  try {
+    const omniJsScript = \`${escapeTemplateString(omniJsSource)}\`;
+    return app.evaluateJavascript(omniJsScript);
+  } catch (error) {
+    return JSON.stringify({
+      error: true,
+      message: error.message || String(error),
+      context: 'tasks_by_id_set'
+    });
+  }
+})()
+`;
+
+  return {
+    script: script.trim(),
+    filterDescription: `ids = [${ids.join(', ')}]`,
+    isEmptyFilter: ids.length === 0,
+  };
+}
