@@ -62,6 +62,7 @@ import { flattenBatchResults } from './batch-response-flatten.js';
 import { decide, normalizeArgsToPolicy } from '../../auth/operation-policy.js';
 import type { Role } from '../../contracts/roles.js';
 import { parseRole } from '../../auth/role-resolver.js';
+import { WriteVerifier } from './verifier/WriteVerifier.js';
 
 // Convert string IDs to branded types for type safety (compile-time only, no runtime validation)
 const convertToTaskId = (id: string): TaskId => id as TaskId;
@@ -383,10 +384,12 @@ OPERATION POLICY (agent role):
   };
 
   private compiler: MutationCompiler;
+  private readonly verifier: WriteVerifier;
 
   constructor(cache: CacheManager) {
     super(cache);
     this.compiler = new MutationCompiler();
+    this.verifier = new WriteVerifier(this.execJson.bind(this), this.logger);
   }
 
   async executeValidated(args: WriteInput): Promise<unknown> {
@@ -461,12 +464,14 @@ OPERATION POLICY (agent role):
 
     // Tag management operations
     if (compiled.operation === 'tag_manage') {
-      return this.handleTagManage(compiled);
+      const tagResult = await this.handleTagManage(compiled);
+      return this.verifier.verify(tagResult, {}, compiled, parseRole());
     }
 
     // Folder creation
     if (compiled.operation === 'create_folder') {
-      return this.handleFolderCreate(compiled);
+      const folderResult = await this.handleFolderCreate(compiled);
+      return this.verifier.verify(folderResult, {}, compiled, parseRole());
     }
 
     // Handle dry-run for batch operations
@@ -491,7 +496,8 @@ OPERATION POLICY (agent role):
 
     // Route based on target: task vs project
     if (compiled.target === 'project') {
-      return this.handleProjectOperation(compiled);
+      const projectResult = await this.handleProjectOperation(compiled);
+      return this.verifier.verify(projectResult, {}, compiled, parseRole());
     }
 
     // Route task operations to inline handlers
@@ -521,8 +527,10 @@ OPERATION POLICY (agent role):
           );
       }
 
-      const isSuccess = taskResult && typeof taskResult === 'object' && (taskResult as { success?: boolean }).success;
-      return this.formatForCLI(taskResult, compiled.operation, isSuccess ? 'success' : 'error');
+      const verifiedResult = await this.verifier.verify(taskResult, {}, compiled, parseRole());
+      const isVerifiedSuccess =
+        verifiedResult && typeof verifiedResult === 'object' && (verifiedResult as { success?: boolean }).success;
+      return this.formatForCLI(verifiedResult, compiled.operation, isVerifiedSuccess ? 'success' : 'error');
     } catch (error) {
       const errorResult = this.handleErrorV2<TaskOperationDataV2>(error);
       return this.formatForCLI(errorResult, compiled.operation, 'error');
@@ -1623,7 +1631,7 @@ OPERATION POLICY (agent role):
       }
     }
 
-    return {
+    const batchResult = {
       success: results.errors.length === 0,
       data: {
         operation: 'batch',
@@ -1643,6 +1651,7 @@ OPERATION POLICY (agent role):
         ...batchTimer.toMetadata(),
       },
     };
+    return this.verifier.verify(batchResult, {}, compiled, parseRole());
   }
 
   /**
