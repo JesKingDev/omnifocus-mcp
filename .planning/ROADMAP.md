@@ -196,7 +196,7 @@ diff, surfacing a verification status so JessOS can trust that writes persisted.
 
 **Wave 2** _(blocked on Wave 1 completion)_
 
-- [ ] 05-04-PLAN.md — WriteVerifier.ts full implementation (role guard, skip guard, batched read-back, per-field diff,
+- [x] 05-04-PLAN.md — WriteVerifier.ts full implementation (role guard, skip guard, batched read-back, per-field diff,
       status injection)
 
 **Wave 3** _(blocked on Wave 2 completion)_
@@ -232,5 +232,5 @@ must be TRUE):
 | 2. Operation Policy (Deny-Deletes & Gating) | 3/3            | Complete    | 2026-06-04 |
 | 3. RoleGate & Agent Read Paths              | 4/4            | Complete    | 2026-06-05 |
 | 4. HTTP Edge Hardening                      | 4/4            | Complete    | 2026-06-06 |
-| 5. Write-Verifier                           | 3/5            | In Progress |            |
+| 5. Write-Verifier                           | 4/5            | In Progress |            |
 | 6. launchd Deployment & ADR                 | 0/TBD          | Not started | -          |
