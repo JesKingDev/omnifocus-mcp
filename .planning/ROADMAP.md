@@ -189,9 +189,9 @@ diff, surfacing a verification status so JessOS can trust that writes persisted.
 
 **Wave 1** _(blocked on Wave 0 — plans 02 and 03 run in parallel)_
 
-- [ ] 05-02-PLAN.md — field-comparator.ts (D-05/D-08: date ±60s, tags Set, scalars, absent-field hard fail) +
+- [x] 05-02-PLAN.md — field-comparator.ts (D-05/D-08: date ±60s, tags Set, scalars, absent-field hard fail) +
       intent-extractor.ts + error code constants in response-format.ts
-- [ ] 05-03-PLAN.md — read-schema.ts ids[] filter + OmniFocusReadTool.ts dual-schema update + buildTasksByIdSetScript in
+- [x] 05-03-PLAN.md — read-schema.ts ids[] filter + OmniFocusReadTool.ts dual-schema update + buildTasksByIdSetScript in
       script-builder.ts
 
 **Wave 2** _(blocked on Wave 1 completion)_
@@ -232,5 +232,5 @@ must be TRUE):
 | 2. Operation Policy (Deny-Deletes & Gating) | 3/3            | Complete    | 2026-06-04 |
 | 3. RoleGate & Agent Read Paths              | 4/4            | Complete    | 2026-06-05 |
 | 4. HTTP Edge Hardening                      | 4/4            | Complete    | 2026-06-06 |
-| 5. Write-Verifier                           | 1/5            | In Progress |            |
+| 5. Write-Verifier                           | 3/5            | In Progress |            |
 | 6. launchd Deployment & ADR                 | 0/TBD          | Not started | -          |
