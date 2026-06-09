@@ -6,7 +6,7 @@ import { registerTools } from './tools/index.js';
 import { registerPrompts } from './prompts/index.js';
 import { CacheManager } from './cache/CacheManager.js';
 import { CacheWarmer } from './cache/CacheWarmer.js';
-import { PermissionChecker } from './utils/permissions.js';
+import { probeAutomationOrExit } from './utils/automation-probe.js';
 import { createLogger } from './utils/logger.js';
 import { getVersionInfo } from './utils/version.js';
 import { setPendingOperationsTracker } from './omnifocus/OmniAutomation.js';
@@ -73,22 +73,11 @@ export async function runServer() {
     logger.debug('Failed to get version info:', error);
   }
 
-  // Perform initial permission check (blocking — awaited before the transport connects)
-  const permissionChecker = PermissionChecker.getInstance();
   startupTimer.mark('initEnd');
-  try {
-    const result = await permissionChecker.checkPermissions();
-    if (!result.hasPermission) {
-      logger.warn('OmniFocus permissions not granted. Tools will provide instructions when used.');
-      if (result.instructions) {
-        logger.info('Permission instructions:', result.instructions);
-      }
-    } else {
-      logger.info('OmniFocus permissions verified');
-    }
-  } catch (error) {
-    logger.error('Failed to check permissions:', error);
-  }
+  // Automation permission is gated by the fail-fast probeAutomationOrExit() below
+  // (after cache warm, before any transport binds). It supersedes the former
+  // non-blocking PermissionChecker.checkPermissions() warn path (DEPLOY-03): under
+  // launchd a silent grant loss must exit loudly, not just log a warning.
   startupTimer.mark('permsEnd');
 
   // Warm cache with frequently accessed data (blocking — awaited before the transport connects)
@@ -140,6 +129,10 @@ export async function runServer() {
     }
   }
   startupTimer.mark('warmEnd');
+
+  // Fail-fast Automation gate: verify the OmniFocus grant before binding any transport.
+  // Exits non-zero with a remediation message on denial (1) or timeout (2) — never hangs (DEPLOY-03).
+  await probeAutomationOrExit();
 
   // HTTP mode: identity/role are resolved per-request from bearer tokens (D-10, D-12)
   // stdio mode: identity/role are resolved once at startup from env
