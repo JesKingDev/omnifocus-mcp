@@ -18,16 +18,27 @@ posture — that was locked in Phase 4 and is carried forward below. New capabil
 
 ### Node Runtime Pinning — DEPLOY-01 (TCC grant survival)
 
-- **D-01: Fixed-path binary copy.** Copy Homebrew's `node` to a user-owned stable path (`~/.local/libexec/of-mcp-node`)
-  and overwrite it **in place** on deliberate upgrades. Rationale: macOS TCC resolves symlinks to the canonical
-  `realpath` and keys the Automation grant to that resolved binary path — so _no_ symlink strategy
-  (`/opt/homebrew/bin/node`, the `opt` path, or a hand-rolled link) survives a `brew upgrade` that moves the Cellar
-  target. A path we own, overwritten in place, never changes from TCC's view, so the grant persists. Under launchd a
-  lost grant fails **silently** (no UI to re-prompt), which is the exact failure this defends against.
-- **D-02: plist points at the pinned copy; install + upgrade runbook owns the copy.** `ProgramArguments[0]` is the fixed
-  path from D-01. The install script performs the initial copy; the `brew upgrade` runbook documents the one-line
-  re-copy (`cp "$(brew --prefix)/bin/node" ~/.local/libexec/of-mcp-node`). No ad-hoc code-signing required — TCC keys
-  path-based (unsigned) clients on path, not signature.
+> **Rationale corrected by Phase 6 research (06-RESEARCH.md, 2026-06-09) and user decision.** The original D-01/D-02
+> claim — "TCC keys path-based clients on path, not signature" — is **wrong**. Live `TCC.db` + `codesign` verification
+> on the host proved TCC attributes the Automation grant to the responsible process via a stored `csreq` (designated
+> requirement) that it **re-validates on every access**. Homebrew's `node` is **ad-hoc signed**, so its DR is its
+> **cdhash** (content-derived): re-copying an upgraded brew node to the same fixed path changes the cdhash and **breaks
+> the grant despite an identical path** — defeating the whole point of the pin. The fix keeps the fixed-path shape but
+> changes which binary is pinned.
+
+- **D-01 (amended): Fixed-path copy of a Developer-ID-signed Node.** Pin a **Developer-ID-signed** `node` (official
+  nodejs.org `.pkg` build, or an nvm/official build — NOT Homebrew's ad-hoc-signed node) to a user-owned stable path
+  (`~/.local/libexec/of-mcp-node`), overwritten **in place** on deliberate upgrades. A Developer-ID binary's designated
+  requirement is **identity-based, not cdhash-based**, so an in-place overwrite keeps the same DR and the TCC Automation
+  grant persists across upgrades. Under launchd a lost grant fails **silently** (no consent UI to re-prompt) — the exact
+  failure this defends against. The first-run grant is seeded interactively against this pinned binary as the
+  responsible process; an on-host spike (06-RESEARCH.md, S0–S5, run under `launchctl`) confirms the seeding and survival
+  empirically.
+- **D-02 (amended): plist points at the pinned Developer-ID copy; install + upgrade runbook owns the copy.**
+  `ProgramArguments[0]` is the fixed path from D-01. The install script performs the initial copy from the chosen
+  Developer-ID node source (NOT `$(brew --prefix)/bin/node`); the upgrade runbook documents the one-line in-place
+  re-copy from that same Developer-ID source. Because the DR is identity-based, no interactive re-grant is needed after
+  an upgrade — satisfying the "survives upgrade with no interactive prompt" success criterion.
 
 ### Fail-Fast Permission Probe — DEPLOY-03
 
@@ -71,6 +82,14 @@ posture — that was locked in Phase 4 and is carried forward below. New capabil
   (setting it spawns a new security session that can break the Automation/Apple-Events flow). No `UserName`/`GroupName`
   (those are for system LaunchDaemons), no `Sockets`, no entitlement/FDA keys — a LaunchAgent grants no privilege by
   itself; Automation is the only grant requested, at runtime.
+
+### Probe Reuse Note (from 06-RESEARCH.md)
+
+- `src/utils/permissions.ts` already detects the `-1743` (`errAEEventNotPermitted`) Automation-denial code, but it is
+  **non-blocking** — it logs a warning and never exits. The D-03/D-04 fail-fast probe must **precede or replace** that
+  path so a missing grant produces a loud non-zero exit before any transport binds, not a logged warning.
+- The probe must be validated **under `launchctl`**, not from a terminal: a terminal-run probe inherits the terminal
+  app's Automation grant and gives a false pass.
 
 ### Claude's Discretion
 
