@@ -35,7 +35,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 5: Write-Verifier** - Every agent mutation is confirmed by an independent post-mutation read-back with a
       (completed 2026-06-08) field-level diff and a reported verification status.
 
-- [ ] **Phase 6: launchd Deployment & ADR** - The hardened server runs as a least-privilege LaunchAgent with an
+- [x] **Phase 6: launchd Deployment & ADR** - The hardened server runs as a least-privilege LaunchAgent with an (completed 2026-06-09)
       Automation-only grant, a fail-fast probe, and a superseding ADR.
 
 ## Phase Details
@@ -231,7 +231,7 @@ must be TRUE):
 
 **Wave 2** _(blocked on Wave 1 — needs buildable server + plist + Makefile)_
 
-- [ ] 06-04-PLAN.md — Deployment runbook + on-host TCC spike S0–S5 + ADR 001 vault back-reference (DEPLOY-01/04)
+- [x] 06-04-PLAN.md — Deployment runbook + on-host TCC spike S0–S5 + ADR 001 vault back-reference (DEPLOY-01/04)
 
 ## Progress
 
@@ -244,4 +244,4 @@ must be TRUE):
 | 3. RoleGate & Agent Read Paths              | 4/4            | Complete    | 2026-06-05 |
 | 4. HTTP Edge Hardening                      | 4/4            | Complete    | 2026-06-06 |
 | 5. Write-Verifier                           | 5/5            | Complete    | 2026-06-08 |
-| 6. launchd Deployment & ADR                 | 3/4            | In Progress |            |
+| 6. launchd Deployment & ADR                 | 4/4 | Complete    | 2026-06-09 |

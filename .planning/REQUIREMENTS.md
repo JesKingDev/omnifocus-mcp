@@ -78,13 +78,13 @@ Requirements for this hardening milestone. Each maps to a roadmap phase.
 
 ### Deployment
 
-- [ ] **DEPLOY-01**: The server runs as a macOS LaunchAgent with a pinned, stable Node binary path (survives
+- [x] **DEPLOY-01**: The server runs as a macOS LaunchAgent with a pinned, stable Node binary path (survives
       `brew upgrade` without losing the TCC grant).
-- [ ] **DEPLOY-02**: The deployment requests Automation (Apple Events) permission only — no Full Disk Access, no open
+- [x] **DEPLOY-02**: The deployment requests Automation (Apple Events) permission only — no Full Disk Access, no open
       network.
-- [ ] **DEPLOY-03**: Startup includes a fail-fast Automation-permission probe that errors loudly (does not hang) when
+- [x] **DEPLOY-03**: Startup includes a fail-fast Automation-permission probe that errors loudly (does not hang) when
       the grant is missing or revoked.
-- [ ] **DEPLOY-04**: A new ADR documents the deployment posture (localhost default / Tailscale optional / cloud ruled
+- [x] **DEPLOY-04**: A new ADR documents the deployment posture (localhost default / Tailscale optional / cloud ruled
       out by the Mac pin) and the security model, superseding ADR 001.
 
 ## v2 Requirements
@@ -151,10 +151,10 @@ confirms the research's strict bottom-up dependency order; no coverage gap found
 | VERIFY-01   | Phase 5 — Write-Verifier                           | Pending  |
 | VERIFY-02   | Phase 5 — Write-Verifier                           | Pending  |
 | VERIFY-03   | Phase 5 — Write-Verifier                           | Pending  |
-| DEPLOY-01   | Phase 6 — launchd Deployment & ADR                 | Pending  |
-| DEPLOY-02   | Phase 6 — launchd Deployment & ADR                 | Pending  |
-| DEPLOY-03   | Phase 6 — launchd Deployment & ADR                 | Pending  |
-| DEPLOY-04   | Phase 6 — launchd Deployment & ADR                 | Pending  |
+| DEPLOY-01   | Phase 6 — launchd Deployment & ADR                 | Complete |
+| DEPLOY-02   | Phase 6 — launchd Deployment & ADR                 | Complete |
+| DEPLOY-03   | Phase 6 — launchd Deployment & ADR                 | Complete |
+| DEPLOY-04   | Phase 6 — launchd Deployment & ADR                 | Complete |
 
 **Coverage:**
 
