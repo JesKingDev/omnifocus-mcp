@@ -126,20 +126,30 @@ launchctl kickstart -k gui/$(id -u)/com.kip-d.omnifocus-mcp
 > Record pass/fail, any `-1743` observations, the S2 TCC.db row if captured, and the S6 created-task id / read-back
 > confirmation.
 
-| Step                                 | What it proves                                                                                                                          | Result    | Notes                                 |
-| ------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------- | --------- | ------------------------------------- |
-| **S0**                               | Pinned Node has an identity-based DR (`codesign -d -r-` shows `identifier "node" and anchor apple generic …`, not a cdhash)             | _pending_ |                                       |
-| **S1**                               | One-time interactive prompt names Node; grant seeded as responsible process                                                             | _pending_ |                                       |
-| **S2**                               | TCC.db row for `kTCCServiceAppleEvents` / OmniFocus keyed to the pinned Node, `auth_value=2` (optional; needs FDA)                      | _pending_ |                                       |
-| **S3**                               | `make install` → clean LaunchAgent start, no `-1743`, no prompt                                                                         | _pending_ |                                       |
-| **S4 (Developer-ID)**                | In-place overwrite with a different Developer-ID Node version → grant survives, **no re-prompt** (core survival test)                   | _pending_ |                                       |
-| **S4 (Homebrew contrast, optional)** | In-place overwrite with Homebrew's ad-hoc Node → `-1743` failure reproduced                                                             | _pending_ |                                       |
-| **S5**                               | Revoke grant + kickstart → ONE `exit(1)` with remediation, agent stays **down** (no restart loop)                                       | _pending_ |                                       |
-| **S6**                               | Real `omnifocus_write` create + `omnifocus_read` read-back under `launchctl`, **no interactive prompt** (the verified end-to-end write) | _pending_ | created task id: **_ ; read-back: _** |
+_Run 2026-06-09 by the host operator. S0–S3 executed under `launchctl`; S4/S5/S6 deferred by operator decision (risk
+accepted — see notes)._
+
+| Step                                 | What it proves                                                                                                                          | Result     | Notes                                                                                                                                                                                             |
+| ------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------- | ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **S0**                               | Pinned Node has an identity-based DR (`codesign -d -r-` shows `identifier "node" and anchor apple generic …`, not a cdhash)             | ✅ PASS    | Clean.                                                                                                                                                                                            |
+| **S1**                               | One-time interactive prompt names Node; grant seeded as responsible process                                                             | ✅ PASS    | Prompt appeared and was approved.                                                                                                                                                                 |
+| **S2**                               | TCC.db row for `kTCCServiceAppleEvents` / OmniFocus keyed to the pinned Node, `auth_value=2` (optional; needs FDA)                      | — not run  | Optional inspection step; skipped.                                                                                                                                                                |
+| **S3**                               | `make install` → clean LaunchAgent start, no `-1743`, no prompt                                                                         | ✅ PASS    | Clean start under `launchctl`, no `-1743`.                                                                                                                                                        |
+| **S4 (Developer-ID)**                | In-place overwrite with a different Developer-ID Node version → grant survives, **no re-prompt** (core survival test)                   | ⏸ DEFERRED | Risk accepted by operator; to verify on the first real Node upgrade. The identity-based DR (S0) is the mechanism that makes survival expected.                                                    |
+| **S4 (Homebrew contrast, optional)** | In-place overwrite with Homebrew's ad-hoc Node → `-1743` failure reproduced                                                             | — not run  | Optional contrast; skipped.                                                                                                                                                                       |
+| **S5**                               | Revoke grant + kickstart → ONE `exit(1)` with remediation, agent stays **down** (no restart loop)                                       | ⏸ DEFERRED | Risk accepted. NOTE: under `launchd` there is **no** re-grant prompt — a lost grant surfaces as a loud `-1743` line in `server.err` + a down agent; re-grant via System Settings, then kickstart. |
+| **S6**                               | Real `omnifocus_write` create + `omnifocus_read` read-back under `launchctl`, **no interactive prompt** (the verified end-to-end write) | ⏸ DEFERRED | The end-to-end write round-trip was not exercised on-host. S0–S3 prove the LaunchAgent's read probe passes under the grant; the write round-trip remains to be confirmed.                         |
 
 **Spike S0–S6 commands:** see [`06-RESEARCH.md`](../../.planning/phases/06-launchd-deployment-adr/06-RESEARCH.md)
 (Verification Spike section). S6 extends the read-only S0–S5 sequence with a live write round-trip to satisfy success
 criterion 1 (a verified end-to-end write under `launchctl`).
+
+> **Deferred verification debt (DEPLOY-01 / DEPLOY-04):** S4 (upgrade survival), S5 (no restart loop), and S6 (write
+> round-trip) are the host-only proofs of DEPLOY-01's "verified" clause. They are recorded as deferred by operator
+> decision, not failed. The reciprocal ADR 001 back-reference (Task 3, DEPLOY-04) is also deferred — ADR 001 was not
+> located as a discrete file in the JessOS vault; add
+> `Superseded by ADR 005 — omnifocus-mcp repo, docs/adr/ADR-005-deployment-posture.md` if/when it surfaces. ADR-005
+> already carries the forward `Supersedes ADR 001`.
 
 ---
 
