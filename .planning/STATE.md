@@ -4,11 +4,11 @@ milestone: hardening
 milestone_name:
   '**Goal**: The HTTP/Tailscale remote path enforces the same guarantees as stdio — per-request bearer auth with'
 status: Phase 05 complete
-last_updated: '2026-06-09T13:54:37.500Z'
+last_updated: '2026-06-09T14:25:06.298Z'
 progress:
   total_phases: 3
   completed_phases: 2
-  total_plans: 9
+  total_plans: 13
   completed_plans: 9
   percent: 67
 ---
@@ -20,11 +20,11 @@ progress:
 See: .planning/PROJECT.md (updated 2026-06-03)
 
 **Core value:** The agent can read and write OmniFocus tasks safely — no silent write failures, no destructive deletes —
-so JessOS can trust OmniFocus as the source of truth. **Current focus:** Phase 05 — write-verifier
+so JessOS can trust OmniFocus as the source of truth. **Current focus:** Phase 06 — launchd-deployment-adr
 
 ## Current Position
 
-Phase: 05 — COMPLETE
+Phase: 06 (launchd-deployment-adr) — EXECUTING Plan: 1 of 4
 
 Progress: [▓▓▓▓▓▓▓░░░] 67%
 
