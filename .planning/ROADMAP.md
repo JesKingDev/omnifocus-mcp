@@ -224,10 +224,10 @@ must be TRUE):
 
 **Wave 1** _(probe, ADR, and deploy artifacts are independent — run in parallel)_
 
-- [ ] 06-01-PLAN.md — Fail-fast Automation probe (automation-probe.ts) + wire into runServer before transport bind
+- [x] 06-01-PLAN.md — Fail-fast Automation probe (automation-probe.ts) + wire into runServer before transport bind
       (DEPLOY-03)
-- [ ] 06-02-PLAN.md — ADR-005 deployment-posture (Nygard, supersedes ADR 001) (DEPLOY-04)
-- [ ] 06-03-PLAN.md — Least-privilege LaunchAgent plist template + Makefile install/uninstall (DEPLOY-01/02)
+- [x] 06-02-PLAN.md — ADR-005 deployment-posture (Nygard, supersedes ADR 001) (DEPLOY-04)
+- [x] 06-03-PLAN.md — Least-privilege LaunchAgent plist template + Makefile install/uninstall (DEPLOY-01/02)
 
 **Wave 2** _(blocked on Wave 1 — needs buildable server + plist + Makefile)_
 
@@ -237,11 +237,11 @@ must be TRUE):
 
 **Execution Order:** Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6
 
-| Phase                                       | Plans Complete | Status   | Completed  |
-| ------------------------------------------- | -------------- | -------- | ---------- |
-| 1. Role Model & Resolver                    | 3/3            | Complete | 2026-06-03 |
-| 2. Operation Policy (Deny-Deletes & Gating) | 3/3            | Complete | 2026-06-04 |
-| 3. RoleGate & Agent Read Paths              | 4/4            | Complete | 2026-06-05 |
-| 4. HTTP Edge Hardening                      | 4/4            | Complete | 2026-06-06 |
-| 5. Write-Verifier                           | 5/5            | Complete | 2026-06-08 |
-| 6. launchd Deployment & ADR                 | 0/4            | Planned  | -          |
+| Phase                                       | Plans Complete | Status      | Completed  |
+| ------------------------------------------- | -------------- | ----------- | ---------- |
+| 1. Role Model & Resolver                    | 3/3            | Complete    | 2026-06-03 |
+| 2. Operation Policy (Deny-Deletes & Gating) | 3/3            | Complete    | 2026-06-04 |
+| 3. RoleGate & Agent Read Paths              | 4/4            | Complete    | 2026-06-05 |
+| 4. HTTP Edge Hardening                      | 4/4            | Complete    | 2026-06-06 |
+| 5. Write-Verifier                           | 5/5            | Complete    | 2026-06-08 |
+| 6. launchd Deployment & ADR                 | 3/4            | In Progress |            |
