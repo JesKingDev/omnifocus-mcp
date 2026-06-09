@@ -63,11 +63,11 @@ Requirements for this hardening milestone. Each maps to a roadmap phase.
 
 ### Write Verification
 
-- [ ] **VERIFY-01**: Every agent mutation is confirmed by an independent post-mutation read-back — a separate
+- [x] **VERIFY-01**: Every agent mutation is confirmed by an independent post-mutation read-back — a separate
       round-trip, not an in-script read of the same context.
-- [ ] **VERIFY-02**: The read-back performs a field-level diff against the intended change and fails explicitly on
+- [x] **VERIFY-02**: The read-back performs a field-level diff against the intended change and fails explicitly on
       mismatch.
-- [ ] **VERIFY-03**: Each mutation response reports a verification status of `verified | unverified | skipped`.
+- [x] **VERIFY-03**: Each mutation response reports a verification status of `verified | unverified | skipped`.
 
 ### Read & Surfacing
 
@@ -148,9 +148,9 @@ confirms the research's strict bottom-up dependency order; no coverage gap found
 | HTTP-03     | Phase 4 — HTTP Edge Hardening                      | Complete |
 | HTTP-04     | Phase 4 — HTTP Edge Hardening                      | Complete |
 | HTTP-05     | Phase 4 — HTTP Edge Hardening                      | Complete |
-| VERIFY-01   | Phase 5 — Write-Verifier                           | Pending  |
-| VERIFY-02   | Phase 5 — Write-Verifier                           | Pending  |
-| VERIFY-03   | Phase 5 — Write-Verifier                           | Pending  |
+| VERIFY-01   | Phase 5 — Write-Verifier                           | Complete |
+| VERIFY-02   | Phase 5 — Write-Verifier                           | Complete |
+| VERIFY-03   | Phase 5 — Write-Verifier                           | Complete |
 | DEPLOY-01   | Phase 6 — launchd Deployment & ADR                 | Complete |
 | DEPLOY-02   | Phase 6 — launchd Deployment & ADR                 | Complete |
 | DEPLOY-03   | Phase 6 — launchd Deployment & ADR                 | Complete |
@@ -164,4 +164,5 @@ confirms the research's strict bottom-up dependency order; no coverage gap found
 
 ---
 
-_Requirements defined: 2026-06-03_ _Last updated: 2026-06-03 after roadmap traceability finalized_
+_Requirements defined: 2026-06-03_ _Last updated: 2026-06-09 — VERIFY-01/02/03 marked Complete per Phase 5 verification
+(milestone audit doc-sync)._
