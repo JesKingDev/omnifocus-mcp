@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  LaunchAgent template for com.kip-d.omnifocus-mcp.
+  TEMPLATE — placeholders are substituted by `make install`. Do NOT use this file directly.
+
+  Placeholders filled by make install:
+    __NODE_BINARY__       → ~/.local/libexec/of-mcp-node  (absolute, ~ not expanded by launchd)
+    __SERVER_ENTRYPOINT__ → absolute path to dist/index.js
+    __LOG_DIR__           → ~/Library/Logs/omnifocus-mcp  (absolute)
+    __MCP_AGENT_TOKEN__   → bearer token for agent callers
+    __MCP_OWNER_TOKEN__   → bearer token for owner callers
+
+  Security posture (DEPLOY-02, ADR-005):
+    - Requests Automation only — no Full Disk Access, no entitlements, no Sockets.
+    - SessionCreate unset — preserves the Apple-Events responsibility chain (D-09).
+    - KeepAlive={Crashed=true} — restarts only on signal-crash (SIGILL/SIGSEGV).
+      A clean process.exit(1) or exit(2) from the Automation probe stays DOWN. (D-08)
+    - ProcessType=Background — background resource limits; not interactive. (D-09)
+    - No UserName/GroupName — those are for system LaunchDaemons; this is a per-user LaunchAgent.
+
+  See docs/adr/ADR-005-deployment-posture.md for rationale.
+-->
+<plist version="1.0">
+<dict>
+
+  <key>Label</key>
+  <string>com.kip-d.omnifocus-mcp</string>
+
+  <!-- ProgramArguments[0] is the responsible process for TCC Automation attribution.
+       Pin a Developer-ID-signed node (NOT Homebrew ad-hoc) so the designated requirement
+       is identity-based and survives in-place overwrite on upgrade. (D-01, D-02) -->
+  <key>ProgramArguments</key>
+  <array>
+    <string>__NODE_BINARY__</string>
+    <string>__SERVER_ENTRYPOINT__</string>
+  </array>
+
+  <!-- Run once on load / reboot. -->
+  <key>RunAtLoad</key>
+  <true/>
+
+  <!-- Restart ONLY on signal-induced crash (SIGILL, SIGSEGV, etc.).
+       process.exit(1/2) from the fail-fast Automation probe is a CLEAN exit —
+       launchd does NOT restart, preventing a restart-loop on permission denial. -->
+  <key>KeepAlive</key>
+  <dict>
+    <key>Crashed</key>
+    <true/>
+  </dict>
+
+  <!-- Minimum seconds between respawns (default is 10; explicit for clarity). -->
+  <key>ThrottleInterval</key>
+  <integer>10</integer>
+
+  <!-- Background daemon — not directly requested by the user;
+       applies background CPU/IO resource limits. -->
+  <key>ProcessType</key>
+  <string>Background</string>
+
+  <!-- Log paths. make install creates ~/Library/Logs/omnifocus-mcp/ before bootstrapping. -->
+  <key>StandardOutPath</key>
+  <string>__LOG_DIR__/server.log</string>
+
+  <key>StandardErrorPath</key>
+  <string>__LOG_DIR__/server.err</string>
+
+  <!-- Bearer tokens injected at install time. NEVER commit real values.
+       Placeholders are replaced by make install using the caller-supplied env vars. -->
+  <key>EnvironmentVariables</key>
+  <dict>
+    <key>MCP_AGENT_TOKEN</key>
+    <string>__MCP_AGENT_TOKEN__</string>
+    <key>MCP_OWNER_TOKEN</key>
+    <string>__MCP_OWNER_TOKEN__</string>
+  </dict>
+
+</dict>
+</plist>
