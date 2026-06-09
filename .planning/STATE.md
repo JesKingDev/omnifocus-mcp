@@ -4,13 +4,13 @@ milestone: hardening
 milestone_name:
   '**Goal**: The HTTP/Tailscale remote path enforces the same guarantees as stdio — per-request bearer auth with'
 status: Phase 05 complete
-last_updated: '2026-06-08T22:37:35.714Z'
+last_updated: '2026-06-09T13:54:37.500Z'
 progress:
-  total_phases: 6
-  completed_phases: 5
-  total_plans: 19
-  completed_plans: 19
-  percent: 83
+  total_phases: 3
+  completed_phases: 2
+  total_plans: 9
+  completed_plans: 9
+  percent: 67
 ---
 
 # Project State
@@ -118,4 +118,4 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-06-06T03:05:03.719Z
+Last session: 2026-06-09T13:54:37.495Z
