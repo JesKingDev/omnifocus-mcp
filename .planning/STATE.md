@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: hardening
 milestone_name:
   '**Goal**: The HTTP/Tailscale remote path enforces the same guarantees as stdio — per-request bearer auth with'
-status: milestone_complete
-last_updated: 2026-06-09T16:28:58.854Z
+status: Awaiting next milestone
+last_updated: '2026-06-09T19:26:59.209Z'
+last_activity: 2026-06-09 — Milestone hardening completed and archived
 progress:
   total_phases: 3
-  completed_phases: 2
+  completed_phases: 3
   total_plans: 13
-  completed_plans: 23
-  percent: 67
-stopped_at: Milestone complete (Phase 06 was final phase)
+  completed_plans: 13
+  percent: 100
 ---
 
 # Project State
@@ -25,9 +25,8 @@ so JessOS can trust OmniFocus as the source of truth. **Current focus:** Milesto
 
 ## Current Position
 
-Phase: 06 of 4 (launchd-deployment-adr)
-
-Progress: [▓▓▓▓▓▓▓░░░] 67%
+Phase: Milestone hardening complete Plan: — Status: Awaiting next milestone Last activity: 2026-06-09 — Milestone
+hardening completed and archived
 
 ## Performance Metrics
 
@@ -44,7 +43,7 @@ Progress: [▓▓▓▓▓▓▓░░░] 67%
 | 02    | 3     | -     | -        |
 | 03    | 4     | -     | -        |
 | 04    | 4     | -     | -        |
-| 06 | 4 | - | - |
+| 06    | 4     | -     | -        |
 
 **Recent Trend:**
 
@@ -112,12 +111,22 @@ None yet.
 
 ## Deferred Items
 
-Items acknowledged and carried forward from previous milestone close:
+Items acknowledged and deferred at the `hardening` milestone close on 2026-06-09 (risk-accepted; documented in
+`milestones/hardening-MILESTONE-AUDIT.md`):
 
-| Category | Item | Status | Deferred At |
-| -------- | ---- | ------ | ----------- |
-| _(none)_ |      |        |             |
+| Category         | Item                                                                                                                 | Status  | Deferred At |
+| ---------------- | -------------------------------------------------------------------------------------------------------------------- | ------- | ----------- |
+| uat_gap          | Phase 04 — Tailscale `serve` (not `funnel`) operational verification on the host (HTTP-04)                           | partial | 2026-06-09  |
+| verification_gap | Phase 04 — 04-VERIFICATION.md `human_needed` (same Tailscale-Serve operational check)                                | open    | 2026-06-09  |
+| uat_gap          | Phase 06 — host spikes S4/S5/S6 under `launchctl` (node-overwrite grant survival, no restart-loop, write round-trip) | partial | 2026-06-09  |
+
+**Trigger to close:** Phase 06 S4 becomes free to verify on the first real Node upgrade on the host. Phase 04 + S5/S6
+need a deliberate on-Mac session per `deploy/launchd/RUNBOOK.md`.
 
 ## Session Continuity
 
 Last session: 2026-06-09T13:54:37.495Z
+
+## Operator Next Steps
+
+- Start the next milestone with /gsd-new-milestone

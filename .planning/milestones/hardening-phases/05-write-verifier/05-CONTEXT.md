@@ -69,7 +69,7 @@ these — not WHETHER.
 ### Verification Scope
 
 - **D-09:** **Verify every mutating AGENT op** — create, update (including defer/reschedule and flag), complete, tag
-  assignment, task move, project ops, folder create, and tag_manage. Move and tag-assign are the _documented_
+  assignment, task move, project ops, folder create, and tag*manage. Move and tag-assign are the \_documented*
   silent-no-op offenders (SETTER-PATTERNS rows 6–7), so they are explicitly in scope and get a **relationship-shaped
   read-back extractor** rather than a scalar compare.
 - **D-10:** **Batch verifies every item**, routed through the same per-item verifier the single path uses, at the
