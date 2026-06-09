@@ -3,26 +3,26 @@ milestone: hardening
 audited: 2026-06-09
 status: tech_debt
 scores:
-  requirements: 28/28 substantively satisfied (3 with deferred/stale bookkeeping)
+  requirements: 28/28 substantively satisfied (1 with deferred host verification — DEPLOY-01)
   phases: 6/6 shipped (5 with VERIFICATION.md; Phase 6 verified via VALIDATION + HUMAN-UAT)
   integration: pass (tsc clean, 2375/2375 unit tests green)
   flows: agent read/write path green in unit + Phase 5 live integration; launchd host path host-verification deferred
 gaps: {} # No critical blockers — nothing unsatisfied, orphaned, or broken
+resolved_during_audit: # Doc-sync pass 2026-06-09 (option B)
+  - 'VERIFY-01/02/03 traceability corrected: REQUIREMENTS.md boxes flipped to [x] and traceability table set to
+    Complete, matching 05-VERIFICATION.md (passed, 7/7).'
+  - "DEPLOY-04 confirmed fully satisfied (not partial): ADR 001 IS in the vault
+    (03-resources/decisions/001-obsidian-tasks-plugin.md); it carries status: superseded + superseded_by:
+    [[005-deployment-posture]], and ADR-005 carries supersedes: [[001-obsidian-tasks-plugin]]. Bidirectional link
+    present. The earlier HUMAN-UAT 'not located' note was a false negative; 06-HUMAN-UAT.md item 4 marked PASS."
 tech_debt:
-  - phase: 05-write-verifier
-    items:
-      - "REQUIREMENTS.md traceability stale: VERIFY-01/02/03 still marked 'Pending' with [ ] boxes, but
-        05-VERIFICATION.md (status: passed, 7/7) marks all three SATISFIED with evidence. Documentation drift, not a
-        functional gap."
   - phase: 06-launchd-deployment-adr
     items:
       - 'No 06-VERIFICATION.md — Phase 6 was verified via VALIDATION.md + HUMAN-UAT.md instead (TCC behavior is not
-        unit-testable). Formal verification artifact absent.'
+        unit-testable). Formal verification artifact absent (acceptable; documented).'
       - 'DEPLOY-01 on-host end-to-end verification deferred: host spikes S4 (node-overwrite grant survival), S5 (no
         restart-loop on denial), S6 (write round-trip under launchctl) pending. Risk-accepted by operator 2026-06-09.
-        Software complete; S0–S3 passed clean.'
-      - "DEPLOY-04 vault back-reference deferred: ADR-005 carries 'Supersedes ADR 001' + forward ref, but reverse link
-        in JessOS vault ADR 001 not added (ADR 001 not located as a discrete file). Risk-accepted 2026-06-09."
+        Software complete; S0–S3 passed clean. First real node upgrade is the natural trigger for S4.'
 nyquist:
   compliant_phases: [01]
   partial_phases: [03, 04, 05, 06]
@@ -56,15 +56,16 @@ flowchart TD
     M --> P5["Phase 5 · Write-Verifier<br/>PASSED ✓"]:::done
     M --> P6["Phase 6 · launchd Deploy<br/>SHIPPED · host-verify deferred"]:::partial
 
-    P5 --> D1["Debt: VERIFY-01/02/03<br/>stale 'Pending' in traceability"]:::debt
-    P6 --> D2["Debt: no VERIFICATION.md<br/>verified via VALIDATION+UAT"]:::debt
+    P6 --> D2["Debt: no VERIFICATION.md<br/>verified via VALIDATION+UAT (OK)"]:::debt
     P6 --> D3["Debt: DEPLOY-01 host spikes<br/>S4/S5/S6 deferred (risk-accepted)"]:::debt
-    P6 --> D4["Debt: DEPLOY-04 vault ADR 001<br/>back-reference deferred"]:::debt
+
+    M --> R["Resolved in audit doc-sync:<br/>VERIFY traceability · DEPLOY-04 link"]:::fixed
 
     classDef root fill:#2f4858,stroke:#1d2d38,color:#fff;
     classDef done fill:#cfe3d4,stroke:#6b9e7c,color:#1d3325;
     classDef partial fill:#e6dcc3,stroke:#b39a5b,color:#3a3220;
     classDef debt fill:#dfe7ef,stroke:#7a93ac,color:#243240;
+    classDef fixed fill:#bcd6c6,stroke:#5c8a6f,color:#1d3325;
 ```
 
 ## Requirements Coverage (28 total)
@@ -78,24 +79,24 @@ flowchart TD
 | Role Gate          | GATE-01/02/03        | 3     | VERIFICATION: passed (6/6); SUMMARY frontmatter lists all                                                      | **Satisfied**                         |
 | Read & Surfacing   | READ-01/02/03        | 3     | VERIFICATION: passed; SUMMARY frontmatter lists all                                                            | **Satisfied**                         |
 | HTTP Edge          | HTTP-01…05           | 4     | VERIFICATION: human_needed (9/9 code-verified); HTTP-04 is an operational Tailscale-Serve check, risk-accepted | **Satisfied** (op-verification noted) |
-| Write Verification | VERIFY-01/02/03      | 5     | VERIFICATION: passed (7/7), coverage table marks all SATISFIED — **but traceability still says "Pending"**     | **Satisfied** · traceability stale    |
+| Write Verification | VERIFY-01/02/03      | 5     | VERIFICATION: passed (7/7), coverage table marks all SATISFIED; traceability corrected to Complete (doc-sync)  | **Satisfied**                         |
 | Deployment         | DEPLOY-02, DEPLOY-03 | 6     | plist least-priv (source-checkable) + fail-fast probe (unit-tested, green)                                     | **Satisfied**                         |
+| Deployment         | DEPLOY-04            | 6     | ADR-005 supersedes ADR 001; vault ADR 001 carries reverse `superseded_by` link — bidirectional, confirmed      | **Satisfied**                         |
 | Deployment         | DEPLOY-01            | 6     | Software complete; on-host end-to-end write (spikes S4/S6) **deferred, risk-accepted**                         | **Partial** (accepted debt)           |
-| Deployment         | DEPLOY-04            | 6     | ADR-005 created w/ "Supersedes ADR 001"; vault back-reference deferred                                         | **Partial** (accepted debt)           |
 
 **FAIL gate:** no requirement is `unsatisfied`, `orphaned`, or failed verification. All 28 appear in a phase
 verification/validation artifact. → gate does not force `gaps_found`.
 
 ## Phases
 
-| Phase                     | Verification Artifact             | Status                           | Notes                                                                                     |
-| ------------------------- | --------------------------------- | -------------------------------- | ----------------------------------------------------------------------------------------- |
-| 1 — Role Model & Resolver | 01-VERIFICATION.md                | ✓ verified                       | Human live-startup check resolved 2026-06-03                                              |
-| 2 — Operation Policy      | 02-VERIFICATION.md                | ✓ passed                         | —                                                                                         |
-| 3 — RoleGate & Reads      | 03-VERIFICATION.md                | ✓ passed                         | Flagged READ checkbox drift (since fixed); 3 non-blocking cleanup warnings (WR-01/02/03)  |
-| 4 — HTTP Edge             | 04-VERIFICATION.md                | ✓ human_needed                   | 9/9 code-verified; HTTP-04 Tailscale-Serve is an operational on-host check, risk-accepted |
-| 5 — Write-Verifier        | 05-VERIFICATION.md                | ✓ passed                         | 7/7; live OmniFocus integration GREEN with `verification_status: verified`                |
-| 6 — launchd Deployment    | **none** (VALIDATION + HUMAN-UAT) | ⚡ shipped, host-verify deferred | TCC not unit-testable; S0–S3 passed clean; S4/S5/S6 + vault back-ref deferred             |
+| Phase                     | Verification Artifact             | Status                           | Notes                                                                                                         |
+| ------------------------- | --------------------------------- | -------------------------------- | ------------------------------------------------------------------------------------------------------------- |
+| 1 — Role Model & Resolver | 01-VERIFICATION.md                | ✓ verified                       | Human live-startup check resolved 2026-06-03                                                                  |
+| 2 — Operation Policy      | 02-VERIFICATION.md                | ✓ passed                         | —                                                                                                             |
+| 3 — RoleGate & Reads      | 03-VERIFICATION.md                | ✓ passed                         | Flagged READ checkbox drift (since fixed); 3 non-blocking cleanup warnings (WR-01/02/03)                      |
+| 4 — HTTP Edge             | 04-VERIFICATION.md                | ✓ human_needed                   | 9/9 code-verified; HTTP-04 Tailscale-Serve is an operational on-host check, risk-accepted                     |
+| 5 — Write-Verifier        | 05-VERIFICATION.md                | ✓ passed                         | 7/7; live OmniFocus integration GREEN with `verification_status: verified`                                    |
+| 6 — launchd Deployment    | **none** (VALIDATION + HUMAN-UAT) | ⚡ shipped, host-verify deferred | TCC not unit-testable; S0–S3 passed clean; S4/S5/S6 deferred (risk-accepted). ADR back-ref confirmed present. |
 
 ## Cross-Phase Integration
 
@@ -136,9 +137,11 @@ reconciled.
 ## Verdict
 
 All 28 requirements are substantively delivered and the full suite is green. The milestone is **functionally complete**.
-What stands between here and a clean archive is bookkeeping plus operator-deferred on-host verification — all four debt
-items are either documentation drift or consciously risk-accepted on 2026-06-09. None blocks shipping.
+The 2026-06-09 doc-sync pass closed the two bookkeeping items (VERIFY-01/02/03 traceability; DEPLOY-04 confirmed
+bidirectional, not partial). What remains is a single thread of operator-deferred, risk-accepted on-host verification
+for Phase 6 (DEPLOY-01 spikes S4/S5/S6) plus the noted absence of a formal Phase 6 VERIFICATION.md. Neither blocks
+shipping; both are consciously carried into the archive.
 
 ---
 
-_Audited 2026-06-09 · `/gsd-audit-milestone`_
+_Audited 2026-06-09 · `/gsd-audit-milestone` · doc-sync pass applied 2026-06-09_
