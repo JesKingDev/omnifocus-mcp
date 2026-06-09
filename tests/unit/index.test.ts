@@ -52,15 +52,9 @@ const CacheWarmerMock = vi.fn((_cache, options) => {
   return instance;
 });
 
-const permissionCheckerInstance = {
-  checkPermissions: vi.fn(() => Promise.resolve({ hasPermission: true })),
-};
-const getPermissionCheckerMock = vi.fn(() => permissionCheckerInstance);
-class MockPermissionChecker {
-  static getInstance() {
-    return getPermissionCheckerMock();
-  }
-}
+// DEPLOY-03: the fail-fast Automation probe supersedes the old non-blocking
+// PermissionChecker.checkPermissions() warn path. A clean probe resolves without exiting.
+const probeAutomationOrExitMock = vi.fn(() => Promise.resolve());
 
 const loggerInstance = { info: vi.fn(), warn: vi.fn(), error: vi.fn(), debug: vi.fn() };
 const createLoggerMock = vi.fn(() => loggerInstance);
@@ -105,8 +99,8 @@ vi.mock('../../src/cache/CacheWarmer.js', () => ({
   CacheWarmer: CacheWarmerMock,
 }));
 
-vi.mock('../../src/utils/permissions.js', () => ({
-  PermissionChecker: MockPermissionChecker,
+vi.mock('../../src/utils/automation-probe.js', () => ({
+  probeAutomationOrExit: probeAutomationOrExitMock,
 }));
 
 vi.mock('../../src/utils/logger.js', () => ({
@@ -157,8 +151,7 @@ describe('server entrypoint', () => {
     );
     registerPromptsMock.mockClear();
     setPendingOperationsTrackerMock.mockClear();
-    getPermissionCheckerMock.mockClear();
-    permissionCheckerInstance.checkPermissions.mockClear();
+    probeAutomationOrExitMock.mockClear();
     createLoggerMock.mockClear();
     lastRegisteredPendingOps = undefined;
     resetEnv({ MCP_SKIP_AUTO_START: 'true' });
@@ -203,7 +196,7 @@ describe('server entrypoint', () => {
     expect(cacheWarmer.warmCache).toHaveBeenCalledTimes(1);
     expect(cacheManager.getStats).toHaveBeenCalledTimes(1);
     expect(serverConnectMock).toHaveBeenCalledWith(transport);
-    expect(permissionCheckerInstance.checkPermissions).toHaveBeenCalledTimes(1);
+    expect(probeAutomationOrExitMock).toHaveBeenCalledTimes(1);
   });
 
   it('emits the OWNER startup role line when OMNIFOCUS_MCP_ROLE=owner (D-09 / ROLE-03)', async () => {
