@@ -130,7 +130,10 @@ JXA `task.tags = …` and `task.addTags()` silently no-op. Assign tags via OmniJ
 
 ## Code & Writing Standards
 
-- **TypeScript only** - Never create `.js` files. Follow existing patterns in the codebase.
+- **TypeScript only** - Never create `.js` files. Follow existing patterns in the codebase. **Exception:** throwaway
+  `osascript -l JavaScript` probe scripts under `tests/manual/` and `probes/` may be `.js` — `osascript` executes raw
+  JXA and cannot run compiled TypeScript (existing precedent: `tests/manual/perspectives/*.js`,
+  `docs/jxa-test-utilities.js`).
 - **Markdown for documentation** - Apply Elements of Style: tables over prose, omit needless words, active voice.
 - **Build before running:** `npm run build`
 - **Run integration tests** before considering features complete
@@ -247,16 +250,18 @@ confidently wrong solutions (e.g., "/verbose command"). If uncertain, say so and
 - **Graceful exit is NOT an error** - it's required MCP compliance
 
 <!-- GSD:workflow-start source:GSD defaults -->
+
 ## GSD Workflow Enforcement
 
 This repo uses GSD for planned milestone work. Planning artifacts live in `.planning/` (PROJECT.md, ROADMAP.md,
 REQUIREMENTS.md, config.json, research/, codebase/).
 
 Before broad planned changes, start through a GSD command so planning artifacts and execution context stay in sync:
+
 - `/gsd-plan-phase N` then `/gsd-execute-phase N` for planned phase work
 - `/gsd-quick` for small fixes, doc updates, and ad-hoc tasks
 - `/gsd-debug` for investigation and bug fixing
 
 Existing repo workflows (TDD via superpowers, the `.claude/processes/` decision trees) still apply within phases.
-<!-- GSD:workflow-end -->
 
+<!-- GSD:workflow-end -->

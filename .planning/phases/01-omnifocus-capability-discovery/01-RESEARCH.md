@@ -656,35 +656,39 @@ directly or the MCP tool surface.
 
 ---
 
-## Open Questions
+## Open Questions (RESOLVED)
+
+> All four are resolved by the Phase 1 plan disposition. None blocks execution. Q3 is the only build-decision gate and
+> is handled at the Plan 04 human checkpoint (manual write → quit → reopen → read-back).
 
 1. **Scripting Dictionary PDF version**
+   - **RESOLVED:** Use `omni-automation.com` as the primary cite source; the PDF is corroboration only. Any PDF-only
+     claim is tagged `evidence: doc`, never `verified`.
    - What we know: Added 2025-07-25. OF 4.5 shipped December 2024. OF 4.8.11 is current June 2026.
    - What's unclear: Which OF version generated the PDF. If it predates 4.7, `plannedDate` and other newer properties
      are absent.
-   - Recommendation: Use `omni-automation.com` as the primary cite source. Use the PDF only for corroboration, not as
-     the sole evidence source.
 
 2. **Plug-in invocability from background osascript**
+   - **RESOLVED:** Accepted as `unverified` for Phase 1 (Assumptions Log A2). Recorded in finding DISC-AUTO-04 with an
+     explicit follow-up note; probe only if a downstream phase (Phase 6) needs plug-in invocation.
    - What we know: `omnifocus:///run-plug-in?identifier=...` URL scheme exists. Plug-ins require OmniFocus to be
      foregrounded and have a selection.
    - What's unclear: Whether osascript can trigger a URL scheme that invokes a plug-in without OmniFocus being the
      frontmost app.
-   - Recommendation: Probe this specifically if any downstream phase (Phase 6) needs plug-in invocation. For Phase 1,
-     record as `[ASSUMED]` limitation until probed.
 
 3. **`archivedFilterRules` persistence across OmniFocus restarts**
+   - **RESOLVED:** Handled at the Plan 04 human checkpoint — manual write → quit OmniFocus → reopen → read-back cycle;
+     the result feeds DISC-PERSP-01. Until that cycle runs, the in-session write is `verified` but the cross-restart
+     dimension stays `unverified` and `nyquist_compliant` is not set true on its account (honest validation semantics).
    - What we know: The API is documented as read/write since OF 4.2 `[CITED: omni-automation.com]`.
    - What's unclear: Whether writes persist through app restart (vs. in-memory only during a session).
-   - Recommendation: This is a gate-claim for Phase 6 PROV-01. The executor must include a probe that writes rules,
-     quits/reopens OF, and reads back — or at minimum, writes and re-reads in a fresh osascript invocation.
 
 4. **`plannedDate` availability in OF 4.8.11**
+   - **RESOLVED:** Low priority — not a build-decision gate for this milestone. Probe only if a later agent workflow
+     (session-day planning) needs it; flag in DISC-FIELD findings if it surfaces.
    - What we know: `plannedDate` is referenced in `omni-automation.com/omnifocus/task.html` as "v4.7+"
      `[CITED: Context7 fetch]`.
    - What's unclear: Exact version it was introduced.
-   - Recommendation: If `plannedDate` is relevant to any agent workflow (session-day planning), probe its availability.
-     Low priority for Phase 1 scope.
 
 ---
 
