@@ -99,6 +99,11 @@ None yet.
 
 - [agent-workflow, Phase 1]: Discovery findings constrain Phases 2–6 — keep the native-vs-build decisions concrete
   enough that each downstream phase can cite one for build-vs-reuse.
+- [Phase 1, planning override 2026-06-11]: Decision-coverage gate flagged D-02/D-03/D-06 as uncited (no literal `D-NN`
+  token in plan `must_haves`). Reviewed and accepted — all three are substantively enforced (D-06 = the single
+  `files_modified` report path; D-03 = the synthesize→probe method of plans 01-02/01-03; D-02 = the no-OF3 evidence
+  standard). Proceeded to execute. Verify-phase should confirm each landed in
+  `docs/reference/omnifocus-capabilities.md`.
 
 ## Deferred Items
 
