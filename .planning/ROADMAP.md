@@ -81,7 +81,14 @@ solved problem. **Depends on**: Nothing (first phase, gates everything else) **R
 2. For each capability area, the report records an explicit native-vs-build decision — where OmniFocus handles it
    natively vs. where the MCP integration genuinely adds value.
 3. The report's decisions are concrete enough to constrain later phases (each downstream phase can cite a discovery
-   finding for build-vs-reuse). **Plans**: TBD
+   finding for build-vs-reuse). **Plans**: 4 plans
+
+Plans:
+
+- [ ] 01-01-PLAN.md — Report scaffold + probe harness warmup
+- [ ] 01-02-PLAN.md — TAG, FILTER, FIELD, MODEL area findings + 4 gate-claim probes
+- [ ] 01-03-PLAN.md — PERSP, CAPTURE, AUTO area findings + D-08 fit matrix + 2 PERSP probes
+- [ ] 01-04-PLAN.md — Consistency audit, human sign-off, VALIDATION.md finalization
 
 ### Phase 2: Capture & Permission Gating
 
@@ -156,7 +163,7 @@ Criteria** (what must be TRUE):
 
 | Phase                               | Plans Complete | Status      | Completed |
 | ----------------------------------- | -------------- | ----------- | --------- |
-| 1. OmniFocus Capability Discovery   | 0/?            | Not started | -         |
+| 1. OmniFocus Capability Discovery   | 0/4            | Planned     | -         |
 | 2. Capture & Permission Gating      | 0/?            | Not started | -         |
 | 3. Routing & On-Demand Trigger      | 0/?            | Not started | -         |
 | 4. Review Loops & Live Auto-Capture | 0/?            | Not started | -         |
