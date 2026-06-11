@@ -4,7 +4,29 @@
 
 - ✅ **Hardening** — Phases 1–6 (shipped 2026-06-09, tag `jk/hardening`) — full archive:
   [`milestones/hardening-ROADMAP.md`](milestones/hardening-ROADMAP.md)
-- 📋 **Next milestone** — not yet defined. Run `/gsd-new-milestone` to scope it.
+- 📋 **agent-workflow — Agent Workflow System** — Phases 1–6 (planning, started 2026-06-11)
+
+## Visual TL;DR
+
+```mermaid
+flowchart TD
+    P1["Phase 1<br/>Capability Discovery<br/>(gates everything)"]
+    P2["Phase 2<br/>Capture &amp; Permission Gating<br/>first agent write"]
+    P3["Phase 3<br/>Routing &amp; On-Demand Trigger<br/>the MVP loop"]
+    P4["Phase 4<br/>Review Loops &amp; Live Capture"]
+    P5["Phase 5<br/>Session Archaeology"]
+    P6["Phase 6<br/>Surfaces &amp; Migration"]
+
+    P1 --> P2 --> P3 --> P4 --> P5
+    P3 --> P6
+
+    classDef discovery fill:#cfe3f0,stroke:#6b9ec7,color:#1a3a4a
+    classDef core fill:#d4e8dd,stroke:#7bb38e,color:#1f3d2c
+    classDef carried fill:#e6e2d8,stroke:#b3a98e,color:#3d372c
+    class P1 discovery
+    class P2,P3,P4,P5 core
+    class P6 carried
+```
 
 ## Phases
 
@@ -29,18 +51,119 @@
 
 </details>
 
-### 📋 Next milestone (not yet planned)
+### 📋 agent-workflow — Agent Workflow System (Phases 1–6)
 
-Candidates carried forward (from the prior milestone's v2 requirements):
+- [ ] **Phase 1: OmniFocus Capability Discovery** — produce a capability-discovery report mapping OmniFocus native
+      behavior with a native-vs-build call per area; gates all workflow design.
+- [ ] **Phase 2: Capture & Permission Gating** — agent dumps items into the inbox under explicit permission gates, with
+      session lineage on every created task.
+- [ ] **Phase 3: Routing & On-Demand Trigger** — agent routes inbox items (match → infer → create → leave), runnable
+      on-demand via a manual trigger (the MVP path).
+- [ ] **Phase 4: Review Loops & Live Auto-Capture** — review tags surface agent work in a today view, distinguishing
+      output from capture; live sessions capture blockers in real time.
+- [ ] **Phase 5: Session Archaeology** — summarize-then-approve scan of the last 7 days of Claude Code sessions;
+      approved open loops become `archaeology`-tagged tasks.
+- [ ] **Phase 6: Surfaces & Migration** — resolve and provision the JessOS custom perspective; one-time migration of
+      vault checkboxes into OmniFocus.
 
-- [ ] Custom-perspective **contents** resolution through the read tool (READAS-01)
-- [ ] **Provision/repair** the JessOS custom perspective via OmniJS `Perspective.Custom` (PROV-01)
-- [ ] Markdown surface **regeneration** from OmniFocus, if native perspectives prove insufficient (SURF-01)
-- [ ] One-time **vault-checkbox migration** into OmniFocus (MIG-01)
-- [ ] Work-account **Google Tasks → OmniFocus** pull via Fantastical (WORK-01)
+## Phase Details
+
+### Phase 1: OmniFocus Capability Discovery
+
+**Goal**: Understand what OmniFocus does natively — tagging, filtering, custom fields, perspectives, the project/task
+data model, native capture, and automation surfaces — before any workflow is designed, so no custom code is built for a
+solved problem. **Depends on**: Nothing (first phase, gates everything else) **Requirements**: DISC-01, DISC-02
+**Success Criteria** (what must be TRUE):
+
+1. A capability-discovery report exists in the repo documenting OmniFocus native behavior across all six named areas:
+   tagging/filtering/custom fields, perspectives, the project/task data model (sequencing + dependencies, sequential vs.
+   parallel), native capture (inbox, templates), and automation surfaces (OmniAutomation / URL schemes / plug-ins).
+2. For each capability area, the report records an explicit native-vs-build decision — where OmniFocus handles it
+   natively vs. where the MCP integration genuinely adds value.
+3. The report's decisions are concrete enough to constrain later phases (each downstream phase can cite a discovery
+   finding for build-vs-reuse). **Plans**: TBD
+
+### Phase 2: Capture & Permission Gating
+
+**Goal**: The agent can dump a messy item straight into the OmniFocus inbox, but only under explicit permission gates,
+and every task it creates carries its originating Claude Code session ID. **Depends on**: Phase 1 (discovery decides
+native capture vs. custom) **Requirements**: CAP-01, PERM-01, PERM-02, LINE-01 **Success Criteria** (what must be TRUE):
+
+1. User (or agent on the user's behalf) can dump an item into the inbox without choosing a project, tags, or dates.
+2. In an async/background run, the agent acts only on tasks tagged `agent-okay`; untagged tasks are left untouched.
+3. In a sync/live session, the agent prompts before creating a task and offers an "allow all this session" option
+   (mirroring the existing Jira-creation flow).
+4. Every agent-created task stores its originating Claude Code session ID in the task notes. **Plans**: TBD
+
+> **Why gating lands here:** permission gating is a cross-cutting safety concern, but there is no agent _write_ before
+> this phase to protect. Capture (CAP-01) is the first surface where the agent mutates the store, so the gates (PERM-01,
+> PERM-02) and lineage stamping (LINE-01) are co-located with it rather than spun into a standalone phase. This honors
+> the constraint that gating must land _before or with_ the first write phase — it lands _with_ it.
+
+### Phase 3: Routing & On-Demand Trigger
+
+**Goal**: The agent routes inbox items to the right home — match an existing project, else infer from the vault, else
+create a project, else leave in the inbox — and the whole loop is runnable on demand via a manual trigger. **Depends
+on**: Phase 2 (capture + gating exist; routing acts on captured items) **Requirements**: ROUTE-01, ROUTE-02, ROUTE-03,
+ROUTE-04, TRIG-01 **Success Criteria** (what must be TRUE):
+
+1. Given an inbox item matching an existing project, the agent files the task under that project.
+2. When no project matches, the agent checks the vault for a signal and, when one exists, creates the project and files
+   the task under it.
+3. When no project can be inferred, the agent leaves the item in the inbox rather than guessing.
+4. The routing workflow can be invoked on demand by a manual trigger — proving gating + routing before any scheduler.
+   **Plans**: TBD
+
+### Phase 4: Review Loops & Live Auto-Capture
+
+**Goal**: Agent activity surfaces in the user's today view through review tags that distinguish work the agent did from
+tasks the agent decided should exist, and live sessions can capture concrete blockers in real time. **Depends on**:
+Phase 3 (routing + tagging foundations exist) **Requirements**: REVIEW-01, REVIEW-02, LIVE-01 **Success Criteria** (what
+must be TRUE):
+
+1. Agent-created or completed work carries a review tag and surfaces in the user's today view.
+2. Review flags distinguish review-output (verify work the agent did) from review-capture (verify a task the agent
+   decided should exist).
+3. During a live session, the agent captures a concrete blocker or open question as an OmniFocus task in real time (with
+   permission), without the `archaeology` tag. **Plans**: TBD
+
+### Phase 5: Session Archaeology
+
+**Goal**: A summarize-then-approve scan recovers buried open loops from recent Claude Code sessions before they die at
+context-window boundaries, turning approved loops into well-placed, tagged tasks. **Depends on**: Phase 3 (routing
+places loops in the right project) and Phase 4 (review/tagging conventions) **Requirements**: ARCH-01, ARCH-02, ARCH-03
+**Success Criteria** (what must be TRUE):
+
+1. The agent scans the last 7 days of active (non-archived) Claude Code sessions for unresolved open loops.
+2. The first pass summarizes per session (what it was about + whether open loops exist) and waits for the user to
+   approve which sessions to extract from — it never bulk auto-creates tasks.
+3. Approved open loops become OmniFocus tasks in the correct project (inbox only as fallback), tagged `archaeology`.
+   **Plans**: TBD
+
+### Phase 6: Surfaces & Migration
+
+**Goal**: The JessOS today-view surfaces are resolvable and repairable through the tool, and existing Obsidian vault
+checkboxes are migrated once into OmniFocus now that writes are verified-trustworthy. **Depends on**: Phase 3 (routing
+exists to place migrated items); independent of Phases 4–5 **Requirements**: READAS-01, PROV-01, MIG-01 **Success
+Criteria** (what must be TRUE):
+
+1. User can resolve a named custom perspective's contents (not just list its name) through the read tool.
+2. The agent can provision or repair the JessOS custom perspective via OmniJS `Perspective.Custom` (OmniFocus Pro).
+3. Existing Obsidian vault checkboxes are migrated into OmniFocus once, as a verified-trustworthy one-time move.
+   **Plans**: TBD **UI hint**: yes
 
 ## Progress
 
-| Milestone | Phases | Plans | Status   | Completed  |
-| --------- | ------ | ----- | -------- | ---------- |
-| Hardening | 1–6    | 23    | Complete | 2026-06-09 |
+| Phase                               | Plans Complete | Status      | Completed |
+| ----------------------------------- | -------------- | ----------- | --------- |
+| 1. OmniFocus Capability Discovery   | 0/?            | Not started | -         |
+| 2. Capture & Permission Gating      | 0/?            | Not started | -         |
+| 3. Routing & On-Demand Trigger      | 0/?            | Not started | -         |
+| 4. Review Loops & Live Auto-Capture | 0/?            | Not started | -         |
+| 5. Session Archaeology              | 0/?            | Not started | -         |
+| 6. Surfaces & Migration             | 0/?            | Not started | -         |
+
+| Milestone      | Phases | Plans | Status   | Completed  |
+| -------------- | ------ | ----- | -------- | ---------- |
+| Hardening      | 1–6    | 23    | Complete | 2026-06-09 |
+| agent-workflow | 1–6    | TBD   | Planning | -          |

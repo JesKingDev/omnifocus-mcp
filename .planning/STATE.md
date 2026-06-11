@@ -6,7 +6,7 @@ status: planning
 last_updated: '2026-06-11T15:53:43.467Z'
 last_activity: 2026-06-11
 progress:
-  total_phases: 0
+  total_phases: 6
   completed_phases: 0
   total_plans: 0
   completed_plans: 0
@@ -17,15 +17,27 @@ progress:
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-06-03)
+See: .planning/PROJECT.md (updated 2026-06-11)
 
 **Core value:** The agent can read and write OmniFocus tasks safely — no silent write failures, no destructive deletes —
-so JessOS can trust OmniFocus as the source of truth. **Current focus:** Milestone complete
+so JessOS can trust OmniFocus as the source of truth. **Current focus:** agent-workflow milestone — roadmap created
+(Phases 1–6); Phase 1 = OmniFocus capability discovery, which gates all workflow design.
 
 ## Current Position
 
-Phase: Not started (defining requirements) Plan: — Status: Defining requirements Last activity: 2026-06-11 — Milestone
-agent-workflow started
+Phase: 1 — OmniFocus Capability Discovery (not started) Plan: — Status: Roadmap created, ready to plan Phase 1 Last
+activity: 2026-06-11 — Roadmap created, traceability populated (20/20 requirements mapped)
+
+## Roadmap Summary (agent-workflow)
+
+| Phase                               | Goal                                                                      | Requirements                      |
+| ----------------------------------- | ------------------------------------------------------------------------- | --------------------------------- |
+| 1. OmniFocus Capability Discovery   | Map native OF behavior + native-vs-build call per area; gates everything  | DISC-01, DISC-02                  |
+| 2. Capture & Permission Gating      | Inbox dump under permission gates, session lineage on every created task  | CAP-01, PERM-01, PERM-02, LINE-01 |
+| 3. Routing & On-Demand Trigger      | Route inbox items (match→infer→create→leave), runnable on-demand          | ROUTE-01…04, TRIG-01              |
+| 4. Review Loops & Live Auto-Capture | Review tags in today view (output vs. capture); real-time blocker capture | REVIEW-01, REVIEW-02, LIVE-01     |
+| 5. Session Archaeology              | Summarize-then-approve scan of last 7 days; `archaeology`-tagged tasks    | ARCH-01, ARCH-02, ARCH-03         |
+| 6. Surfaces & Migration             | Resolve/provision JessOS perspective; one-time vault-checkbox migration   | READAS-01, PROV-01, MIG-01        |
 
 ## Performance Metrics
 
@@ -35,7 +47,7 @@ agent-workflow started
 - Average duration: —
 - Total execution time: —
 
-**By Phase:**
+**By Phase (hardening, shipped):**
 
 | Phase | Plans | Total | Avg/Plan |
 | ----- | ----- | ----- | -------- |
@@ -49,51 +61,30 @@ agent-workflow started
 - Last 5 plans: —
 - Trend: —
 
-_Updated after each plan completion_ | Phase 01-role-model-resolver P01 | 190s | 2 tasks | 4 files | _Updated after each
-plan completion_ | Phase 01-role-model-resolver P02 | 180s | 2 tasks | 2 files | | Phase 02 P01 | 540s | 3 tasks | 3
-files | | Phase 02 P02 | 480s | 2 tasks | 5 files | | Phase 02 P03 | 900s | 2 tasks | 7 files | | Phase
-03-rolegate-agent-read-paths P01 | 350 | 2 tasks | 4 files | | Phase 03-rolegate-agent-read-paths P02 | 523 | 2 tasks |
-7 files | | Phase 03-rolegate-agent-read-paths P03 | 250 | 1 tasks | 3 files | | Phase 03-rolegate-agent-read-paths P04
-| 2700s | 2 tasks | 5 files |
-
 ## Accumulated Context
 
 ### Decisions
 
 Decisions are logged in PROJECT.md Key Decisions table. Recent decisions affecting current work:
 
-- [Roadmap]: Strict bottom-up build order — role model → policy → gate → HTTP → verifier → deployment.
-- [Phase 2]: Agent loses content deletes (removed, not gated); tag delete/merge + perspective delete are GATED
-  (dry-run + owner approval); OWNER keeps full `tag_manage`.
-
+- [Roadmap, agent-workflow]: Phase 1 (capability discovery) gates everything — no workflow design or build precedes it,
+  because we refuse to build custom code for capabilities OmniFocus provides natively.
+- [Roadmap, agent-workflow]: Permission gating (PERM-01/02) and session lineage (LINE-01) fold into Phase 2 (Capture)
+  rather than a standalone phase — Capture is the first agent _write_ surface, so the gates and lineage stamping land
+  _with_ the first mutation, honoring "gating must land before/with the first write."
+- [Roadmap, agent-workflow]: On-demand manual trigger (TRIG-01) lands in Phase 3 with routing so the route loop is
+  exercisable as the MVP path before any scheduler (TRIG-02/n8n is deferred).
+- [Roadmap, agent-workflow]: Surfaces & migration (READAS-01, PROV-01, MIG-01) are Phase 6 — independent of the core
+  loop; depend on routing (Phase 3) only so migrated items can be placed.
+- [Roadmap, hardening]: Strict bottom-up build order — role model → policy → gate → HTTP → verifier → deployment.
+- [Phase 2, hardening]: Agent loses content deletes (removed, not gated); tag delete/merge + perspective delete are
+  GATED (dry-run + owner approval); OWNER keeps full `tag_manage`.
 - [Cross-cutting]: Destructive-op enforcement lives at the single mutation funnel (single+batch normalized) —
   batch-parity test is mandatory (OMN-119 lesson).
-
 - [Cross-cutting]: Write-verification is an independent post-mutation read-back round-trip, never an in-script read.
-- [Phase ?]: Role is 'owner'|'agent' — closed 2-value literal union; fail-safe default is 'agent' (T-1-01)
-- [Phase ?]: RoleSource has 3 values — no launchd-label; launchd path emits explicit-env (D-06)
-- [Phase ?]: principal and tokenId added to SENSITIVE_KEYS as D-08 follow-through
-- [Phase 01-02]: env override typed as Record<string, string | undefined> — NodeJS.ProcessEnv causes no-undef ESLint
-  error in this repo config
-
-- [Phase 01-02]: sonarjs/todo-tag rule flags TODO comments as errors — Phase 4 annotations use plain prose instead
-- [Phase 02-03]: assertPolicyAllow() defined locally in each builder — no shared module needed; 4-line helper avoids
-  import cycle risk
-
-- [Phase 02-03]: Pre-existing builder tests updated to owner role — same pattern as Plan 02 for JXA-dispatch tests vs.
-  policy tests
-
-- [Phase ?]: OWNER test for dispatch gate sets OMNIFOCUS_MCP_ROLE=owner env var: dispatch gate uses closure-captured
-  role but Write tool funnel still calls parseRole() from env (Phase 4 D-10 deferred item)
-
-- [Phase ?]: whoami op complete with dual-schema parity
-- [Phase ?]: SystemTool whoami op
-- [Phase 03-04]: withCorrelation override required for any tool that repurposes BaseTool constructor arg 2 (e.g. for
-  context: ResolvedContext); base reconstruction new ctor(cache, correlationId) silently drops the context slot —
-  override must thread both args in the correct positions
-
-- [Phase 03-04]: Regression tests for withCorrelation should drive whoami through the reconstruction path
-  (tool.withCorrelation(...).call(...)), not direct construction, to catch this class of failure
+- [Phase 03-04, hardening]: withCorrelation override required for any tool that repurposes BaseTool constructor arg 2
+  (e.g. for context: ResolvedContext); base reconstruction silently drops the context slot — override must thread both
+  args in the correct positions.
 
 ### Pending Todos
 
@@ -101,12 +92,8 @@ None yet.
 
 ### Blockers/Concerns
 
-- [Phase 4]: Confirm installed `@modelcontextprotocol/sdk ^1.25.1` bearer-auth export surface and exact
-  `enableDnsRebindingProtection`/`allowedHosts`/`allowedOrigins` config shape (research flag —
-  `/gsd-plan-phase --research-phase 4`).
-
-- [Phase 6]: launchd/TCC attribution chain is MEDIUM-confidence (community sources); pre-authorization flow +
-  stable-path pin warrant a verification spike on the actual host (research flag).
+- [agent-workflow, Phase 1]: Discovery findings constrain Phases 2–6 — keep the native-vs-build decisions concrete
+  enough that each downstream phase can cite one for build-vs-reuse.
 
 ## Deferred Items
 
@@ -124,8 +111,8 @@ need a deliberate on-Mac session per `deploy/launchd/RUNBOOK.md`.
 
 ## Session Continuity
 
-Last session: 2026-06-09T13:54:37.495Z
+Last session: 2026-06-11 — agent-workflow roadmap created (Phases 1–6, 20/20 requirements mapped).
 
 ## Operator Next Steps
 
-- Start the next milestone with /gsd-new-milestone
+- Plan Phase 1 with `/gsd-plan-phase 1` (OmniFocus capability discovery — gates everything).

@@ -110,35 +110,36 @@ Explicitly excluded. Documented to prevent scope creep.
 
 Which phases cover which requirements. Populated during roadmap creation.
 
-| Requirement | Phase | Status  |
-| ----------- | ----- | ------- |
-| DISC-01     | TBD   | Pending |
-| DISC-02     | TBD   | Pending |
-| CAP-01      | TBD   | Pending |
-| ROUTE-01    | TBD   | Pending |
-| ROUTE-02    | TBD   | Pending |
-| ROUTE-03    | TBD   | Pending |
-| ROUTE-04    | TBD   | Pending |
-| PERM-01     | TBD   | Pending |
-| PERM-02     | TBD   | Pending |
-| REVIEW-01   | TBD   | Pending |
-| REVIEW-02   | TBD   | Pending |
-| ARCH-01     | TBD   | Pending |
-| ARCH-02     | TBD   | Pending |
-| ARCH-03     | TBD   | Pending |
-| LIVE-01     | TBD   | Pending |
-| LINE-01     | TBD   | Pending |
-| TRIG-01     | TBD   | Pending |
-| READAS-01   | TBD   | Pending |
-| PROV-01     | TBD   | Pending |
-| MIG-01      | TBD   | Pending |
+| Requirement | Phase                                      | Status  |
+| ----------- | ------------------------------------------ | ------- |
+| DISC-01     | Phase 1 — Capability Discovery             | Pending |
+| DISC-02     | Phase 1 — Capability Discovery             | Pending |
+| CAP-01      | Phase 2 — Capture & Permission Gating      | Pending |
+| PERM-01     | Phase 2 — Capture & Permission Gating      | Pending |
+| PERM-02     | Phase 2 — Capture & Permission Gating      | Pending |
+| LINE-01     | Phase 2 — Capture & Permission Gating      | Pending |
+| ROUTE-01    | Phase 3 — Routing & On-Demand Trigger      | Pending |
+| ROUTE-02    | Phase 3 — Routing & On-Demand Trigger      | Pending |
+| ROUTE-03    | Phase 3 — Routing & On-Demand Trigger      | Pending |
+| ROUTE-04    | Phase 3 — Routing & On-Demand Trigger      | Pending |
+| TRIG-01     | Phase 3 — Routing & On-Demand Trigger      | Pending |
+| REVIEW-01   | Phase 4 — Review Loops & Live Auto-Capture | Pending |
+| REVIEW-02   | Phase 4 — Review Loops & Live Auto-Capture | Pending |
+| LIVE-01     | Phase 4 — Review Loops & Live Auto-Capture | Pending |
+| ARCH-01     | Phase 5 — Session Archaeology              | Pending |
+| ARCH-02     | Phase 5 — Session Archaeology              | Pending |
+| ARCH-03     | Phase 5 — Session Archaeology              | Pending |
+| READAS-01   | Phase 6 — Surfaces & Migration             | Pending |
+| PROV-01     | Phase 6 — Surfaces & Migration             | Pending |
+| MIG-01      | Phase 6 — Surfaces & Migration             | Pending |
 
 **Coverage:**
 
 - Milestone requirements: 20 total
-- Mapped to phases: 0 (roadmap pending)
-- Unmapped: 20 ⚠️ (resolved when roadmap is created)
+- Mapped to phases: 20 ✓ (100% — every requirement in exactly one phase)
+- Unmapped: 0
 
 ---
 
-_Requirements defined: 2026-06-11_ _Last updated: 2026-06-11 at milestone start (agent-workflow)_
+_Requirements defined: 2026-06-11_ _Last updated: 2026-06-11 — roadmap created, traceability populated (agent-workflow,
+Phases 1–6)_
