@@ -3,8 +3,7 @@ gsd_state_version: 1.0
 milestone: agent-workflow
 milestone_name: Agent Workflow System
 status: planning
-last_updated: '2026-06-11T15:53:43.467Z'
-last_activity: 2026-06-11
+last_updated: '2026-06-11T16:16:36.509Z'
 progress:
   total_phases: 6
   completed_phases: 0
@@ -69,18 +68,24 @@ Decisions are logged in PROJECT.md Key Decisions table. Recent decisions affecti
 
 - [Roadmap, agent-workflow]: Phase 1 (capability discovery) gates everything — no workflow design or build precedes it,
   because we refuse to build custom code for capabilities OmniFocus provides natively.
+
 - [Roadmap, agent-workflow]: Permission gating (PERM-01/02) and session lineage (LINE-01) fold into Phase 2 (Capture)
   rather than a standalone phase — Capture is the first agent _write_ surface, so the gates and lineage stamping land
   _with_ the first mutation, honoring "gating must land before/with the first write."
+
 - [Roadmap, agent-workflow]: On-demand manual trigger (TRIG-01) lands in Phase 3 with routing so the route loop is
   exercisable as the MVP path before any scheduler (TRIG-02/n8n is deferred).
+
 - [Roadmap, agent-workflow]: Surfaces & migration (READAS-01, PROV-01, MIG-01) are Phase 6 — independent of the core
   loop; depend on routing (Phase 3) only so migrated items can be placed.
+
 - [Roadmap, hardening]: Strict bottom-up build order — role model → policy → gate → HTTP → verifier → deployment.
 - [Phase 2, hardening]: Agent loses content deletes (removed, not gated); tag delete/merge + perspective delete are
   GATED (dry-run + owner approval); OWNER keeps full `tag_manage`.
+
 - [Cross-cutting]: Destructive-op enforcement lives at the single mutation funnel (single+batch normalized) —
   batch-parity test is mandatory (OMN-119 lesson).
+
 - [Cross-cutting]: Write-verification is an independent post-mutation read-back round-trip, never an in-script read.
 - [Phase 03-04, hardening]: withCorrelation override required for any tool that repurposes BaseTool constructor arg 2
   (e.g. for context: ResolvedContext); base reconstruction silently drops the context slot — override must thread both
@@ -111,7 +116,7 @@ need a deliberate on-Mac session per `deploy/launchd/RUNBOOK.md`.
 
 ## Session Continuity
 
-Last session: 2026-06-11 — agent-workflow roadmap created (Phases 1–6, 20/20 requirements mapped).
+Last session: 2026-06-11T16:16:36.502Z
 
 ## Operator Next Steps
 
