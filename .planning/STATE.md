@@ -1,17 +1,16 @@
 ---
 gsd_state_version: 1.0
-milestone: hardening
-milestone_name:
-  '**Goal**: The HTTP/Tailscale remote path enforces the same guarantees as stdio — per-request bearer auth with'
-status: Awaiting next milestone
-last_updated: '2026-06-09T19:26:59.209Z'
-last_activity: 2026-06-09 — Milestone hardening completed and archived
+milestone: agent-workflow
+milestone_name: Agent Workflow System
+status: planning
+last_updated: '2026-06-11T15:53:43.467Z'
+last_activity: 2026-06-11
 progress:
-  total_phases: 3
-  completed_phases: 3
-  total_plans: 13
-  completed_plans: 13
-  percent: 100
+  total_phases: 0
+  completed_phases: 0
+  total_plans: 0
+  completed_plans: 0
+  percent: 0
 ---
 
 # Project State
@@ -25,8 +24,8 @@ so JessOS can trust OmniFocus as the source of truth. **Current focus:** Milesto
 
 ## Current Position
 
-Phase: Milestone hardening complete Plan: — Status: Awaiting next milestone Last activity: 2026-06-09 — Milestone
-hardening completed and archived
+Phase: Not started (defining requirements) Plan: — Status: Defining requirements Last activity: 2026-06-11 — Milestone
+agent-workflow started
 
 ## Performance Metrics
 

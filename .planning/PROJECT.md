@@ -12,6 +12,31 @@ supersedes the prior Obsidian Tasks plugin store (ADR 001).
 The agent can read and **write** OmniFocus tasks safely — no silent write failures, no destructive deletes — so JessOS
 can trust OmniFocus as the source of truth. If everything else fails, write-safety and least-privilege must hold.
 
+## Current Milestone: agent-workflow — Agent Workflow System
+
+**Goal:** Make OmniFocus the single source of truth for tasks and give agents a safe capture → route → execute → review
+loop on top of it — with session archaeology so buried open loops stop dying at context-window boundaries.
+
+**Target features:**
+
+- **OmniFocus capability discovery (Phase 1, gates everything else)** — learn what OmniFocus does natively (tagging,
+  filtering, custom fields, perspectives, data model, capture, automation) before designing any workflow, so we don't
+  build custom code for solved problems.
+- **Frictionless capture** — dump messy items into the inbox; the agent routes them later.
+- **Task routing / project inference** — match an existing project, else infer from the vault, else leave in inbox.
+- **Permission gating** — async runs act only on `agent-okay`-tagged tasks; sync sessions prompt before creating, with
+  an allow-all-this-session option (mirrors the Jira-creation flow).
+- **Review loops** — agent flags work into a today view, distinguishing review-output (verify work done) from
+  review-capture/archaeology (verify a task the agent decided should exist).
+- **Session archaeology** — summarize-then-approve scan of the last 7 days of active Claude Code sessions; approved open
+  loops become tasks in the right project, tagged `archaeology`.
+- **Auto-capture in live sessions** — capture concrete blockers in real time (with permission), no archaeology tag.
+- **Session lineage** — store the originating Claude Code session ID in task notes so context travels with the task.
+
+**Architecture stance:** OmniFocus = single source of truth (Obsidian tasks retired entirely); Obsidian = work-artifact
+layer only (research, drafts, specs); no bidirectional sync — agents read OmniFocus directly. MVP runs on-demand (manual
+trigger) to prove gating + routing; the hardened version polls every 15 min via n8n.
+
 ## Requirements
 
 ### Validated
@@ -49,15 +74,43 @@ can trust OmniFocus as the source of truth. If everything else fails, write-safe
 
 ### Active
 
-<!-- Next milestone — not yet started. Candidates promoted from v2 requirements; refine via /gsd-new-milestone. -->
+<!-- agent-workflow milestone — started 2026-06-11. Full REQ-IDs + acceptance criteria in REQUIREMENTS.md. -->
 
-- [ ] Resolve a named custom perspective's **contents** (not just list names) through the read tool (READAS-01)
+**Capability discovery (gates the rest):**
+
+- [ ] Capability-discovery report documenting OmniFocus native behavior (tagging/filtering/custom fields, perspectives,
+      data model + sequencing/dependencies, capture, automation) with a native-vs-MCP-value call per area (DISC-01…02)
+
+**Capture & routing:**
+
+- [ ] Frictionless inbox capture — dump items without deciding anything (CAP-01)
+- [ ] Agent routes inbox items: match existing project, else infer from the vault, else create project+task, else leave
+      in inbox (ROUTE-01…04)
+
+**Permission gating:**
+
+- [ ] Async runs act only on `agent-okay`-tagged tasks; sync sessions prompt before creating with allow-all-this-session
+      (PERM-01…02)
+
+**Review & archaeology:**
+
+- [ ] Review-loop flagging into a today view, distinguishing review-output from review-capture (REVIEW-01…02)
+- [ ] Session archaeology — summarize-then-approve scan of last 7 days of active CC sessions; approved loops become
+      `archaeology`-tagged tasks in the right project (ARCH-01…03)
+- [ ] Auto-capture concrete blockers mid-session with permission, no archaeology tag (LIVE-01)
+- [ ] Session lineage — originating CC session ID stored in task notes (LINE-01)
+
+**Surfaces & migration (carried from hardening):**
+
+- [ ] Resolve a named custom perspective's **contents** through the read tool (READAS-01)
 - [ ] **Provision/repair** the JessOS custom perspective via OmniJS `Perspective.Custom` (PROV-01, OmniFocus Pro)
-- [ ] Regenerate JessOS markdown surfaces (`today.md` / `daily-briefing.md`) from OmniFocus — only if native
-      perspectives prove insufficient (SURF-01)
 - [ ] One-time **migration** of existing Obsidian vault checkboxes into OmniFocus, now that writes are
       verified-trustworthy (MIG-01)
-- [ ] Pull new work-account **Google Tasks** into OmniFocus via the Fantastical → Google Tasks path (WORK-01)
+
+<!-- Deferred out of this milestone: SURF-01 (markdown regen — OF is the surface now) and WORK-01 (Google Tasks pull —
+not in scope; sync-work-tasks skill already exists). Both remain candidates for a later milestone. -->
+
+**n8n 15-min polling** is the hardened follow-up to the on-demand MVP — likely a later phase or its own milestone.
 
 ### Out of Scope
 
@@ -148,5 +201,7 @@ This document evolves at phase transitions and milestone boundaries.
 
 ---
 
-_Last updated: 2026-06-09 after the `hardening` milestone — all 6 phases shipped (role model, deny-deletes, RoleGate,
-HTTP edge, write-verifier, launchd deployment); on-host verification debt risk-accepted and tracked in STATE.md._
+_Last updated: 2026-06-11 — started the `agent-workflow` milestone (OmniFocus as single source of truth + agent
+capture/route/execute/review loop + session archaeology). Phase 1 = OmniFocus capability discovery, which gates all
+workflow design. Carried in: READAS-01, PROV-01, MIG-01. Deferred: SURF-01, WORK-01. Prior `hardening` milestone shipped
+2026-06-09 (6 phases)._
