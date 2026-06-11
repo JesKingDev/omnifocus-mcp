@@ -4,6 +4,7 @@
 
 - ✅ **Hardening** — Phases 1–6 (shipped 2026-06-09, tag `jk/hardening`) — full archive:
   [`milestones/hardening-ROADMAP.md`](milestones/hardening-ROADMAP.md)
+
 - 📋 **agent-workflow — Agent Workflow System** — Phases 1–6 (planning, started 2026-06-11)
 
 ## Visual TL;DR
@@ -35,14 +36,19 @@ flowchart TD
 
 - [x] **Phase 1: Role Model & Resolver** (3 plans) — a connection resolves to exactly one fail-safe role (OWNER | AGENT)
       before any dispatch.
+
 - [x] **Phase 2: Operation Policy (Deny-Deletes & Gating)** (3 plans) — the agent cannot hard- or bulk-delete;
       structural destructive ops are gated at the single mutation funnel.
+
 - [x] **Phase 3: RoleGate & Agent Read Paths** (4 plans) — role-aware advertisement + dispatch ship a usable
       least-privilege stdio agent with its core read surface.
+
 - [x] **Phase 4: HTTP Edge Hardening** (4 plans) — bearer auth, loopback bind, DNS-rebinding protection, Serve-only;
       owner+agent token parity with stdio.
+
 - [x] **Phase 5: Write-Verifier** (5 plans) — every agent mutation confirmed by an independent post-mutation read-back
       with a field-level diff and verification status.
+
 - [x] **Phase 6: launchd Deployment & ADR** (4 plans) — least-privilege LaunchAgent, Automation-only grant, fail-fast
       probe, ADR-005 superseding ADR 001.
 
@@ -55,14 +61,19 @@ flowchart TD
 
 - [ ] **Phase 1: OmniFocus Capability Discovery** — produce a capability-discovery report mapping OmniFocus native
       behavior with a native-vs-build call per area; gates all workflow design.
+
 - [ ] **Phase 2: Capture & Permission Gating** — agent dumps items into the inbox under explicit permission gates, with
       session lineage on every created task.
+
 - [ ] **Phase 3: Routing & On-Demand Trigger** — agent routes inbox items (match → infer → create → leave), runnable
       on-demand via a manual trigger (the MVP path).
+
 - [ ] **Phase 4: Review Loops & Live Auto-Capture** — review tags surface agent work in a today view, distinguishing
       output from capture; live sessions capture blockers in real time.
+
 - [ ] **Phase 5: Session Archaeology** — summarize-then-approve scan of the last 7 days of Claude Code sessions;
       approved open loops become `archaeology`-tagged tasks.
+
 - [ ] **Phase 6: Surfaces & Migration** — resolve and provision the JessOS custom perspective; one-time migration of
       vault checkboxes into OmniFocus.
 
@@ -78,16 +89,25 @@ solved problem. **Depends on**: Nothing (first phase, gates everything else) **R
 1. A capability-discovery report exists in the repo documenting OmniFocus native behavior across all six named areas:
    tagging/filtering/custom fields, perspectives, the project/task data model (sequencing + dependencies, sequential vs.
    parallel), native capture (inbox, templates), and automation surfaces (OmniAutomation / URL schemes / plug-ins).
+
 2. For each capability area, the report records an explicit native-vs-build decision — where OmniFocus handles it
    natively vs. where the MCP integration genuinely adds value.
-3. The report's decisions are concrete enough to constrain later phases (each downstream phase can cite a discovery
-   finding for build-vs-reuse). **Plans**: 4 plans
 
-Plans:
+3. The report's decisions are concrete enough to constrain later phases (each downstream phase can cite a discovery
+   finding for build-vs-reuse). **Plans**: 4 plans Plans: **Wave 1**
 
 - [ ] 01-01-PLAN.md — Report scaffold + probe harness warmup
+
+**Wave 2** _(blocked on Wave 1 completion)_
+
 - [ ] 01-02-PLAN.md — TAG, FILTER, FIELD, MODEL area findings + 4 gate-claim probes
+
+**Wave 3** _(blocked on Wave 2 completion)_
+
 - [ ] 01-03-PLAN.md — PERSP, CAPTURE, AUTO area findings + D-08 fit matrix + 2 PERSP probes
+
+**Wave 4** _(blocked on Wave 3 completion)_
+
 - [ ] 01-04-PLAN.md — Consistency audit, human sign-off, VALIDATION.md finalization
 
 ### Phase 2: Capture & Permission Gating
@@ -100,6 +120,7 @@ native capture vs. custom) **Requirements**: CAP-01, PERM-01, PERM-02, LINE-01 *
 2. In an async/background run, the agent acts only on tasks tagged `agent-okay`; untagged tasks are left untouched.
 3. In a sync/live session, the agent prompts before creating a task and offers an "allow all this session" option
    (mirroring the existing Jira-creation flow).
+
 4. Every agent-created task stores its originating Claude Code session ID in the task notes. **Plans**: TBD
 
 > **Why gating lands here:** permission gating is a cross-cutting safety concern, but there is no agent _write_ before
@@ -117,6 +138,7 @@ ROUTE-04, TRIG-01 **Success Criteria** (what must be TRUE):
 1. Given an inbox item matching an existing project, the agent files the task under that project.
 2. When no project matches, the agent checks the vault for a signal and, when one exists, creates the project and files
    the task under it.
+
 3. When no project can be inferred, the agent leaves the item in the inbox rather than guessing.
 4. The routing workflow can be invoked on demand by a manual trigger — proving gating + routing before any scheduler.
    **Plans**: TBD
@@ -131,6 +153,7 @@ must be TRUE):
 1. Agent-created or completed work carries a review tag and surfaces in the user's today view.
 2. Review flags distinguish review-output (verify work the agent did) from review-capture (verify a task the agent
    decided should exist).
+
 3. During a live session, the agent captures a concrete blocker or open question as an OmniFocus task in real time (with
    permission), without the `archaeology` tag. **Plans**: TBD
 
@@ -144,6 +167,7 @@ places loops in the right project) and Phase 4 (review/tagging conventions) **Re
 1. The agent scans the last 7 days of active (non-archived) Claude Code sessions for unresolved open loops.
 2. The first pass summarizes per session (what it was about + whether open loops exist) and waits for the user to
    approve which sessions to extract from — it never bulk auto-creates tasks.
+
 3. Approved open loops become OmniFocus tasks in the correct project (inbox only as fallback), tagged `archaeology`.
    **Plans**: TBD
 
