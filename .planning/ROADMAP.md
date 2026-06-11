@@ -100,7 +100,7 @@ solved problem. **Depends on**: Nothing (first phase, gates everything else) **R
 
 **Wave 2** _(blocked on Wave 1 completion)_
 
-- [ ] 01-02-PLAN.md — TAG, FILTER, FIELD, MODEL area findings + 4 gate-claim probes
+- [x] 01-02-PLAN.md — TAG, FILTER, FIELD, MODEL area findings + 4 gate-claim probes
 
 **Wave 3** _(blocked on Wave 2 completion)_
 
@@ -187,7 +187,7 @@ Criteria** (what must be TRUE):
 
 | Phase                               | Plans Complete | Status      | Completed |
 | ----------------------------------- | -------------- | ----------- | --------- |
-| 1. OmniFocus Capability Discovery   | 1/4            | In Progress |           |
+| 1. OmniFocus Capability Discovery   | 2/4            | In Progress |           |
 | 2. Capture & Permission Gating      | 0/?            | Not started | -         |
 | 3. Routing & On-Demand Trigger      | 0/?            | Not started | -         |
 | 4. Review Loops & Live Auto-Capture | 0/?            | Not started | -         |
