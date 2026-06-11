@@ -226,13 +226,44 @@ DISC-01 coverage: "custom fields"
 
 ### Area Verdict
 
-- Verdict: _to be determined in Plan 02_
-- Evidence: _pending_
-- Rubric: _pending_
+- Verdict: **native**
+- Evidence: evidence: doc
+- Rubric: `task.note` plus the native structured fields handle every agent custom-data need; no build required.
 
 ### Findings
 
-— to be populated in Plan 02 or Plan 03 —
+#### DISC-FIELD-01 — `task.note` is the custom-data extension point
+
+| Field           | Value                                                                                       |
+| --------------- | ------------------------------------------------------------------------------------------- |
+| Verdict         | native                                                                                      |
+| Rubric          | OF has no first-class custom fields; `task.note` is the intended free-form/JSON surface     |
+| Evidence        | evidence: doc                                                                               |
+| Source          | omni-automation.com/omnifocus/task.html; codebase `mutation-script-builder.ts` (note write) |
+| Downstream cite | Phase 2 (LINE-01 session lineage), Phase 5 (ARCH-03 archaeology)                            |
+
+The note round-trip was additionally live-exercised by `disc-capture-01` (`notePersisted: true`; see the MODEL evidence
+appendix). The agent stores session lineage as a structured prefix in `task.note`.
+
+#### DISC-FIELD-02 — Structured native fields cover scheduling metadata
+
+| Field           | Value                                                                                                     |
+| --------------- | --------------------------------------------------------------------------------------------------------- |
+| Verdict         | native                                                                                                    |
+| Rubric          | `estimatedMinutes`, defer/due/completion dates, `flagged`, `plannedDate` (v4.7+), `taskStatus` are native |
+| Evidence        | evidence: doc                                                                                             |
+| Source          | omni-automation.com/omnifocus/task.html (plannedDate noted v4.7+; available on 4.8.11 by version)         |
+| Downstream cite | Phase 3 (task routing metadata)                                                                           |
+
+#### DISC-FIELD-03 — OmniFocus has no first-class custom fields
+
+| Field           | Value                                                                       |
+| --------------- | --------------------------------------------------------------------------- |
+| Verdict         | native                                                                      |
+| Rubric          | Custom fields would require a build; the note field is the accepted pattern |
+| Evidence        | evidence: doc                                                               |
+| Source          | discourse.omnigroup.com/t/custom-fields (community confirmation of absence) |
+| Downstream cite | Any phase tempted to add structured per-task metadata                       |
 
 ---
 
@@ -242,13 +273,85 @@ DISC-01 coverage: "the project/task data model (sequencing + dependencies — se
 
 ### Area Verdict
 
-- Verdict: _to be determined in Plan 02_
-- Evidence: _pending_
-- Rubric: _pending_
+- Verdict: **native**
+- Evidence: evidence: verified (project.sequential write-back live-probed on 4.8.11)
+- Rubric: The OF data model is fully native; the setter-pattern wrappers (DISC-MODEL-05) are thin and already exist in
+  `mutation-script-builder.ts`.
 
 ### Findings
 
-— to be populated in Plan 02 or Plan 03 —
+#### DISC-MODEL-01 — `project.sequential` controls task availability and persists on write-back
+
+| Field           | Value                                                                     |
+| --------------- | ------------------------------------------------------------------------- |
+| Verdict         | native                                                                    |
+| Rubric          | Direct scalar assignment (SETTER row 4); toggle true→false both read back |
+| Evidence        | evidence: verified                                                        |
+| Source          | Live probe `probes/disc-model-01-sequential-write.js`                     |
+| Downstream cite | Phase 3 (ROUTE-03 project creation with sequential flag)                  |
+
+#### DISC-MODEL-02 — `task.taskStatus` exposes a native status enum
+
+| Field           | Value                                                                                       |
+| --------------- | ------------------------------------------------------------------------------------------- |
+| Verdict         | native                                                                                      |
+| Rubric          | Available / Blocked / Completed / Dropped / DueSoon / Next / Overdue are native enum values |
+| Evidence        | evidence: doc                                                                               |
+| Source          | omni-automation.com/omnifocus/task.html                                                     |
+| Downstream cite | Phase 3 routing (available-task detection)                                                  |
+
+#### DISC-MODEL-03 — Sequential project ordering is the only built-in dependency mechanism
+
+| Field           | Value                                                               |
+| --------------- | ------------------------------------------------------------------- |
+| Verdict         | native                                                              |
+| Rubric          | Sequential projects cover the agent-workflow ordering need natively |
+| Evidence        | evidence: doc                                                       |
+| Source          | omni-automation.com/omnifocus/project.html                          |
+| Downstream cite | Phase 3 (ROUTE-01)                                                  |
+
+#### DISC-MODEL-04 — No native cross-project task dependency system
+
+| Field           | Value                                                                                              |
+| --------------- | -------------------------------------------------------------------------------------------------- |
+| Verdict         | build                                                                                              |
+| Rubric          | Don't build cross-task dependencies for this milestone; if needed later, use the community plug-in |
+| Evidence        | evidence: doc                                                                                      |
+| Source          | github.com/ksalzke/dependency-omnifocus-plugin (exists because OF lacks native dependencies)       |
+| Downstream cite | Phase 3 only if cross-task dependency surfaces (not in current milestone scope)                    |
+
+#### DISC-MODEL-05 — Typed-class setters need wrapper patterns (repetitionRule, reviewInterval)
+
+| Field           | Value                                                                                                 |
+| --------------- | ----------------------------------------------------------------------------------------------------- |
+| Verdict         | extend                                                                                                |
+| Rubric          | `repetitionRule` needs P2 (`new Task.RepetitionRule`), `reviewInterval` needs P4 read-modify-reassign |
+| Evidence        | evidence: doc                                                                                         |
+| Source          | docs/dev/SETTER-PATTERNS.md rows 1–2                                                                  |
+| Downstream cite | Phase 2 if recurrence is set on captured tasks                                                        |
+
+This is a per-finding `extend` verdict; the MODEL area-level verdict stays `native` because the wrappers already exist
+in `mutation-script-builder.ts`.
+
+#### DISC-MODEL-06 — `moveTasks()` relocates tasks between projects natively
+
+| Field           | Value                                                                |
+| --------------- | -------------------------------------------------------------------- |
+| Verdict         | native                                                               |
+| Rubric          | `moveTasks([task], destination)` is the native OmniJS relocation API |
+| Evidence        | evidence: doc                                                        |
+| Source          | omni-automation.com (moveTasks)                                      |
+| Downstream cite | Phase 3 (ROUTE-01 task filing)                                       |
+
+<!-- DISC-MODEL / DISC-CAPTURE sanitized probe evidence (counts / booleans / probe-created names only; no live-DB names) -->
+
+| Probe                                     | Timestamp (UTC)   | Sanitized result                                                                  | Cleanup                                                                                  | OF build |
+| ----------------------------------------- | ----------------- | --------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------- | -------- |
+| `disc-model-01-sequential-write.js`       | 2026-06-11T20:30Z | initialWrite=true; readBack1=true; writeBack=true; readBack2=true; persisted=true | cleanedUp=true (Project.Status.Dropped — non-destructive; probe project remains dropped) | 185.15   |
+| `disc-capture-01-inbox-note-roundtrip.js` | 2026-06-11T20:30Z | taskCreated=true; notePersisted=true; inboxReflectsImmediately=true               | cleanedUp=true (deleteObject)                                                            | 185.15   |
+
+> `disc-capture-01` also supplies CAPTURE-area evidence (inbox immediacy + note round-trip) for **Plan 03's
+> DISC-CAPTURE-01** finding, which will cite this same probe run.
 
 ---
 
