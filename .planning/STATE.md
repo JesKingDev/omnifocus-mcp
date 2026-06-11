@@ -24,8 +24,9 @@ so JessOS can trust OmniFocus as the source of truth. **Current focus:** agent-w
 
 ## Current Position
 
-Phase: 1 — OmniFocus Capability Discovery (not started) Plan: — Status: Roadmap created, ready to plan Phase 1 Last
-activity: 2026-06-11 — Roadmap created, traceability populated (20/20 requirements mapped)
+Phase: 1 — OmniFocus Capability Discovery (planned, ready to execute) Plan: 4 plans across 4 waves Status: Planning
+complete — research + validation + 4 plans committed; ready for `/gsd-execute-phase 1` Last activity: 2026-06-11 — Phase
+1 planned (DISC-01/02 covered; decision-coverage override recorded for D-02/D-03/D-06)
 
 ## Roadmap Summary (agent-workflow)
 
@@ -125,4 +126,5 @@ Last session: 2026-06-11T16:16:36.502Z
 
 ## Operator Next Steps
 
-- Plan Phase 1 with `/gsd-plan-phase 1` (OmniFocus capability discovery — gates everything).
+- Execute Phase 1 with `/gsd-execute-phase 1` (4 plans, 4 waves — report scaffold → area findings + probes → consistency
+  checkpoint). `/clear` first for a fresh executor context.
