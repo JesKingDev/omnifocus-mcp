@@ -96,7 +96,7 @@ solved problem. **Depends on**: Nothing (first phase, gates everything else) **R
 3. The report's decisions are concrete enough to constrain later phases (each downstream phase can cite a discovery
    finding for build-vs-reuse). **Plans**: 4 plans Plans: **Wave 1**
 
-- [ ] 01-01-PLAN.md — Report scaffold + probe harness warmup
+- [x] 01-01-PLAN.md — Report scaffold + probe harness warmup
 
 **Wave 2** _(blocked on Wave 1 completion)_
 
@@ -187,7 +187,7 @@ Criteria** (what must be TRUE):
 
 | Phase                               | Plans Complete | Status      | Completed |
 | ----------------------------------- | -------------- | ----------- | --------- |
-| 1. OmniFocus Capability Discovery   | 0/4            | Planned     | -         |
+| 1. OmniFocus Capability Discovery   | 1/4            | In Progress |           |
 | 2. Capture & Permission Gating      | 0/?            | Not started | -         |
 | 3. Routing & On-Demand Trigger      | 0/?            | Not started | -         |
 | 4. Review Loops & Live Auto-Capture | 0/?            | Not started | -         |
