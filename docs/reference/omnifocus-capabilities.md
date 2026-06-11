@@ -220,3 +220,28 @@ DISC-01 coverage: "automation surfaces (OmniAutomation / URL schemes / plug-ins)
 ### Findings
 
 — to be populated in Plan 02 or Plan 03 —
+
+<!-- WAVE-0-HARNESS-CHECK -->
+<!--
+Wave 0 probe-harness warmup — sanitized evidence (counts / booleans / exit status only; NO task,
+project, or perspective names per threat T-01-03). Confirms probes produce valid evidence before
+any finding is marked `evidence: verified`.
+
+| Check               | Command                                                                        | Result                                                                  |
+| ------------------- | ------------------------------------------------------------------------------ | ----------------------------------------------------------------------- |
+| Build               | npm run build (tsc)                                                             | pass — dist/index.js present, no type errors                            |
+| Discovery utilities | osascript -l JavaScript docs/jxa-test-utilities.js                             | exit 0 — 7 collections enumerated, no exception thrown                   |
+| Perspective harness | osascript -l JavaScript tests/manual/perspectives/test-perspectives-simple.js  | exit 0 — OmniJS Perspective.all returned 25 perspectives (count only)   |
+
+Run timestamp (UTC): 2026-06-11T20:15Z
+OmniFocus version: 4.8.11 (build v185.15.0) — user-declared target per D-01; not emitted by these probes.
+
+Notes:
+- jxa-test-utilities.js: exit 0; structured output present (7 collection-count lines); zero exceptions.
+- test-perspectives-simple.js: exit 0. The OmniJS path (Perspective.all via evaluateJavascript) returned
+  25 perspectives cleanly. The JXA fallback sub-path window.perspective() raised a non-fatal
+  "Can't convert types" error (expected JXA limitation per docs/dev/JXA-VS-OMNIJS-PATTERNS.md), which
+  reinforces OmniJS-first: evidence:verified probes in Plans 02-03 must use the OmniJS bridge, not JXA
+  direct property access.
+- No user-visible names, task content, or perspective names appear in this block.
+-->
