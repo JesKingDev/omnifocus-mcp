@@ -177,6 +177,7 @@ export default [
       '*.cjs',
       'vitest.config.ts', // Not in any tsconfig project
       'tests/**/*.js', // Except test files that are specifically JS
+      'probes/**/*.js', // Throwaway JXA/osascript discovery probes (CLAUDE.md .js exception)
     ],
   },
 ];

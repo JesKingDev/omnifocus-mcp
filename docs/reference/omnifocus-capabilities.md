@@ -117,13 +117,59 @@ DISC-01 coverage: "tagging"
 
 ### Area Verdict
 
-- Verdict: _to be determined in Plan 02_
-- Evidence: _pending_
-- Rubric: _pending_
+- Verdict: **extend**
+- Evidence: evidence: verified (OmniJS tag-assignment path live-probed on 4.8.11)
+- Rubric: OF has a complete native tag API; a thin OmniJS wrapper already exists in `mutation-script-builder.ts`. The
+  agent adds only semantic conventions (tag names) and a find-or-create step — no new tag engine.
 
 ### Findings
 
-— to be populated in Plan 02 or Plan 03 —
+#### DISC-TAG-01 — Tag assignment requires the OmniJS bridge (JXA silently no-ops)
+
+| Field           | Value                                                                                              |
+| --------------- | -------------------------------------------------------------------------------------------------- |
+| Verdict         | extend                                                                                             |
+| Rubric          | JXA `task.tags = [...]` silently no-ops; the working path is OmniJS `task.addTag(tagObject)`       |
+| Evidence        | evidence: verified                                                                                 |
+| Source          | Live probe `probes/disc-tag-02-addtag-omni.js` (OmniJS path); SETTER-PATTERNS.md row 6 (JXA no-op) |
+| Downstream cite | Phase 2 (CAP-01, PERM-01), Phase 4 (REVIEW-01)                                                     |
+
+The OmniJS `addTag(tagObject)` path was confirmed to assign and survive read-back on 4.8.11
+(`addTagViaObjectWorks: true`, `readBackConfirmed: true`). The JXA silent-no-op half is cited from SETTER-PATTERNS.md
+row 6 (not re-probed here).
+
+#### DISC-TAG-02 — `addTag()` does not auto-create from a string; a Tag object is required
+
+| Field           | Value                                                                                        |
+| --------------- | -------------------------------------------------------------------------------------------- |
+| Verdict         | extend                                                                                       |
+| Rubric          | Passing a string to `addTag()` throws; MCP must find-or-create (`new Tag(name, null)`) first |
+| Evidence        | evidence: verified                                                                           |
+| Source          | Live probe `probes/disc-tag-01-auto-create.js`                                               |
+| Downstream cite | Phase 2 tag management (PERM-01)                                                             |
+
+Resolves research assumption **A3**: `task.addTag(<string>)` raises `Task.addTag argument "tag" requires [a Tag object]`
+and does NOT auto-create the tag. The agent layer must resolve or create the `Tag` object before assignment (the
+existing `mutation-script-builder.ts` find-or-create pattern already does this).
+
+#### DISC-TAG-03 — Tags are hierarchical first-class objects
+
+| Field           | Value                                                                                        |
+| --------------- | -------------------------------------------------------------------------------------------- |
+| Verdict         | native                                                                                       |
+| Rubric          | `Tag` class (name/id/parent/children/tasks) is complete; nested tags supported natively      |
+| Evidence        | evidence: doc                                                                                |
+| Source          | omni-automation.com/omnifocus/tag.html; codebase `tag-mutation-script-builder.ts`            |
+| Downstream cite | Phase 4 (REVIEW-01/02) — agent tags (agent-okay, review-output, archaeology) are conventions |
+
+Agent-workflow tags are conventional names over the native tag model; no OF extension required.
+
+<!-- DISC-TAG sanitized probe evidence (counts / booleans / probe-created names only; no live-DB names) -->
+
+| Probe                        | Timestamp (UTC)   | Sanitized result                                                                        | Cleanup        | OF build |
+| ---------------------------- | ----------------- | --------------------------------------------------------------------------------------- | -------------- | -------- |
+| `disc-tag-01-auto-create.js` | 2026-06-11T20:27Z | tagAutoCreateFromString=false (string throws); addTagViaObjectWorks=true; readBack=true | cleanedUp=true | 185.15   |
+| `disc-tag-02-addtag-omni.js` | 2026-06-11T20:27Z | addTagViaObjectWorks=true; readBackConfirmed=true                                       | cleanedUp=true | 185.15   |
 
 ---
 
@@ -133,13 +179,44 @@ DISC-01 coverage: "filtering"
 
 ### Area Verdict
 
-- Verdict: _to be determined in Plan 02_
-- Evidence: _pending_
-- Rubric: _pending_
+- Verdict: **extend**
+- Evidence: evidence: doc (codebase query-alternatives + AST query compiler)
+- Rubric: OF filtering is imperative OmniJS iteration; the AST query compiler already wraps it. No new build needed.
 
 ### Findings
 
-— to be populated in Plan 02 or Plan 03 —
+#### DISC-FILTER-01 — Targeted collections avoid full scans for scoped queries
+
+| Field           | Value                                                                                 |
+| --------------- | ------------------------------------------------------------------------------------- |
+| Verdict         | native                                                                                |
+| Rubric          | `inbox`, `tag.remainingTasks`, `project.flattenedTasks` are direct scoped collections |
+| Evidence        | evidence: doc                                                                         |
+| Source          | docs/OMNIFOCUS_QUERY_ALTERNATIVES.md (codebase doc citation, not a live probe)        |
+| Downstream cite | Phase 3 routing (ROUTE-01)                                                            |
+
+#### DISC-FILTER-02 — `.whose()` / `.where()` is forbidden in this codebase
+
+| Field           | Value                                                                    |
+| --------------- | ------------------------------------------------------------------------ |
+| Verdict         | native                                                                   |
+| Rubric          | OF exposes `.whose()` but it is too slow/unreliable; repo policy bans it |
+| Evidence        | evidence: doc                                                            |
+| Source          | CLAUDE.md (Quick Symptom Index); docs/OMNIFOCUS_QUERY_ALTERNATIVES.md    |
+| Downstream cite | All phases that query tasks                                              |
+
+Native capability exists but is unusable at the project's performance bar; enforced at the CLAUDE.md level. Queries
+iterate OmniJS collections instead.
+
+#### DISC-FILTER-03 — Date/flag combined filtering requires a `flattenedTasks` linear scan
+
+| Field           | Value                                                                                     |
+| --------------- | ----------------------------------------------------------------------------------------- |
+| Verdict         | extend                                                                                    |
+| Rubric          | No server-side date-range API; combined predicates need an in-process scan + wrapper      |
+| Evidence        | evidence: doc                                                                             |
+| Source          | docs/OMNIFOCUS_QUERY_ALTERNATIVES.md; existing AST query compiler in `src/contracts/ast/` |
+| Downstream cite | Phase 4 review / today-view filtering                                                     |
 
 ---
 
