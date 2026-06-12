@@ -121,7 +121,23 @@ native capture vs. custom) **Requirements**: CAP-01, PERM-01, PERM-02, LINE-01 *
 3. In a sync/live session, the agent prompts before creating a task and offers an "allow all this session" option
    (mirroring the existing Jira-creation flow).
 
-4. Every agent-created task stores its originating Claude Code session ID in the task notes. **Plans**: TBD
+4. Every agent-created task stores its originating Claude Code session ID in the task notes. **Plans**: 4 plans
+
+**Wave 1** _(test scaffolds — no production code)_
+
+- [ ] 02-01-PLAN.md — Wave 0 test scaffolds (lineage-stamp, agent-okay-predicate, parseMode, policy-gate)
+
+**Wave 2** _(blocked on Wave 1 completion)_
+
+- [ ] 02-02-PLAN.md — Mode type + parseMode() + policy create→gate + allowAllThisSession grant state
+
+**Wave 3** _(blocked on Wave 2 completion)_
+
+- [ ] 02-03-PLAN.md — composeLineageStamp() + LineageSchema dual-schema + gate verdict dispatch + stamp wiring
+
+**Wave 4** _(blocked on Wave 3 completion)_
+
+- [ ] 02-04-PLAN.md — agentOkayPredicate() + end-to-end capture verification checkpoint
 
 > **Why gating lands here:** permission gating is a cross-cutting safety concern, but there is no agent _write_ before
 > this phase to protect. Capture (CAP-01) is the first surface where the agent mutates the store, so the gates (PERM-01,
@@ -188,7 +204,7 @@ Criteria** (what must be TRUE):
 | Phase                               | Plans Complete | Status      | Completed  |
 | ----------------------------------- | -------------- | ----------- | ---------- |
 | 1. OmniFocus Capability Discovery   | 4/4            | Complete    | 2026-06-12 |
-| 2. Capture & Permission Gating      | 0/?            | Not started | -          |
+| 2. Capture & Permission Gating      | 0/4            | In planning | -          |
 | 3. Routing & On-Demand Trigger      | 0/?            | Not started | -          |
 | 4. Review Loops & Live Auto-Capture | 0/?            | Not started | -          |
 | 5. Session Archaeology              | 0/?            | Not started | -          |
