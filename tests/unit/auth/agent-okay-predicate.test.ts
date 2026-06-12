@@ -29,7 +29,8 @@ describe('agentOkayPredicate — PERM-01 predicate compilation', () => {
     const ast = buildAST(agentOkayPredicate());
     const script = emitOmniJS(ast);
 
-    expect(script).toContain('agent-okay');
+    // emitOmniJS returns EmitResult { preamble, predicate }; the tag name appears in the predicate
+    expect(script.predicate).toContain('agent-okay');
   });
 
   it('a task without agent-okay tag does NOT satisfy the filter (negative test)', () => {
