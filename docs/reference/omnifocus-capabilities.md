@@ -439,13 +439,58 @@ DISC-01 coverage: "native capture workflows (inbox, templates)"
 
 ### Area Verdict
 
-- Verdict: _to be determined in Plan 03_
-- Evidence: _pending_
-- Rubric: _pending_
+- Verdict: **extend**
+- Evidence: evidence: verified (inbox `new Task()` + note round-trip live-probed in Plan 02)
+- Rubric: Inbox creation is native via OmniJS; the permission gate (PERM-01/02) and lineage stamping (LINE-01) are thin
+  agent-layer additions. No template system exists.
 
 ### Findings
 
-— to be populated in Plan 02 or Plan 03 —
+#### DISC-CAPTURE-01 — OmniJS `new Task(name, inbox)` is the MCP capture path
+
+| Field           | Value                                                                                               |
+| --------------- | --------------------------------------------------------------------------------------------------- |
+| Verdict         | extend                                                                                              |
+| Rubric          | Inbox creation is native; the permission gate + lineage stamp are thin agent additions              |
+| Evidence        | evidence: verified                                                                                  |
+| Source          | Live probe `probes/disc-capture-01-inbox-note-roundtrip.js` (Plan 02 — see MODEL evidence appendix) |
+| Downstream cite | Phase 2 (CAP-01, LINE-01)                                                                           |
+
+Cross-referenced from Plan 02: `taskCreated: true`, `notePersisted: true`, `inboxReflectsImmediately: true` (not re-run
+here). All OmniJS task properties (note, tags, dates, flagged) are settable in the same creation script.
+
+#### DISC-CAPTURE-02 — URL scheme `omnifocus:///add` is a one-way external capture path
+
+| Field           | Value                                                                                |
+| --------------- | ------------------------------------------------------------------------------------ |
+| Verdict         | extend                                                                               |
+| Rubric          | Alternate capture for external triggers; one-way write only (cannot read back)       |
+| Evidence        | evidence: doc                                                                        |
+| Source          | inside.omnifocus.com/url-schemes (name/note/project/tags/defer/due/flag/repeat-rule) |
+| Downstream cite | Phase 3 if external webhooks drive routing triggers                                  |
+
+#### DISC-CAPTURE-03 — Native user-facing capture surfaces are out of MCP scope
+
+| Field           | Value                                                                                        |
+| --------------- | -------------------------------------------------------------------------------------------- |
+| Verdict         | native                                                                                       |
+| Rubric          | Quick Entry / Clippings / Mail Drop / Share sheet are solved natively; MCP needn't replicate |
+| Evidence        | evidence: doc                                                                                |
+| Source          | support.omnigroup.com/documentation/omnifocus (capture methods)                              |
+| Downstream cite | none (out of agent scope)                                                                    |
+
+#### DISC-CAPTURE-04 — No built-in template system via OmniJS
+
+| Field           | Value                                                                                                    |
+| --------------- | -------------------------------------------------------------------------------------------------------- |
+| Verdict         | build                                                                                                    |
+| Rubric          | If templates are needed they must be custom; `omnifocus:///paste` (TaskPaper) is the nearest native path |
+| Evidence        | evidence: unverified                                                                                     |
+| Source          | No template API found in official docs or Context7 (absence not definitively proven)                     |
+| Downstream cite | Phase 2 if capture needs template-driven task creation                                                   |
+
+**Follow-up note:** Absence of a template API is inferred from missing documentation, not proven. Low priority for Phase
+1 scope; re-examine if Phase 2 needs structured task templates.
 
 ---
 
@@ -455,13 +500,80 @@ DISC-01 coverage: "automation surfaces (OmniAutomation / URL schemes / plug-ins)
 
 ### Area Verdict
 
-- Verdict: _to be determined in Plan 03_
-- Evidence: _pending_
-- Rubric: _pending_
+- Verdict: **native**
+- Evidence: evidence: doc
+- Rubric: OmniJS is the right surface for all agent operations; JXA is a necessary but minimal outer wrapper; URL
+  schemes cover external-trigger use cases.
 
 ### Findings
 
-— to be populated in Plan 02 or Plan 03 —
+#### DISC-AUTO-01 — OmniJS (via `evaluateJavascript`) is the primary automation surface
+
+| Field           | Value                                                                                |
+| --------------- | ------------------------------------------------------------------------------------ |
+| Verdict         | native                                                                               |
+| Rubric          | OmniJS has full read/write access to the OF data model; MCP relies on it exclusively |
+| Evidence        | evidence: doc                                                                        |
+| Source          | docs/dev/JXA-VS-OMNIJS-PATTERNS.md, CLAUDE.md (established codebase pattern)         |
+| Downstream cite | All phases                                                                           |
+
+#### DISC-AUTO-02 — JXA / AppleScript is a minimal outer wrapper (legacy/sunset)
+
+| Field           | Value                                                                                   |
+| --------------- | --------------------------------------------------------------------------------------- |
+| Verdict         | extend                                                                                  |
+| Rubric          | JXA outer only passes scripts to OmniJS; never used for direct property access          |
+| Evidence        | evidence: doc                                                                           |
+| Source          | docs/dev/JXA-VS-OMNIJS-PATTERNS.md (JXA sunset; `Can't convert types` on direct access) |
+| Downstream cite | All phases (JXA is the osascript entry point but holds no logic)                        |
+
+#### DISC-AUTO-03 — URL schemes are a one-way write / navigation path
+
+| Field           | Value                                                                              |
+| --------------- | ---------------------------------------------------------------------------------- |
+| Verdict         | native                                                                             |
+| Rubric          | `///add`, `///paste`, `/perspective/[name]`, x-callback-url; cannot read data back |
+| Evidence        | evidence: doc                                                                      |
+| Source          | inside.omnifocus.com/url-schemes                                                   |
+| Downstream cite | Phase 3 (TRIG-01) if a manual trigger uses a URL scheme; Phase 6 navigation        |
+
+#### DISC-AUTO-04 — Omni Automation plug-ins are not invocable from MCP background context
+
+| Field           | Value                                                                                 |
+| --------------- | ------------------------------------------------------------------------------------- |
+| Verdict         | build                                                                                 |
+| Rubric          | Plug-in invocation needs OF foreground + selection; not applicable to agent-layer ops |
+| Evidence        | evidence: unverified                                                                  |
+| Source          | RESEARCH.md Assumptions Log A2 (invocation model; not probed)                         |
+| Downstream cite | Phase 6 (PROV-01) only if the `archivedFilterRules` path proves insufficient          |
+
+**Follow-up note:** Plug-in invocability from a background osascript context is assumed-unavailable, not probed. The
+current PROV-01 path uses `archivedFilterRules` writes, which do not need a plug-in. Probe only if a downstream phase
+requires plug-in invocation.
+
+#### DISC-AUTO-05 — Apple Shortcuts actions exist but are off the MCP execution path
+
+| Field           | Value                                                                                        |
+| --------------- | -------------------------------------------------------------------------------------------- |
+| Verdict         | native                                                                                       |
+| Rubric          | OF 4.5 added Get Action/Project/Perspective/Tag Shortcuts; MCP uses osascript, not Shortcuts |
+| Evidence        | evidence: doc                                                                                |
+| Source          | mjtsai.com/blog/2024/12/11/omnifocus-4-5/ (cited in RESEARCH.md)                             |
+| Downstream cite | none for MCP; potentially Phase 3 if manual triggers via Shortcuts are requested             |
+
+### Automation Surfaces: Fit Assessment (D-08)
+
+Fit of each automation surface against this milestone's actual needs:
+
+| Surface                | Agent Capture (CAP-01)          | Routing Writes (ROUTE-01..04) | Perspective Provisioning (PROV-01) | MCP Server Basis       |
+| ---------------------- | ------------------------------- | ----------------------------- | ---------------------------------- | ---------------------- |
+| OmniJS (via osascript) | Primary path                    | Primary path                  | Required (`archivedFilterRules`)   | All current operations |
+| URL schemes            | Possible alternate (external)   | Not suitable (no reads)       | Not suitable                       | Not currently used     |
+| Plug-ins               | Not suitable (needs foreground) | Not suitable                  | Not suitable (unverified — A2)     | Not used               |
+| Apple Shortcuts        | Not suitable (MCP context)      | Not suitable                  | Not suitable                       | Not used               |
+
+**Read:** every milestone operation routes through OmniJS. URL schemes are the only viable _alternate_, and only for
+external one-way capture triggers. Plug-ins and Shortcuts are out for agent-layer work.
 
 <!-- WAVE-0-HARNESS-CHECK -->
 <!--
