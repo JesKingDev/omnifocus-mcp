@@ -66,7 +66,14 @@ describe('WriteVerifier integration: task create response includes verification_
 
   beforeAll(async () => {
     const serverPath = path.join(__dirname, '../../../dist/index.js');
-    serverProcess = spawn('node', [serverPath], { stdio: ['pipe', 'pipe', 'pipe'] });
+    // OWNER role: the write-verifier round-trip creates a task to verify the
+    // post-mutation read-back. The Phase 2 policy flip gates AGENT task-creates,
+    // so owner is required for the create to execute (this suite tests
+    // verification, not the permission gate).
+    serverProcess = spawn('node', [serverPath], {
+      stdio: ['pipe', 'pipe', 'pipe'],
+      env: { ...process.env, OMNIFOCUS_MCP_ROLE: 'owner' },
+    });
     await sendRequest({
       jsonrpc: '2.0',
       id: 1,

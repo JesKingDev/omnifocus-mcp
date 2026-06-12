@@ -71,10 +71,15 @@ describe('Unified Tools End-to-End Integration', () => {
   }
 
   beforeAll(async () => {
-    // Start MCP server
+    // Start MCP server as OWNER. These tests exercise CRUD, field routing,
+    // planned dates, and repeats — not the permission gate. The Phase 2 policy
+    // flip gates AGENT task-creates (the fail-safe default), so an owner role is
+    // required for these creates to execute. Gate behavior itself is covered by
+    // the PERM-02 unit tests and the D-08b agent-mode integration test below.
     const serverPath = path.join(__dirname, '../../../../dist/index.js');
     serverProcess = spawn('node', [serverPath], {
       stdio: ['pipe', 'pipe', 'pipe'],
+      env: { ...process.env, OMNIFOCUS_MCP_ROLE: 'owner' },
     });
 
     // Wait for server to be ready (send initialize)
@@ -825,17 +830,20 @@ describe('Unified Tools End-to-End Integration', () => {
 //
 // Automated proof for D-08b: an agent-created task with a lineage param is
 // stamped with the 'agent-okay' tag and has the of-mcp:lineage note block.
-// Runs as owner role so the permission gate is bypassed (gate verification
-// is covered by the PERM-02 unit tests).
+// Runs as the AGENT role (the fail-safe default) — this is the real production
+// capture path. The lineage param is the agent's self-attestation, which both
+// bypasses the create gate (capture-attestation bypass) AND triggers the
+// agent-okay stamp (stamp fires only for role=agent + lineage present). Running
+// as owner would bypass the gate but the stamp would never fire (role !== agent).
 // ---------------------------------------------------------------------------
 
 describe('Phase 2 D-08b — agent create with lineage stamps agent-okay tag', () => {
-  let ownerServerProcess: ChildProcess;
+  let agentServerProcess: ChildProcess;
 
   const lineageTaskName = runScopedName('phase2-lineage-tag');
 
-  // Helper to send JSON-RPC request to the owner-mode server
-  async function sendOwnerRequest(request: unknown): Promise<unknown> {
+  // Helper to send JSON-RPC request to the agent-mode server
+  async function sendAgentRequest(request: unknown): Promise<unknown> {
     return new Promise((resolve, reject) => {
       const requestStr = JSON.stringify(request) + '\n';
       let response = '';
@@ -853,15 +861,15 @@ describe('Phase 2 D-08b — agent create with lineage stamps agent-okay tag', ()
               const parsed = JSON.parse(line);
               if (parsed.jsonrpc === '2.0' && 'result' in parsed) {
                 clearTimeout(timeout);
-                ownerServerProcess.stdout?.off('data', onData);
-                ownerServerProcess.stderr?.off('data', onError);
+                agentServerProcess.stdout?.off('data', onData);
+                agentServerProcess.stderr?.off('data', onError);
                 resolve(parsed.result);
                 return;
               }
               if (parsed.jsonrpc === '2.0' && 'error' in parsed) {
                 clearTimeout(timeout);
-                ownerServerProcess.stdout?.off('data', onData);
-                ownerServerProcess.stderr?.off('data', onError);
+                agentServerProcess.stdout?.off('data', onData);
+                agentServerProcess.stderr?.off('data', onError);
                 reject(new Error(`MCP error: ${JSON.stringify(parsed.error)}`));
                 return;
               }
@@ -876,20 +884,24 @@ describe('Phase 2 D-08b — agent create with lineage stamps agent-okay tag', ()
         void data; // suppress unused variable warning
       };
 
-      ownerServerProcess.stdout?.on('data', onData);
-      ownerServerProcess.stderr?.on('data', onError);
-      ownerServerProcess.stdin?.write(requestStr);
+      agentServerProcess.stdout?.on('data', onData);
+      agentServerProcess.stderr?.on('data', onError);
+      agentServerProcess.stdin?.write(requestStr);
     });
   }
 
   beforeAll(async () => {
     const serverPath = path.join(__dirname, '../../../../dist/index.js');
-    ownerServerProcess = spawn('node', [serverPath], {
+    agentServerProcess = spawn('node', [serverPath], {
       stdio: ['pipe', 'pipe', 'pipe'],
-      env: { ...process.env, OMNIFOCUS_MCP_ROLE: 'owner' },
+      // AGENT role: explicitly 'agent' (any non-'owner' value resolves to agent
+      // via parseRole's default-deny) so an inherited OMNIFOCUS_MCP_ROLE=owner
+      // cannot leak in. This exercises the real capture path (gate bypass via
+      // lineage attestation + agent-okay stamp).
+      env: { ...process.env, OMNIFOCUS_MCP_ROLE: 'agent' },
     });
 
-    const initResult = await sendOwnerRequest({
+    const initResult = await sendAgentRequest({
       jsonrpc: '2.0',
       id: 1,
       method: 'initialize',
@@ -903,8 +915,8 @@ describe('Phase 2 D-08b — agent create with lineage stamps agent-okay tag', ()
   }, 30000);
 
   afterAll(() => {
-    if (ownerServerProcess) {
-      ownerServerProcess.kill();
+    if (agentServerProcess) {
+      agentServerProcess.kill();
     }
   });
 
@@ -913,7 +925,7 @@ describe('Phase 2 D-08b — agent create with lineage stamps agent-okay tag', ()
 
     try {
       // (a) Create task with lineage param
-      const createResult = await sendOwnerRequest({
+      const createResult = await sendAgentRequest({
         jsonrpc: '2.0',
         id: 100,
         method: 'tools/call',
@@ -942,7 +954,7 @@ describe('Phase 2 D-08b — agent create with lineage stamps agent-okay tag', ()
       expect(createdTaskId).toBeDefined();
 
       // (d) Read back the task by ID
-      const readResult = await sendOwnerRequest({
+      const readResult = await sendAgentRequest({
         jsonrpc: '2.0',
         id: 101,
         method: 'tools/call',
@@ -972,7 +984,7 @@ describe('Phase 2 D-08b — agent create with lineage stamps agent-okay tag', ()
     } finally {
       // Self-cleaning: delete the created task
       if (createdTaskId) {
-        await sendOwnerRequest({
+        await sendAgentRequest({
           jsonrpc: '2.0',
           id: 102,
           method: 'tools/call',

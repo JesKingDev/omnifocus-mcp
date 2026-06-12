@@ -16,6 +16,10 @@ const d = RUN_INTEGRATION_TESTS ? describe : describe.skip;
 
 d('HTTP Transport Integration Tests', () => {
   let client: HTTPTestClient;
+  // Owner token registered on the server so a dedicated owner client can run the
+  // gated create test (Phase 2 gates AGENT task-creates). Must differ from the
+  // default agent token the helper assigns.
+  const OWNER_TOKEN = 'maintest-owner-token-cccccccccccccccccccccccc';
 
   beforeAll(async () => {
     console.log('🚀 Starting HTTP transport test server...');
@@ -23,6 +27,7 @@ d('HTTP Transport Integration Tests', () => {
       port: 3099,
       host: '127.0.0.1',
       enableCacheWarming: false, // Faster test startup
+      ownerToken: OWNER_TOKEN,
     });
     await client.startServer();
     // Initialize once for all tests in this suite
@@ -123,16 +128,27 @@ d('HTTP Transport Integration Tests', () => {
     });
 
     it('should create a task successfully', { timeout: 90000 }, async () => {
-      // Create a test task
-      const createResult = (await client.createTestTask('HTTP Transport Test Task')) as {
-        success: boolean;
-        error?: unknown;
-        data: { task: { taskId: string; name: string } };
-      };
+      // Phase 2 gates AGENT task-creates (the default role). This transport test
+      // asserts that create works over HTTP, not the gate — so it runs as OWNER
+      // via a dedicated owner-authenticated client against the same server. The
+      // owner role's create→agent role distinction itself is covered by the
+      // Phase 4 per-session role-parity test. The owner client cleans up its own
+      // task (cleanup uses bulk_delete, which is denied for the agent role).
+      const ownerClient = new HTTPTestClient({ port: 3099, host: '127.0.0.1', authToken: OWNER_TOKEN });
+      try {
+        await ownerClient.initialize();
+        const createResult = (await ownerClient.createTestTask('HTTP Transport Test Task')) as {
+          success: boolean;
+          error?: unknown;
+          data: { task: { taskId: string; name: string } };
+        };
 
-      expectOk(createResult, 'HTTP transport create task');
-      expect(createResult.data.task.taskId).toBeTruthy();
-      expect(createResult.data.task.name).toContain('HTTP Transport Test Task');
+        expectOk(createResult, 'HTTP transport create task');
+        expect(createResult.data.task.taskId).toBeTruthy();
+        expect(createResult.data.task.name).toContain('HTTP Transport Test Task');
+      } finally {
+        await ownerClient.cleanup();
+      }
     });
 
     it('should run analytics via omnifocus_analyze', { timeout: 90000 }, async () => {
