@@ -819,3 +819,177 @@ describe('Unified Tools End-to-End Integration', () => {
     });
   });
 });
+
+// ---------------------------------------------------------------------------
+// Phase 2 D-08b: agent create with lineage stamps agent-okay tag
+//
+// Automated proof for D-08b: an agent-created task with a lineage param is
+// stamped with the 'agent-okay' tag and has the of-mcp:lineage note block.
+// Runs as owner role so the permission gate is bypassed (gate verification
+// is covered by the PERM-02 unit tests).
+// ---------------------------------------------------------------------------
+
+describe('Phase 2 D-08b — agent create with lineage stamps agent-okay tag', () => {
+  let ownerServerProcess: ChildProcess;
+
+  const lineageTaskName = runScopedName('phase2-lineage-tag');
+
+  // Helper to send JSON-RPC request to the owner-mode server
+  async function sendOwnerRequest(request: unknown): Promise<unknown> {
+    return new Promise((resolve, reject) => {
+      const requestStr = JSON.stringify(request) + '\n';
+      let response = '';
+
+      const timeout = setTimeout(() => {
+        reject(new Error('Request timeout after 120s'));
+      }, 120000);
+
+      const onData = (data: Buffer) => {
+        response += data.toString();
+        const lines = response.split('\n');
+        for (const line of lines) {
+          if (line.trim().startsWith('{')) {
+            try {
+              const parsed = JSON.parse(line);
+              if (parsed.jsonrpc === '2.0' && 'result' in parsed) {
+                clearTimeout(timeout);
+                ownerServerProcess.stdout?.off('data', onData);
+                ownerServerProcess.stderr?.off('data', onError);
+                resolve(parsed.result);
+                return;
+              }
+              if (parsed.jsonrpc === '2.0' && 'error' in parsed) {
+                clearTimeout(timeout);
+                ownerServerProcess.stdout?.off('data', onData);
+                ownerServerProcess.stderr?.off('data', onError);
+                reject(new Error(`MCP error: ${JSON.stringify(parsed.error)}`));
+                return;
+              }
+            } catch {
+              // Not valid JSON yet, continue collecting
+            }
+          }
+        }
+      };
+
+      const onError = (data: Buffer) => {
+        void data; // suppress unused variable warning
+      };
+
+      ownerServerProcess.stdout?.on('data', onData);
+      ownerServerProcess.stderr?.on('data', onError);
+      ownerServerProcess.stdin?.write(requestStr);
+    });
+  }
+
+  beforeAll(async () => {
+    const serverPath = path.join(__dirname, '../../../../dist/index.js');
+    ownerServerProcess = spawn('node', [serverPath], {
+      stdio: ['pipe', 'pipe', 'pipe'],
+      env: { ...process.env, OMNIFOCUS_MCP_ROLE: 'owner' },
+    });
+
+    const initResult = await sendOwnerRequest({
+      jsonrpc: '2.0',
+      id: 1,
+      method: 'initialize',
+      params: {
+        protocolVersion: '2025-06-18',
+        capabilities: {},
+        clientInfo: { name: 'test-d08b', version: '1.0.0' },
+      },
+    });
+    expect(initResult).toBeDefined();
+  }, 30000);
+
+  afterAll(() => {
+    if (ownerServerProcess) {
+      ownerServerProcess.kill();
+    }
+  });
+
+  it('creates a task with lineage and reads back agent-okay tag (D-08b)', async () => {
+    let createdTaskId: string | undefined;
+
+    try {
+      // (a) Create task with lineage param
+      const createResult = await sendOwnerRequest({
+        jsonrpc: '2.0',
+        id: 100,
+        method: 'tools/call',
+        params: {
+          name: 'omnifocus_write',
+          arguments: {
+            mutation: {
+              operation: 'create',
+              target: 'task',
+              data: {
+                name: lineageTaskName,
+                lineage: { sessionId: 'integration-test-session' },
+              },
+            },
+          },
+        },
+      });
+
+      // (b) Assert create succeeded
+      const createContent = (createResult as { content: Array<{ type: string; text: string }> }).content;
+      const createParsed = JSON.parse(createContent[0].text);
+      expectOk(createParsed, 'create task with lineage (D-08b)');
+
+      // (c) Extract task ID
+      createdTaskId = createParsed.data?.task?.taskId ?? createParsed.data?.taskId;
+      expect(createdTaskId).toBeDefined();
+
+      // (d) Read back the task by ID
+      const readResult = await sendOwnerRequest({
+        jsonrpc: '2.0',
+        id: 101,
+        method: 'tools/call',
+        params: {
+          name: 'omnifocus_read',
+          arguments: {
+            query: {
+              type: 'tasks',
+              filters: { ids: [createdTaskId] },
+            },
+          },
+        },
+      });
+
+      const readContent = (readResult as { content: Array<{ type: string; text: string }> }).content;
+      const readParsed = JSON.parse(readContent[0].text);
+      expectOk(readParsed, 'read back task by ID (D-08b)');
+
+      const task = readParsed.data?.tasks?.[0];
+      expect(task).toBeDefined();
+
+      // (e) Assert agent-okay tag is present
+      expect(task.tags).toContain('agent-okay');
+
+      // (f) Assert lineage sentinel is in the note
+      expect(task.note).toContain('of-mcp:lineage');
+    } finally {
+      // Self-cleaning: delete the created task
+      if (createdTaskId) {
+        await sendOwnerRequest({
+          jsonrpc: '2.0',
+          id: 102,
+          method: 'tools/call',
+          params: {
+            name: 'omnifocus_write',
+            arguments: {
+              mutation: {
+                operation: 'delete',
+                target: 'task',
+                id: createdTaskId,
+              },
+            },
+          },
+        }).catch(() => {
+          // Best-effort cleanup — don't fail the test if delete fails
+        });
+      }
+    }
+  }, 60000);
+});
