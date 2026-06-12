@@ -2,7 +2,7 @@
 gsd_state_version: 1.0
 milestone: agent-workflow
 milestone_name: Agent Workflow System
-status: ready_to_plan
+status: ready_to_execute
 last_updated: '2026-06-12T05:13:29.769Z'
 progress:
   total_phases: 6
@@ -24,8 +24,9 @@ so JessOS can trust OmniFocus as the source of truth. **Current focus:** Phase 2
 
 ## Current Position
 
-Phase: 2 of 4 (capture & permission gating) committed; ready for `/gsd-execute-phase 1` Last activity: 2026-06-11 —
-Phase 1 planned (DISC-01/02 covered; decision-coverage override recorded for D-02/D-03/D-06)
+Phase: 2 of 6 (capture & permission gating) **planned and verified**; ready for `/gsd-execute-phase 2`. Last activity:
+2026-06-12 — Phase 2 planned (4 plans / 4 waves; CAP-01/PERM-01/PERM-02/LINE-01 covered; plan-checker PASSED iteration
+2; RESEARCH + PATTERNS + VALIDATION committed). Phase 1 (capability discovery) complete 2026-06-12.
 
 ## Roadmap Summary (agent-workflow)
 
