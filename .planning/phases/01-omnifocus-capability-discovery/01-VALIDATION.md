@@ -1,10 +1,11 @@
 ---
 phase: 1
 slug: omnifocus-capability-discovery
-status: draft
-nyquist_compliant: false
-wave_0_complete: false
+status: complete
+nyquist_compliant: true
+wave_0_complete: true
 created: 2026-06-11
+updated: 2026-06-12
 ---
 
 # Phase 1 — Validation Strategy
@@ -44,13 +45,13 @@ created: 2026-06-11
 
 ## Per-Task Verification Map
 
-| Req ID  | Behavior                                                                                                  | Test Type         | Automated Command                    | Verified By                                                | Status     |
-| ------- | --------------------------------------------------------------------------------------------------------- | ----------------- | ------------------------------------ | ---------------------------------------------------------- | ---------- |
-| DISC-01 | Report covers all seven area codes (TAG, FILTER, FIELD, PERSP, MODEL, CAPTURE, AUTO) with ≥1 finding each | Manual doc review | —                                    | Reviewer confirms each area section exists                 | ⬜ pending |
-| DISC-01 | Claims tagged `evidence: verified` have a corresponding probe that produced matching output               | Manual trace      | `osascript -l JavaScript <probe>.js` | Probe script exists and output matches the claim           | ⬜ pending |
-| DISC-02 | Each area section records a 3-way verdict (native / extend / build)                                       | Manual doc review | —                                    | Reviewer reads each area's verdict block                   | ⬜ pending |
-| DISC-02 | Each verdict carries a one-line rubric reason + evidence tag (`verified` \| `doc` \| `unverified`)        | Manual doc review | —                                    | Reviewer confirms verdict format per D-04/D-05             | ⬜ pending |
-| DISC-02 | No `evidence: unverified` finding remains without an explicit follow-up note                              | Manual doc review | —                                    | Reviewer confirms each `unverified` is flagged, not silent | ⬜ pending |
+| Req ID  | Behavior                                                                                                  | Test Type         | Automated Command                    | Verified By                                                                                 | Status   |
+| ------- | --------------------------------------------------------------------------------------------------------- | ----------------- | ------------------------------------ | ------------------------------------------------------------------------------------------- | -------- |
+| DISC-01 | Report covers all seven area codes (TAG, FILTER, FIELD, PERSP, MODEL, CAPTURE, AUTO) with ≥1 finding each | Manual doc review | —                                    | 28 findings across 7 areas (TAG 3, FILTER 3, FIELD 3, PERSP 4, MODEL 6, CAPTURE 4, AUTO 5)  | ✅ green |
+| DISC-01 | Claims tagged `evidence: verified` have a corresponding probe that produced matching output               | Manual trace      | `osascript -l JavaScript <probe>.js` | 6 live probes in `probes/`; each verified finding has a sanitized in-report appendix        | ✅ green |
+| DISC-02 | Each area section records a 3-way verdict (native / extend / build)                                       | Manual doc review | —                                    | 7 single-value area verdicts; 0 slash-combined values                                       | ✅ green |
+| DISC-02 | Each verdict carries a one-line rubric reason + evidence tag (`verified` \| `doc` \| `unverified`)        | Manual doc review | —                                    | Every finding has Verdict + Rubric + Evidence + Source + Downstream cite per D-04/D-05      | ✅ green |
+| DISC-02 | No `evidence: unverified` finding remains without an explicit follow-up note                              | Manual doc review | —                                    | 2 accepted research gaps (CAPTURE-04, AUTO-04), each with a follow-up note — no silent gaps | ⚠️ flaky |
 
 _Status: ⬜ pending · ✅ green · ❌ red · ⚠️ flaky_
 
@@ -60,9 +61,9 @@ _Status: ⬜ pending · ✅ green · ❌ red · ⚠️ flaky_
 
 Probe harnesses already exist — no test-file gaps. The executor must, before relying on any probe as evidence:
 
-- [ ] Confirm `tests/manual/perspectives/` scripts run cleanly against OmniFocus 4.8.11
-- [ ] Verify `docs/jxa-test-utilities.js` executes without error on the current machine
-- [ ] Run `npm run build` before any MCP-based probe (required by CLAUDE.md)
+- [x] Confirm `tests/manual/perspectives/` scripts run cleanly against OmniFocus 4.8.11 (WAVE-0-HARNESS-CHECK)
+- [x] Verify `docs/jxa-test-utilities.js` executes without error on the current machine (exit 0, 7 collections)
+- [x] Run `npm run build` before any MCP-based probe (required by CLAUDE.md) (build passed)
 
 ---
 
@@ -77,10 +78,13 @@ Probe harnesses already exist — no test-file gaps. The executor must, before r
 
 ## Validation Sign-Off
 
-- [ ] All capability areas have probe evidence or an explicit `doc`/`unverified` tag
-- [ ] Sampling continuity: every `evidence: verified` finding traces to a probe run
-- [ ] Wave 0 harness checks pass against 4.8.11
-- [ ] No watch-mode flags
-- [ ] `nyquist_compliant: true` set in frontmatter once the above hold
+- [x] All capability areas have probe evidence or an explicit `doc`/`unverified` tag
+- [x] Sampling continuity: every `evidence: verified` finding traces to a probe run
+- [x] Wave 0 harness checks pass against 4.8.11
+- [x] No watch-mode flags
+- [x] `nyquist_compliant: true` set in frontmatter once the above hold
 
-**Approval:** pending
+**Approval:** Approved 2026-06-12 — Phase 1 report complete. Restart persistence result: **confirmed persistent**
+(`archivedFilterRules` change survived Cmd-Q + reopen on 4.8.11). The one BUILD-DECISION gate (DISC-PERSP-01
+cross-restart, gating Phase 6 PROV-01) is resolved with full evidence. Two accepted low-risk research gaps remain
+flagged (DISC-CAPTURE-04 templates, DISC-AUTO-04 plug-ins) — neither is a build-decision gate. Report gates Phases 2–6.

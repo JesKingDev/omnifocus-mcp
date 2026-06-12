@@ -369,21 +369,22 @@ DISC-01 coverage: "perspectives"
 
 ### Findings
 
-#### DISC-PERSP-01 — `archivedFilterRules` is read/write (in-session); cross-restart persistence unverified
+#### DISC-PERSP-01 — `archivedFilterRules` is read/write and persists across an OmniFocus restart
 
-| Field           | Value                                                                                             |
-| --------------- | ------------------------------------------------------------------------------------------------- |
-| Verdict         | extend                                                                                            |
-| Rubric          | JSON rule archive (OF 4.2+) is writable; MCP wraps backup→write→restore for safe repair           |
-| Evidence        | evidence: verified (in-session write + read-back) / evidence: unverified (cross-restart)          |
-| Source          | Live probe `probes/disc-persp-01-filter-rules-persist.js` (Option A: disposable test perspective) |
-| Downstream cite | Phase 6 (PROV-01 — perspective repair)                                                            |
+| Field           | Value                                                                                                      |
+| --------------- | ---------------------------------------------------------------------------------------------------------- |
+| Verdict         | extend                                                                                                     |
+| Rubric          | JSON rule archive (OF 4.2+) is writable; MCP wraps backup→write→restore for safe repair                    |
+| Evidence        | evidence: verified (in-session write + read-back AND cross-restart persistence — both confirmed on 4.8.11) |
+| Source          | Live probe `probes/disc-persp-01-filter-rules-persist.js` (Option A: disposable test perspective)          |
+| Downstream cite | Phase 6 (PROV-01 — perspective repair)                                                                     |
 
-**Follow-up note (cross-restart):** The probe confirmed the write API accepts the call and the value round-trips
-in-session (`writeAccepted: true`, `immediateReadBackMatch: true`, `originalRestored: true`). Writing the same value
-back does NOT prove rule mutation persists across an OmniFocus restart. Cross-restart persistence requires a manual
-write→quit→reopen→read cycle — this is the **Plan 04 human checkpoint** and a Phase 6 PROV-01 gate. Until then the
-cross-restart dimension stays `unverified`.
+**Resolution (cross-restart, Plan 04 human checkpoint):** Both dimensions are now confirmed. In-session, the probe
+showed the write API accepts the call and round-trips (`writeAccepted: true`, `immediateReadBackMatch: true`,
+`originalRestored: true`). For cross-restart, a filter-rule change was written to `disc-probe-test-perspective`,
+OmniFocus was fully quit (Cmd-Q) and reopened, and the rules were read back: the change **persisted** (baseline
+`archivedFilterRules` length 70 → 93 after restart; signature changed). Phase 6 PROV-01 can rely on
+`archivedFilterRules` writes surviving app restarts on 4.8.11.
 
 #### DISC-PERSP-02 — `Perspective.Custom.all` enumerates user custom perspectives
 
@@ -426,10 +427,11 @@ exercised in this plan's checkpoint). PROV-01 maps to the supported _repair_ pat
 
 <!-- DISC-PERSP sanitized probe evidence (counts / booleans / identifiers / probe-target name only; no real perspective names) -->
 
-| Probe                                   | Timestamp (UTC)   | Sanitized result                                                                    | Cleanup               | OF build |
-| --------------------------------------- | ----------------- | ----------------------------------------------------------------------------------- | --------------------- | -------- |
-| `disc-persp-02-custom-all-enumerate.js` | 2026-06-11T20:34Z | customPerspectiveCount=18; jessosFound=false (read-only)                            | n/a (read-only)       | 185.15   |
-| `disc-persp-01-filter-rules-persist.js` | 2026-06-12T00:12Z | target=disc-probe-test-perspective; writeAccepted=true; immediateReadBackMatch=true | originalRestored=true | 185.15   |
+| Probe                                   | Timestamp (UTC)   | Sanitized result                                                                    | Cleanup                           | OF build |
+| --------------------------------------- | ----------------- | ----------------------------------------------------------------------------------- | --------------------------------- | -------- |
+| `disc-persp-02-custom-all-enumerate.js` | 2026-06-11T20:34Z | customPerspectiveCount=18; jessosFound=false (read-only)                            | n/a (read-only)                   | 185.15   |
+| `disc-persp-01-filter-rules-persist.js` | 2026-06-12T00:12Z | target=disc-probe-test-perspective; writeAccepted=true; immediateReadBackMatch=true | originalRestored=true             | 185.15   |
+| cross-restart cycle (manual, Plan 04)   | 2026-06-12T00:4xZ | rules length 70→93 across Cmd-Q + reopen; baselineSig 413facb3→5743312c             | persisted=true (UI rule retained) | 185.15   |
 
 ---
 
