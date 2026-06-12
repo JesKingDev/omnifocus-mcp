@@ -86,7 +86,7 @@ describe('decide() — D-08 policy matrix', () => {
     },
     { label: 'agent/drop/task → allow', role: 'agent', operation: 'drop', target: 'task', expected: 'allow' },
     { label: 'agent/drop/project → allow', role: 'agent', operation: 'drop', target: 'project', expected: 'allow' },
-    { label: 'agent/create/task → allow', role: 'agent', operation: 'create', target: 'task', expected: 'allow' },
+    { label: 'agent/create/task → gate', role: 'agent', operation: 'create', target: 'task', expected: 'gate' },
     {
       label: 'agent/create/project → allow',
       role: 'agent',

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { parseRole, resolveStdioIdentity, resolveHttpIdentity } from '../../../src/auth/role-resolver.js';
+import { parseRole, resolveStdioIdentity, resolveHttpIdentity, parseMode } from '../../../src/auth/role-resolver.js';
 import type { ResolvedIdentity } from '../../../src/contracts/roles.js';
 import type { TokenEntry } from '../../../src/auth/token-registry.js';
 
@@ -40,6 +40,33 @@ describe('parseRole — default-deny parse matrix', () => {
     { label: 'unset (undefined)', env: {}, expected: 'agent' },
   ])('$label → $expected', ({ env, expected }) => {
     expect(parseRole(env)).toBe(expected);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// parseMode — default-deny parse matrix (Phase 2, D-05)
+//
+// Covers the 8 input classes from 02-CONTEXT.md D-05.
+// Literal-only, default-deny parse: only exact literal 'true' → interactive.
+// All other inputs → background (the restrictive/fail-safe mode).
+// RED until Wave 1 (Plan 02-02) exports parseMode from role-resolver.ts.
+// ---------------------------------------------------------------------------
+
+describe('parseMode — default-deny parse matrix', () => {
+  it.each<{ label: string; env: Record<string, string | undefined>; expected: 'interactive' | 'background' }>([
+    // The ONE input class that resolves to interactive
+    { label: 'exact match: true', env: { OMNIFOCUS_MCP_INTERACTIVE: 'true' }, expected: 'interactive' },
+
+    // All remaining classes must resolve to background (fail-safe)
+    { label: 'undefined (unset)', env: {}, expected: 'background' },
+    { label: 'empty string', env: { OMNIFOCUS_MCP_INTERACTIVE: '' }, expected: 'background' },
+    { label: 'whitespace only', env: { OMNIFOCUS_MCP_INTERACTIVE: '   ' }, expected: 'background' },
+    { label: 'wrong case: True', env: { OMNIFOCUS_MCP_INTERACTIVE: 'True' }, expected: 'background' },
+    { label: 'wrong case: TRUE', env: { OMNIFOCUS_MCP_INTERACTIVE: 'TRUE' }, expected: 'background' },
+    { label: 'typo: truee', env: { OMNIFOCUS_MCP_INTERACTIVE: 'truee' }, expected: 'background' },
+    { label: 'garbage: 1', env: { OMNIFOCUS_MCP_INTERACTIVE: '1' }, expected: 'background' },
+  ])('$label → $expected', ({ env, expected }) => {
+    expect(parseMode(env)).toBe(expected);
   });
 });
 

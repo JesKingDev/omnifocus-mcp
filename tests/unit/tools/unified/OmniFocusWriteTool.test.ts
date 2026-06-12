@@ -903,3 +903,92 @@ describe('OmniFocusWriteTool task operations', () => {
     });
   });
 });
+
+// ---------------------------------------------------------------------------
+// PERM-02 gate verdict dispatch (Phase 2)
+//
+// Tests the gate verdict returned when an agent tries to create a task in
+// interactive mode without a session grant. The new describe block runs as
+// AGENT (no OMNIFOCUS_MCP_ROLE set) in interactive mode.
+//
+// These tests are RED until Wave 3 (Plan 02-03 Task 2) wires the gate
+// dispatch logic into OmniFocusWriteTool.executeValidated().
+// ---------------------------------------------------------------------------
+
+describe('PERM-02 gate verdict dispatch', () => {
+  let tool: OmniFocusWriteTool;
+  let mockCache: CacheManager;
+  let originalRole: string | undefined;
+  let originalInteractive: string | undefined;
+
+  beforeEach(() => {
+    // Run as AGENT (fail-safe default — no env var set)
+    originalRole = process.env['OMNIFOCUS_MCP_ROLE'];
+    originalInteractive = process.env['OMNIFOCUS_MCP_INTERACTIVE'];
+
+    delete process.env['OMNIFOCUS_MCP_ROLE'];
+    process.env['OMNIFOCUS_MCP_INTERACTIVE'] = 'true';
+
+    mockCache = createMockCache();
+    tool = new OmniFocusWriteTool(mockCache);
+
+    // Mock execJson — policy guard fires before JXA dispatch; no script execution needed
+    vi.spyOn(tool as any, 'execJson').mockResolvedValue(undefined);
+  });
+
+  afterEach(() => {
+    if (originalRole === undefined) {
+      delete process.env['OMNIFOCUS_MCP_ROLE'];
+    } else {
+      process.env['OMNIFOCUS_MCP_ROLE'] = originalRole;
+    }
+    if (originalInteractive === undefined) {
+      delete process.env['OMNIFOCUS_MCP_INTERACTIVE'];
+    } else {
+      process.env['OMNIFOCUS_MCP_INTERACTIVE'] = originalInteractive;
+    }
+    vi.restoreAllMocks();
+  });
+
+  it('returns POLICY_GATE_CAPTURE_CONFIRM for agent + interactive mode + no grant', async () => {
+    const result = (await tool.execute({
+      mutation: {
+        operation: 'create',
+        target: 'task',
+        data: { name: 'Gate test' },
+      },
+    })) as any;
+
+    expect(result.success).toBe(false);
+    expect(result.error.code).toBe('POLICY_GATE_CAPTURE_CONFIRM');
+  });
+
+  it('allows create when isAllowedAllThisSession returns true (session grant bypass)', async () => {
+    // Mock session-state module to simulate grant being active
+    vi.doMock('../../../../src/auth/session-state.js', () => ({
+      isAllowedAllThisSession: () => true,
+      setAllowAllThisSession: vi.fn(),
+      resetSessionGrant: vi.fn(),
+    }));
+
+    // Re-create tool after mock registration so the mocked module is used
+    const freshCache = createMockCache();
+    const freshTool = new OmniFocusWriteTool(freshCache);
+    vi.spyOn(freshTool as any, 'execJson').mockResolvedValue(undefined);
+
+    const result = (await freshTool.execute({
+      mutation: {
+        operation: 'create',
+        target: 'task',
+        data: { name: 'Grant bypass test' },
+      },
+    })) as any;
+
+    // With grant active, execution proceeds (success or execJson called — not the gate code)
+    const didBypassGate =
+      result.success === true || (result.error && result.error.code !== 'POLICY_GATE_CAPTURE_CONFIRM');
+    expect(didBypassGate).toBe(true);
+
+    vi.doUnmock('../../../../src/auth/session-state.js');
+  });
+});
