@@ -3,12 +3,12 @@ gsd_state_version: 1.0
 milestone: agent-workflow
 milestone_name: Agent Workflow System
 status: ready_to_execute
-last_updated: '2026-06-12T14:18:40.390Z'
+last_updated: '2026-06-12T14:32:06.115Z'
 progress:
   total_phases: 6
   completed_phases: 1
   total_plans: 8
-  completed_plans: 6
+  completed_plans: 7
   percent: 17
 ---
 
@@ -24,10 +24,10 @@ Phase 1 = OmniFocus capability discovery, which gates all workflow design.
 
 ## Current Position
 
-Phase: 02 (capture-permission-gating) — EXECUTING Plan: 3 of 4 2026-06-12 — Wave 2 complete: Mode type + parseMode() +
-create→gate policy + session-state singleton + grant bypass all shipped atomically. Wave 0 parseMode and create→gate
-test rows now GREEN. Wave 3 next: gate dispatch + lineage stamp + dual-schema. Phase 1 (capability discovery) complete
-2026-06-12.
+Phase: 02 (capture-permission-gating) — EXECUTING Plan: 4 of 4 2026-06-12 — Wave 3 complete: lineage stamp (LINE-01),
+mode-aware gate dispatch (PERM-02, POLICY_GATE_CAPTURE_CONFIRM + POLICY_GATE_BACKGROUND_ONLY), agent-okay tag (D-06),
+dual-schema lineage wiring (D-11). All Wave 0 RED tests now GREEN except PERM-01 predicate (Wave 4). Wave 4 next:
+agent-okay predicate + integration + human checkpoint.
 
 ## Roadmap Summary (agent-workflow)
 
@@ -64,7 +64,7 @@ test rows now GREEN. Wave 3 next: gate dispatch + lineage stamp + dual-schema. P
 - Trend: —
 
 | Phase 02-capture-permission-gating P01 | 5m | 3 tasks | 6 files | | Phase 02-capture-permission-gating P02 | 25m | 2
-tasks | 11 files |
+tasks | 11 files | | Phase 02-capture-permission-gating P03 | 35m | 2 tasks | 6 files |
 
 ## Accumulated Context
 
@@ -103,6 +103,15 @@ Decisions are logged in PROJECT.md Key Decisions table. Recent decisions affecti
 - [Phase 2, Wave 2]: isAllowedAllThisSession() bypass wired into OmniFocusWriteTool in Task 2 (not deferred to Wave 3)
   per atomicity requirement: policy flip and grant bypass must ship together.
 
+- [Phase 2, Wave 3]: LineageSchema advertised as bare { type: object } in inputSchema to stay under 4KB MCP
+  advertisement limit; Zod schema still enforces strict shape server-side.
+
+- [Phase 2, Wave 3]: SCHEMA_UPSTREAM_FIELDS exclusion added to schema-impl-parity test — lineage consumed upstream of
+  buildCreateTaskScript, not silently dropped (Pitfall 3 guard).
+
+- [Phase 2, Wave 3]: PERM-02 bypass test fixed to use direct setAllowAllThisSession() — vi.doMock cannot intercept ESM
+  static bindings after module load.
+
 ### Pending Todos
 
 None yet.
@@ -134,9 +143,9 @@ need a deliberate on-Mac session per `deploy/launchd/RUNBOOK.md`.
 
 ## Session Continuity
 
-Last session: 2026-06-12T14:18:40.385Z
+Last session: 2026-06-12T14:33:00.000Z
 
 ## Operator Next Steps
 
-- Execute Phase 2 Wave 3 (02-03-PLAN.md): gate dispatch + POLICY_GATE_CAPTURE_CONFIRM + lineage stamp + dual-schema +
-  agent-okay predicate. PERM-02 and LINE-01 test rows go GREEN in Wave 3.
+- Execute Phase 2 Wave 4 (02-04-PLAN.md): agent-okay predicate (PERM-01) + integration tests + human checkpoint. PERM-01
+  predicate tests (agent-okay-predicate.test.ts) go GREEN in Wave 4.
