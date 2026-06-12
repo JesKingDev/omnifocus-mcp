@@ -1,6 +1,6 @@
 import { BaseTool } from '../base.js';
 import { CacheManager } from '../../cache/CacheManager.js';
-import { WriteSchema, type WriteInput } from './schemas/write-schema.js';
+import { WriteSchema, type WriteInput , LineageInput } from './schemas/write-schema.js';
 import { MutationCompiler, type CompiledMutation } from './compilers/MutationCompiler.js';
 import { TempIdResolver } from './utils/tempid-resolver.js';
 import { DependencyGraph, DependencyGraphError } from './utils/dependency-graph.js';
@@ -61,8 +61,9 @@ import { sanitizeTaskUpdates } from './utils/task-sanitizer.js';
 import { flattenBatchResults } from './batch-response-flatten.js';
 import { decide, normalizeArgsToPolicy } from '../../auth/operation-policy.js';
 import type { Role } from '../../contracts/roles.js';
-import { parseRole } from '../../auth/role-resolver.js';
+import { parseRole, parseMode } from '../../auth/role-resolver.js';
 import { isAllowedAllThisSession } from '../../auth/session-state.js';
+import { composeLineageStamp } from '../../contracts/ast/lineage.js';
 import { WriteVerifier } from './verifier/WriteVerifier.js';
 
 // Convert string IDs to branded types for type safety (compile-time only, no runtime validation)
@@ -224,6 +225,8 @@ OPERATION POLICY (agent role):
       sequential: { type: 'boolean', description: 'project-only' },
       status: { type: 'string', description: 'project-only: active|on_hold|completed|dropped' },
       reviewInterval: { description: 'project-only: days or {steps,unit}' },
+      // LINE-01 / D-11: agent-origin provenance stamp (sessionId required).
+      lineage: { type: 'object' },
     };
     const updateChangesProperties: Record<string, unknown> = {
       ...createDataProperties,
@@ -442,6 +445,49 @@ OPERATION POLICY (agent role):
           if (isAllowedAllThisSession()) {
             continue;
           }
+
+          // Mode-aware gate fork (PERM-02, D-01, T-02-08):
+          //   interactive + create  → POLICY_GATE_CAPTURE_CONFIRM  (present yes/no to user)
+          //   background  + create  → POLICY_GATE_BACKGROUND_ONLY  (cannot prompt; tag the task)
+          //   everything else       → POLICY_GATE_REQUIRES_OWNER   (tag_manage/delete/merge, etc.)
+          // These three codes are DISTINCT so the agent skill can branch its UX correctly.
+          const mode = parseMode();
+          if (item.operation === 'create') {
+            if (mode === 'interactive') {
+              return createErrorResponseV2(
+                'omnifocus_write',
+                'POLICY_GATE_CAPTURE_CONFIRM',
+                'Creating a task requires confirmation in interactive mode.',
+                'Confirm with the user and call omnifocus_write again, or call the owner grant endpoint first.',
+                {
+                  dryRun: true,
+                  preview: {
+                    wouldAffect: { operation: item.operation, target: item.target },
+                  },
+                  ownerCommand: { mutation: args.mutation },
+                },
+                new OperationTimerV2().toMetadata(),
+              );
+            } else {
+              // background mode
+              return createErrorResponseV2(
+                'omnifocus_write',
+                'POLICY_GATE_BACKGROUND_ONLY',
+                'Background-mode agent create requires agent-okay tag on the target task.',
+                'Tag the task with agent-okay to allow agent operations, or run in interactive mode for a confirmation prompt.',
+                {
+                  dryRun: true,
+                  preview: {
+                    wouldAffect: { operation: item.operation, target: item.target },
+                  },
+                },
+                new OperationTimerV2().toMetadata(),
+              );
+            }
+          }
+
+          // Structural ops (tag_manage/delete, tag_manage/merge, and any future gate ops
+          // that are not create) — owner approval required.
           return createErrorResponseV2(
             'omnifocus_write',
             'POLICY_GATE_REQUIRES_OWNER',
@@ -505,6 +551,34 @@ OPERATION POLICY (agent role):
       const projectResult = await this.handleProjectOperation(compiled);
       return this.verifier.verify(projectResult, {}, compiled, parseRole());
     }
+
+    // ─── Lineage stamp composition + agent-okay tag (LINE-01, D-06) ────────────
+    // Runs for agent task creates with a lineage param — BEFORE the task routing
+    // block so the verifier's extractIntent() snapshot (called in verifier.verify())
+    // sees the full composed note (Pitfall 4 guard).
+    //
+    // lineage is consumed here and MUST NOT reach buildCreateTaskScript / TaskCreateData
+    // (Pitfall 3: the exhaustiveness guard in mutation-script-builder.ts does not
+    // include 'lineage'). The raw args.mutation.data may carry it from the Zod parse;
+    // compiled.data is typed as CreateData (no lineage field), so we read from args.
+    if (compiled.operation === 'create' && compiled.target === 'task' && args.mutation.operation === 'create') {
+      const rawData = args.mutation.data as { lineage?: LineageInput };
+      const lineage = rawData.lineage;
+      if (lineage) {
+        // Compose note stamp (D-09, D-10) and mutate compiled.data.note in place.
+        // compiled.data is the same object reference passed to handleTaskCreate.
+        compiled.data.note = composeLineageStamp(compiled.data.note, lineage);
+
+        // D-06 write-side stamp: unconditionally append 'agent-okay' tag when
+        // role=agent and lineage is present (D-08b). Applies in both interactive
+        // and background paths — Plan 04 integration tests assert this without
+        // conditional hedging.
+        if (parseRole() === 'agent') {
+          compiled.data.tags = [...(compiled.data.tags ?? []), 'agent-okay'];
+        }
+      }
+    }
+    // ─────────────────────────────────────────────────────────────────────────
 
     // Route task operations to inline handlers
     let taskResult: unknown;

@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { OmniFocusWriteTool } from '../../../../src/tools/unified/OmniFocusWriteTool.js';
 import { CacheManager } from '../../../../src/cache/CacheManager.js';
 import { createScriptSuccess, createScriptError } from '../../../../src/omnifocus/script-result-types.js';
+import { setAllowAllThisSession, resetSessionGrant } from '../../../../src/auth/session-state.js';
 
 /**
  * Integration tests for task CRUD operations through OmniFocusWriteTool.
@@ -964,19 +965,15 @@ describe('PERM-02 gate verdict dispatch', () => {
   });
 
   it('allows create when isAllowedAllThisSession returns true (session grant bypass)', async () => {
-    // Mock session-state module to simulate grant being active
-    vi.doMock('../../../../src/auth/session-state.js', () => ({
-      isAllowedAllThisSession: () => true,
-      setAllowAllThisSession: vi.fn(),
-      resetSessionGrant: vi.fn(),
-    }));
+    // Activate session grant directly via owner-role call (D-02).
+    // vi.doMock() does not intercept ESM static bindings after module load;
+    // the production singleton must be set directly for this path.
+    process.env['OMNIFOCUS_MCP_ROLE'] = 'owner';
+    setAllowAllThisSession('owner');
+    // Restore agent role for the gate check
+    delete process.env['OMNIFOCUS_MCP_ROLE'];
 
-    // Re-create tool after mock registration so the mocked module is used
-    const freshCache = createMockCache();
-    const freshTool = new OmniFocusWriteTool(freshCache);
-    vi.spyOn(freshTool as any, 'execJson').mockResolvedValue(undefined);
-
-    const result = (await freshTool.execute({
+    const result = (await tool.execute({
       mutation: {
         operation: 'create',
         target: 'task',
@@ -984,11 +981,11 @@ describe('PERM-02 gate verdict dispatch', () => {
       },
     })) as any;
 
+    resetSessionGrant();
+
     // With grant active, execution proceeds (success or execJson called — not the gate code)
     const didBypassGate =
       result.success === true || (result.error && result.error.code !== 'POLICY_GATE_CAPTURE_CONFIRM');
     expect(didBypassGate).toBe(true);
-
-    vi.doUnmock('../../../../src/auth/session-state.js');
   });
 });

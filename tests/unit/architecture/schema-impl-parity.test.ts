@@ -714,6 +714,15 @@ describe('Reverse parity: generateProjectFieldProjection ↔ ProjectFieldEnum (O
 // accepted-but-internal surface.
 const BUILDER_INTERNAL_REFS = ['parentFolder', 'projectId'];
 
+// Fields in CreateDataSchema intentionally consumed UPSTREAM of the mutation-script-builder
+// (before buildCreateTaskScript is called) — they are NOT silently dropped, but rather
+// transformed and removed before the script builder receives the data object.
+// A new entry here forces a conscious documentation choice (Pitfall 3, RESEARCH.md).
+//   lineage — consumed in OmniFocusWriteTool.executeValidated() to compose the note
+//             lineage block; the exhaustiveness guard in mutation-script-builder.ts
+//             does not include 'lineage' by design (LINE-01, D-11, Pitfall 3).
+const SCHEMA_UPSTREAM_FIELDS = ['lineage'];
+
 // Strip comments before scanning the (checked-in, bounded) builder source:
 // it has a maintenance comment (`// ... if (data.X) ...`) that would
 // otherwise be captured as a phantom `X` reference, which would then have to
@@ -735,6 +744,8 @@ const builderRefs = new Set(
 describe('Parity: CreateDataSchema ↔ mutation-script-builder (OMN-61)', () => {
   for (const field of Object.keys(CreateDataSchema.shape)) {
     it(`mutation builder reads create field "${field}"`, () => {
+      // Skip fields intentionally consumed upstream of the script builder (SCHEMA_UPSTREAM_FIELDS).
+      if (SCHEMA_UPSTREAM_FIELDS.includes(field)) return;
       expect(
         builderRefs.has(field),
         `CreateDataSchema accepts "${field}" but mutation-script-builder never reads data/changes/projectData.${field} — it is silently dropped on create (OMN-60 bug shape).`,

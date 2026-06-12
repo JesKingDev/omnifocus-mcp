@@ -326,12 +326,10 @@ describe('LINE-01 lineage stamp round-trip', () => {
     const execJsonSpy = vi.fn().mockResolvedValueOnce(readBack);
     const verifier = new WriteVerifier(execJsonSpy);
 
-    const result = (await verifier.verify(
-      makeMutationSuccess(),
-      makeIntent({ note: composedNote }),
-      compiledOp,
-      'agent',
-    )) as Record<string, unknown>;
+    // Pass empty intent so verifier falls back to extractIntent(compiledOp).
+    // extractIntent sees data.note = composedNote (the full stamped string);
+    // the readBack also has note = composedNote — comparison must pass (Pitfall 4 guard).
+    const result = (await verifier.verify(makeMutationSuccess(), {}, compiledOp, 'agent')) as Record<string, unknown>;
 
     // Note comparison must pass — no WRITE_UNVERIFIED_MISMATCH
     const error = result['error'] as Record<string, unknown> | undefined;

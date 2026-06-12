@@ -129,6 +129,18 @@ const writeAliasErrorMap: z.ZodErrorMap = (issue, ctx) => {
  */
 const strictObj = <T extends z.ZodRawShape>(shape: T) => z.object(shape, { errorMap: writeAliasErrorMap }).strict();
 
+// Lineage schema — agent-origin provenance stamp (LINE-01, D-09, D-11).
+// Strict: unknown keys are rejected before stamp composition so the HTML-comment
+// note block cannot be poisoned by caller-supplied garbage (T-02-04).
+// Exported so OmniFocusWriteTool can consume LineageInput without re-importing Zod.
+export const LineageSchema = strictObj({
+  sessionId: z.string().describe('Originating Claude Code session ID'),
+  agent: z.string().optional().describe('Agent identifier; defaults to "claude-code"'),
+  createdAt: z.string().optional().describe('ISO-8601 timestamp; defaults to server time'),
+});
+
+export type LineageInput = z.infer<typeof LineageSchema>;
+
 // Create data schema — single source of truth for task/project creation fields.
 // Both the unified write tool and batch-schemas derive from this.
 // Exported for OMN-61 write-side parity testing (settable field ↔ builder).
@@ -163,6 +175,13 @@ export const CreateDataSchema = z
       sequential: coerceBoolean().optional(),
       status: z.enum(['active', 'on_hold', 'completed', 'dropped']).optional(),
       reviewInterval: ReviewIntervalSchema.optional(),
+
+      // Agent-origin provenance stamp (LINE-01, D-11).
+      // Consumed upstream in OmniFocusWriteTool.executeValidated() to compose the
+      // note lineage block — NEVER forwarded to buildCreateTaskScript / TaskCreateData
+      // (Pitfall 3: the exhaustiveness guard in mutation-script-builder.ts does not
+      // include 'lineage'; composition happens before the script builder runs).
+      lineage: LineageSchema.optional(),
     },
     { errorMap: writeAliasErrorMap },
   ) // OMN-97: actionable redirects on unknown keys
