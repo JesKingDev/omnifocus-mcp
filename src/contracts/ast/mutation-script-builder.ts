@@ -60,6 +60,21 @@ const SANDBOX_FOLDER_NAME = '__MCP_TEST_SANDBOX__';
 export const TEST_TAG_PREFIX = '__test-';
 const TEST_INBOX_PREFIX = '__TEST__';
 
+/**
+ * Functional/system tags the product legitimately applies (not arbitrary user
+ * content), exempt from the test-mode tag-prefix guard. The Phase 2 capture path
+ * stamps `agent-okay` on agent-created tasks; the D-08b integration test must be
+ * able to create and read that tag back live. The task itself still obeys the
+ * sandbox name/folder guards, and tests clean up the tasks they create, so the
+ * blast radius is one shared, idempotent functional tag.
+ */
+export const FUNCTIONAL_TAG_ALLOWLIST: readonly string[] = ['agent-okay'];
+
+/** A tag is allowed in test mode if it is sandbox-prefixed OR a known functional tag. */
+export function isTestTagAllowed(tag: string): boolean {
+  return tag.startsWith(TEST_TAG_PREFIX) || FUNCTIONAL_TAG_ALLOWLIST.includes(tag);
+}
+
 // Cache the sandbox folder ID to avoid repeated lookups
 let cachedSandboxFolderId: string | null = null;
 
@@ -253,7 +268,7 @@ function validateProjectCreate(data: ProjectCreateData): void {
 
   // Validate tags
   if (data.tags && data.tags.length > 0) {
-    const invalidTags = data.tags.filter((t) => !t.startsWith(TEST_TAG_PREFIX));
+    const invalidTags = data.tags.filter((t) => !isTestTagAllowed(t));
     if (invalidTags.length > 0) {
       throw new Error(`TEST GUARD: Tags must start with "${TEST_TAG_PREFIX}". ` + `Invalid: ${invalidTags.join(', ')}`);
     }
@@ -318,7 +333,7 @@ async function validateTaskCreate(data: TaskCreateData): Promise<void> {
 
   // Validate tags (applies to all cases)
   if (data.tags && data.tags.length > 0) {
-    const invalidTags = data.tags.filter((t) => !t.startsWith(TEST_TAG_PREFIX));
+    const invalidTags = data.tags.filter((t) => !isTestTagAllowed(t));
     if (invalidTags.length > 0) {
       throw new Error(`TEST GUARD: Tags must start with "${TEST_TAG_PREFIX}". ` + `Invalid: ${invalidTags.join(', ')}`);
     }
@@ -340,7 +355,7 @@ function validateTagChanges(changes: TaskUpdateData | ProjectUpdateData): void {
     allTags.push(...changes.addTags);
   }
 
-  const invalidTags = allTags.filter((t) => !t.startsWith(TEST_TAG_PREFIX));
+  const invalidTags = allTags.filter((t) => !isTestTagAllowed(t));
   if (invalidTags.length > 0) {
     throw new Error(`TEST GUARD: Tags must start with "${TEST_TAG_PREFIX}". ` + `Invalid: ${invalidTags.join(', ')}`);
   }
