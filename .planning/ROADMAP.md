@@ -129,7 +129,7 @@ native capture vs. custom) **Requirements**: CAP-01, PERM-01, PERM-02, LINE-01 *
 
 **Wave 2** _(blocked on Wave 1 completion)_
 
-- [ ] 02-02-PLAN.md — Mode type + parseMode() + policy create→gate + allowAllThisSession grant state
+- [x] 02-02-PLAN.md — Mode type + parseMode() + policy create→gate + allowAllThisSession grant state
 
 **Wave 3** _(blocked on Wave 2 completion)_
 
@@ -204,7 +204,7 @@ Criteria** (what must be TRUE):
 | Phase                               | Plans Complete | Status      | Completed  |
 | ----------------------------------- | -------------- | ----------- | ---------- |
 | 1. OmniFocus Capability Discovery   | 4/4            | Complete    | 2026-06-12 |
-| 2. Capture & Permission Gating      | 1/4            | In Progress |            |
+| 2. Capture & Permission Gating      | 2/4            | In Progress |            |
 | 3. Routing & On-Demand Trigger      | 0/?            | Not started | -          |
 | 4. Review Loops & Live Auto-Capture | 0/?            | Not started | -          |
 | 5. Session Archaeology              | 0/?            | Not started | -          |

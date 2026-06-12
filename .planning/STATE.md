@@ -3,12 +3,12 @@ gsd_state_version: 1.0
 milestone: agent-workflow
 milestone_name: Agent Workflow System
 status: ready_to_execute
-last_updated: '2026-06-12T14:06:20.160Z'
+last_updated: '2026-06-12T14:18:40.390Z'
 progress:
   total_phases: 6
   completed_phases: 1
   total_plans: 8
-  completed_plans: 5
+  completed_plans: 6
   percent: 17
 ---
 
@@ -24,9 +24,10 @@ Phase 1 = OmniFocus capability discovery, which gates all workflow design.
 
 ## Current Position
 
-Phase: 02 (capture-permission-gating) — EXECUTING Plan: 2 of 4 2026-06-12 — Phase 2 planned (4 plans / 4 waves;
-CAP-01/PERM-01/PERM-02/LINE-01 covered; plan-checker PASSED iteration 2; RESEARCH + PATTERNS + VALIDATION committed).
-Phase 1 (capability discovery) complete 2026-06-12.
+Phase: 02 (capture-permission-gating) — EXECUTING Plan: 3 of 4 2026-06-12 — Wave 2 complete: Mode type + parseMode() +
+create→gate policy + session-state singleton + grant bypass all shipped atomically. Wave 0 parseMode and create→gate
+test rows now GREEN. Wave 3 next: gate dispatch + lineage stamp + dual-schema. Phase 1 (capability discovery) complete
+2026-06-12.
 
 ## Roadmap Summary (agent-workflow)
 
@@ -62,7 +63,8 @@ Phase 1 (capability discovery) complete 2026-06-12.
 - Last 5 plans: —
 - Trend: —
 
-| Phase 02-capture-permission-gating P01 | 5m | 3 tasks | 6 files |
+| Phase 02-capture-permission-gating P01 | 5m | 3 tasks | 6 files | | Phase 02-capture-permission-gating P02 | 25m | 2
+tasks | 11 files |
 
 ## Accumulated Context
 
@@ -95,6 +97,12 @@ Decisions are logged in PROJECT.md Key Decisions table. Recent decisions affecti
   (e.g. for context: ResolvedContext); base reconstruction silently drops the context slot — override must thread both
   args in the correct positions.
 
+- [Phase 2, Wave 2]: create policy uses per-target table (task→gate, project/folder→allow) rather than flat 'gate' —
+  required to satisfy both test rows from Wave 0 (create/task→gate AND create/project→allow).
+
+- [Phase 2, Wave 2]: isAllowedAllThisSession() bypass wired into OmniFocusWriteTool in Task 2 (not deferred to Wave 3)
+  per atomicity requirement: policy flip and grant bypass must ship together.
+
 ### Pending Todos
 
 None yet.
@@ -126,10 +134,9 @@ need a deliberate on-Mac session per `deploy/launchd/RUNBOOK.md`.
 
 ## Session Continuity
 
-Last session: 2026-06-12T14:06:20.155Z
+Last session: 2026-06-12T14:18:40.385Z
 
 ## Operator Next Steps
 
-- Execute Phase 2 with `/gsd-execute-phase 2` (4 plans, 4 waves — Wave 0 test scaffolds → mode + policy flip + grant
-  state → lineage stamp + dual-schema + gate dispatch → predicate + integration proof + human checkpoint). `/clear`
-  first for a fresh executor context.
+- Execute Phase 2 Wave 3 (02-03-PLAN.md): gate dispatch + POLICY_GATE_CAPTURE_CONFIRM + lineage stamp + dual-schema +
+  agent-okay predicate. PERM-02 and LINE-01 test rows go GREEN in Wave 3.
