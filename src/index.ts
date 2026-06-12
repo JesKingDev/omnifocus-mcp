@@ -15,7 +15,7 @@ import { SessionManager } from './session-manager.js';
 import { HttpServerManager } from './http-server.js';
 import { StartupTimer } from './utils/startup-timer.js';
 import { assertSandboxGuardAtStartup } from './utils/sandbox-guard.js';
-import { parseRole, resolveStdioIdentity } from './auth/role-resolver.js';
+import { parseRole, parseMode, resolveStdioIdentity } from './auth/role-resolver.js';
 import { buildTokenRegistry } from './auth/token-registry.js';
 import type { ResolvedIdentity, ResolvedContext, Role } from './contracts/roles.js';
 
@@ -172,7 +172,7 @@ async function runStdioServer(cacheManager: CacheManager, identity: ResolvedIden
   );
 
   // Register all tools and prompts AFTER server creation but BEFORE connection
-  const context: ResolvedContext = { identity, role };
+  const context: ResolvedContext = { identity, role, mode: parseMode() };
   await registerTools(stdioServer, cacheManager, pendingOperations, role, context);
   registerPrompts(stdioServer);
   startupTimer.mark('registerEnd');

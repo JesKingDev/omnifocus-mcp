@@ -31,6 +31,7 @@ function createMockCache(): CacheManager {
 
 const agentContext: ResolvedContext = {
   role: 'agent',
+  mode: 'background',
   identity: {
     transport: 'stdio',
     roleSource: 'fail-safe-default',
@@ -40,6 +41,7 @@ const agentContext: ResolvedContext = {
 
 const ownerContext: ResolvedContext = {
   role: 'owner',
+  mode: 'background',
   identity: {
     transport: 'stdio',
     roleSource: 'explicit-env',

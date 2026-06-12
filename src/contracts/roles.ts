@@ -27,6 +27,17 @@
 export type Role = 'owner' | 'agent';
 
 /**
+ * Connection-bound interaction mode, derived at startup from env (D-04, D-05).
+ *
+ * - 'interactive'  — live/sync session; agent prompts before creating tasks (PERM-02)
+ * - 'background'   — scheduled/async run; agent acts only on agent-okay-tagged tasks (PERM-01)
+ *
+ * Resolved by parseMode() in src/auth/role-resolver.ts.
+ * Literal-only, default-deny: only the exact env literal 'true' → interactive.
+ */
+export type Mode = 'interactive' | 'background';
+
+/**
  * The outcome of a policy decision for a given (role, operation, target) triple.
  *
  * - 'allow' — operation may proceed
@@ -74,11 +85,14 @@ export interface ResolvedIdentity {
 /**
  * Full resolved context passed to policy and gate layers.
  *
- * Combines the identity (who called) with the role (what they may do).
+ * Combines the identity (who called) with the role (what they may do),
+ * and the connection-bound mode (interactive vs background, D-04).
  * These are intentionally separate fields — consumers must not derive Role
  * from ResolvedIdentity fields (T-1-02).
  */
 export interface ResolvedContext {
   identity: ResolvedIdentity;
   role: Role;
+  /** Connection-bound interaction mode resolved at startup (D-04, D-05). */
+  mode: Mode;
 }

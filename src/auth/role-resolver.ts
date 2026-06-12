@@ -27,7 +27,7 @@
  * Only the exact literal 'owner' resolves to OWNER.
  */
 
-import type { Role, RoleSource, ResolvedIdentity } from '../contracts/roles.js';
+import type { Role, RoleSource, ResolvedIdentity, Mode } from '../contracts/roles.js';
 import type { TokenEntry } from './token-registry.js';
 
 /**
@@ -42,6 +42,26 @@ import type { TokenEntry } from './token-registry.js';
  */
 export function parseRole(env: Record<string, string | undefined> = process.env): Role {
   return env.OMNIFOCUS_MCP_ROLE === 'owner' ? 'owner' : 'agent';
+}
+
+/**
+ * Parses OMNIFOCUS_MCP_INTERACTIVE with default-deny semantics (D-04, D-05).
+ *
+ * Returns 'interactive' if and only if env.OMNIFOCUS_MCP_INTERACTIVE === 'true'
+ * (exact equality, no case-fold, no trim). Returns 'background' for every other
+ * value including undefined, empty string, wrong case, whitespace, and garbage.
+ *
+ * Anti-patterns explicitly absent (mirrors parseRole — D-05, T-02-01):
+ *   - No .toLowerCase() or .toUpperCase()
+ *   - No .trim()
+ *   - No truthy check (if env.OMNIFOCUS_MCP_INTERACTIVE)
+ *   - No || 'background' fallback
+ * Only the exact literal 'true' resolves to INTERACTIVE.
+ *
+ * @param env Optional env override for tests. Defaults to process.env.
+ */
+export function parseMode(env: Record<string, string | undefined> = process.env): Mode {
+  return env.OMNIFOCUS_MCP_INTERACTIVE === 'true' ? 'interactive' : 'background';
 }
 
 /**

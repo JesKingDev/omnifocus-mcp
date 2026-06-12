@@ -7,7 +7,7 @@ import { randomUUID } from 'node:crypto';
 import { getVersionInfo } from './utils/version.js';
 import { validateTokenSet } from './auth/token-registry.js';
 import type { TokenEntry } from './auth/token-registry.js';
-import { resolveHttpIdentity } from './auth/role-resolver.js';
+import { resolveHttpIdentity, parseMode } from './auth/role-resolver.js';
 import type { ResolvedContext } from './contracts/roles.js';
 
 const logger = createLogger('http-server');
@@ -387,7 +387,7 @@ export class HttpServerManager {
         const newSessionId = randomUUID();
         // Wire per-session role from the validated token entry (D-12, D-10)
         const identity = resolveHttpIdentity(tokenEntry);
-        const context: ResolvedContext = { identity, role: tokenEntry.role };
+        const context: ResolvedContext = { identity, role: tokenEntry.role, mode: parseMode() };
         session = await this.sessionManager.createSession(newSessionId, tokenEntry.role, context);
         logger.info('Created new session for request', { requestId, sessionId: newSessionId });
       }
