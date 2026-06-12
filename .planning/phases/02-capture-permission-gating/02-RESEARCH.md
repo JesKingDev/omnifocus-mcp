@@ -645,7 +645,7 @@ const LineageSchema = z
 
 ---
 
-## Open Questions
+## Open Questions (RESOLVED)
 
 1. **Single tag vs. two tags for `agent-okay`**
    - What we know: PERM-01 says "tasks tagged `agent-okay`"; D-06 says "agent-origin marker via existing OmniJS `addTag`
@@ -655,6 +655,10 @@ const LineageSchema = z
      origin stamp is separate from the routing gate.
    - Recommendation: Use one tag for Phase 2 (agent-created items get `agent-okay` stamped at creation). Revisit if
      Phase 3 planning reveals a need to gate pre-existing tasks separately.
+   - **RESOLVED:** One tag (`agent-okay`) serves as both origin marker and PERM-01 gate tag. Phase 3 archaeology
+     distinguishes agent-created tasks from user-tagged tasks via the presence of the `of-mcp:lineage` block in the note
+     — the note block is the origin proof; the tag is the routing gate. Plan 02-04 documents this decision in the
+     predicate JSDoc.
 
 2. **`allowAllThisSession` grant in stdio mode**
    - What we know: `SessionManager` is HTTP-only. Stdio mode has no `SessionConfig`.
@@ -662,6 +666,10 @@ const LineageSchema = z
      stdio path.
    - Recommendation: Module-level `stdioSessionState` singleton in `src/auth/session-state.ts`, gated by
      `role === 'owner'` check before mutation. The planner should confirm this pattern before implementation.
+   - **RESOLVED:** Module-level singleton in `src/auth/session-state.ts` (Plan 02-02 Task 2). Three exports:
+     `isAllowedAllThisSession()`, `setAllowAllThisSession(role)` (throws if role !== 'owner'), `resetSessionGrant()`
+     (for test cleanup). OmniFocusWriteTool imports `isAllowedAllThisSession` directly; no dispatch layer needed for
+     stdio mode (single-session process).
 
 3. **`batch: 'allow'` + policy table change interaction**
    - What we know: `batch: 'allow'` in `AGENT_POLICY` means the batch op itself is allowed, but each sub-operation is
@@ -670,6 +678,11 @@ const LineageSchema = z
      expands batch into per-sub-op items and each is evaluated.
    - Recommendation: The session-grant check must cover the batch path. The funnel loops over `policyItems`; if any item
      is `gate`, the grant check applies. This already works with the existing loop structure.
+   - **RESOLVED:** Confirmed — the existing `normalizeArgsToPolicy` loop already expands batch ops into per-sub-op
+     policy items. After the `create: 'gate'` policy table change (Plan 02-02 Task 2), batch create sub-ops hit the same
+     gate check as single creates. The session-grant bypass in `executeValidated()` covers the loop, so a
+     session-granted agent can batch-create without per-op gates. No structural change needed beyond the policy table
+     flip.
 
 ---
 
@@ -858,11 +871,14 @@ Phase 3.
 | Pitfalls       | HIGH  | Exhaustiveness guard, stdio session state, and verifier snapshot ordering are verified concrete gaps                       |
 | Security       | HIGH  | ASVS V4 pattern verified; self-tagging gap documented as a Phase 3 concern                                                 |
 
-### Open Questions
+### Open Questions (RESOLVED)
 
-- Single tag vs. two tags for `agent-okay` (origin vs. gate) — planner resolves against Phase 3 needs
-- `allowAllThisSession` storage mechanism for stdio mode — planner confirms approach before implementation
-- Batch create + gate interaction — confirmed to work via existing loop; document in plan
+- **Q1 single tag:** One tag (`agent-okay`) is both origin marker and gate. Phase 3 archaeology uses the
+  `of-mcp:lineage` note block to distinguish agent-created from user-tagged. **RESOLVED** per Plan 02-04.
+- **Q2 stdio grant:** `src/auth/session-state.ts` module singleton (`isAllowedAllThisSession` / `setAllowAllThisSession`
+  / `resetSessionGrant`). **RESOLVED** per Plan 02-02.
+- **Q3 batch create:** Confirmed — `normalizeArgsToPolicy` loop gates each sub-op; session grant covers the loop. No
+  extra wiring. **RESOLVED** per Plan 02-02/02-03.
 
 ### Ready for Planning
 
