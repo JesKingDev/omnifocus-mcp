@@ -14,10 +14,10 @@ Requirements for the `agent-workflow` milestone. Each maps to exactly one roadma
 
 ### Capability Discovery
 
-- [ ] **DISC-01**: A capability-discovery report documents OmniFocus native behavior across tagging, filtering, custom
+- [x] **DISC-01**: A capability-discovery report documents OmniFocus native behavior across tagging, filtering, custom
       fields, perspectives, the project/task data model (sequencing + dependencies — sequential vs. parallel), native
       capture workflows (inbox, templates), and automation surfaces (OmniAutomation / URL schemes / plug-ins).
-- [ ] **DISC-02**: For each capability area, the report states where OmniFocus handles it natively vs. where the MCP
+- [x] **DISC-02**: For each capability area, the report states where OmniFocus handles it natively vs. where the MCP
       integration genuinely adds value — an explicit native-vs-build decision per area.
 
 ### Capture
@@ -110,28 +110,28 @@ Explicitly excluded. Documented to prevent scope creep.
 
 Which phases cover which requirements. Populated during roadmap creation.
 
-| Requirement | Phase                                      | Status  |
-| ----------- | ------------------------------------------ | ------- |
-| DISC-01     | Phase 1 — Capability Discovery             | Pending |
-| DISC-02     | Phase 1 — Capability Discovery             | Pending |
-| CAP-01      | Phase 2 — Capture & Permission Gating      | Pending |
-| PERM-01     | Phase 2 — Capture & Permission Gating      | Pending |
-| PERM-02     | Phase 2 — Capture & Permission Gating      | Pending |
-| LINE-01     | Phase 2 — Capture & Permission Gating      | Pending |
-| ROUTE-01    | Phase 3 — Routing & On-Demand Trigger      | Pending |
-| ROUTE-02    | Phase 3 — Routing & On-Demand Trigger      | Pending |
-| ROUTE-03    | Phase 3 — Routing & On-Demand Trigger      | Pending |
-| ROUTE-04    | Phase 3 — Routing & On-Demand Trigger      | Pending |
-| TRIG-01     | Phase 3 — Routing & On-Demand Trigger      | Pending |
-| REVIEW-01   | Phase 4 — Review Loops & Live Auto-Capture | Pending |
-| REVIEW-02   | Phase 4 — Review Loops & Live Auto-Capture | Pending |
-| LIVE-01     | Phase 4 — Review Loops & Live Auto-Capture | Pending |
-| ARCH-01     | Phase 5 — Session Archaeology              | Pending |
-| ARCH-02     | Phase 5 — Session Archaeology              | Pending |
-| ARCH-03     | Phase 5 — Session Archaeology              | Pending |
-| READAS-01   | Phase 6 — Surfaces & Migration             | Pending |
-| PROV-01     | Phase 6 — Surfaces & Migration             | Pending |
-| MIG-01      | Phase 6 — Surfaces & Migration             | Pending |
+| Requirement | Phase                                      | Status   |
+| ----------- | ------------------------------------------ | -------- |
+| DISC-01     | Phase 1 — Capability Discovery             | Complete |
+| DISC-02     | Phase 1 — Capability Discovery             | Complete |
+| CAP-01      | Phase 2 — Capture & Permission Gating      | Pending  |
+| PERM-01     | Phase 2 — Capture & Permission Gating      | Pending  |
+| PERM-02     | Phase 2 — Capture & Permission Gating      | Pending  |
+| LINE-01     | Phase 2 — Capture & Permission Gating      | Pending  |
+| ROUTE-01    | Phase 3 — Routing & On-Demand Trigger      | Pending  |
+| ROUTE-02    | Phase 3 — Routing & On-Demand Trigger      | Pending  |
+| ROUTE-03    | Phase 3 — Routing & On-Demand Trigger      | Pending  |
+| ROUTE-04    | Phase 3 — Routing & On-Demand Trigger      | Pending  |
+| TRIG-01     | Phase 3 — Routing & On-Demand Trigger      | Pending  |
+| REVIEW-01   | Phase 4 — Review Loops & Live Auto-Capture | Pending  |
+| REVIEW-02   | Phase 4 — Review Loops & Live Auto-Capture | Pending  |
+| LIVE-01     | Phase 4 — Review Loops & Live Auto-Capture | Pending  |
+| ARCH-01     | Phase 5 — Session Archaeology              | Pending  |
+| ARCH-02     | Phase 5 — Session Archaeology              | Pending  |
+| ARCH-03     | Phase 5 — Session Archaeology              | Pending  |
+| READAS-01   | Phase 6 — Surfaces & Migration             | Pending  |
+| PROV-01     | Phase 6 — Surfaces & Migration             | Pending  |
+| MIG-01      | Phase 6 — Surfaces & Migration             | Pending  |
 
 **Coverage:**
 

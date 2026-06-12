@@ -2,14 +2,15 @@
 gsd_state_version: 1.0
 milestone: agent-workflow
 milestone_name: Agent Workflow System
-status: planning
-last_updated: '2026-06-12T04:32:43.189Z'
+status: ready_to_plan
+last_updated: 2026-06-12T04:54:25.647Z
 progress:
   total_phases: 6
   completed_phases: 1
   total_plans: 4
   completed_plans: 4
   percent: 17
+stopped_at: Phase 01 complete (4/4) — ready to discuss Phase 2
 ---
 
 # Project State
@@ -19,14 +20,13 @@ progress:
 See: .planning/PROJECT.md (updated 2026-06-11)
 
 **Core value:** The agent can read and write OmniFocus tasks safely — no silent write failures, no destructive deletes —
-so JessOS can trust OmniFocus as the source of truth. **Current focus:** Phase 01 — omnifocus-capability-discovery
-(Phases 1–6); Phase 1 = OmniFocus capability discovery, which gates all workflow design.
+so JessOS can trust OmniFocus as the source of truth. **Current focus:** Phase 2 — capture & permission gating (Phases
+1–6); Phase 1 = OmniFocus capability discovery, which gates all workflow design.
 
 ## Current Position
 
-Phase: 01 (omnifocus-capability-discovery) — EXECUTING Plan: 2 of 4 complete — research + validation + 4 plans
-committed; ready for `/gsd-execute-phase 1` Last activity: 2026-06-11 — Phase 1 planned (DISC-01/02 covered;
-decision-coverage override recorded for D-02/D-03/D-06)
+Phase: 2 of 4 (capture & permission gating) committed; ready for `/gsd-execute-phase 1` Last activity: 2026-06-11 —
+Phase 1 planned (DISC-01/02 covered; decision-coverage override recorded for D-02/D-03/D-06)
 
 ## Roadmap Summary (agent-workflow)
 
@@ -43,7 +43,7 @@ decision-coverage override recorded for D-02/D-03/D-06)
 
 **Velocity:**
 
-- Total plans completed: 15
+- Total plans completed: 19
 - Average duration: —
 - Total execution time: —
 
@@ -55,6 +55,7 @@ decision-coverage override recorded for D-02/D-03/D-06)
 | 03    | 4     | -     | -        |
 | 04    | 4     | -     | -        |
 | 06    | 4     | -     | -        |
+| 01    | 4     | -     | -        |
 
 **Recent Trend:**
 
