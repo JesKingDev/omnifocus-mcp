@@ -243,6 +243,50 @@ describe('GATE-02: CallTool pre-dispatch policy gate', () => {
     expect(payload.error.code).toBe('POLICY_GATE_REQUIRES_OWNER');
   });
 
+  it('CallTool AGENT create task WITH lineage → delegated past dispatch gate (not REQUIRES_OWNER)', async () => {
+    // The create gate carries funnel-level bypasses (session-grant D-02, lineage
+    // capture-attestation D-08b) and a mode-aware verdict fork that the blunt
+    // dispatch gate does not know about. Dispatch must delegate 'gate' CREATE
+    // outcomes to the WriteTool funnel rather than short-circuit them with
+    // REQUIRES_OWNER (structural gated ops like tag_manage/merge still block here).
+    const execSpy = vi
+      .spyOn(OmniFocusWriteTool.prototype as unknown as { execJson: () => Promise<unknown> }, 'execJson')
+      .mockResolvedValue(undefined);
+    try {
+      const server = makeServer('agent');
+      const callHandler = server.handlers.get(CallToolRequestSchema) as (req: {
+        params: { name: string; arguments: unknown };
+      }) => Promise<{ content: Array<{ type: string; text: string }> }>;
+
+      let response: { content: Array<{ type: string; text: string }> } | undefined;
+      try {
+        response = await callHandler({
+          params: {
+            name: 'omnifocus_write',
+            arguments: {
+              mutation: {
+                operation: 'create',
+                target: 'task',
+                data: { name: 'Lineage capture (dispatch)', lineage: { sessionId: 'rolegate-test' } },
+              },
+            },
+          },
+        });
+      } catch {
+        // Reaching execution and throwing (rather than a dispatch denial) still
+        // proves the dispatch gate delegated the create — acceptable.
+        return;
+      }
+
+      if (response?.content?.[0]?.text) {
+        const payload = JSON.parse(response.content[0].text) as { error?: { code: string } };
+        expect(payload.error?.code).not.toBe('POLICY_GATE_REQUIRES_OWNER');
+      }
+    } finally {
+      execSpy.mockRestore();
+    }
+  });
+
   it('CallTool OWNER delete passes dispatch — no POLICY_DENY_DELETE in response', async () => {
     // Set env var so the Write tool's Phase 2 funnel also sees owner role.
     // The dispatch gate uses the closure-captured 'owner' role from registerTools.

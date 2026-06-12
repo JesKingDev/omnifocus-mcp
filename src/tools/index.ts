@@ -111,6 +111,18 @@ export function registerTools(
       const items = normalizeArgsToPolicy((args as Record<string, unknown>) ?? {});
       for (const item of items) {
         const outcome = decide(role, item.operation, item.target);
+
+        // 'gate' on a CREATE is delegated to the WriteTool funnel, the authoritative
+        // gate-verdict renderer (D-01). The funnel owns the bypasses (session grant
+        // D-02, lineage capture-attestation D-08b) and the mode-aware code fork
+        // (CAPTURE_CONFIRM / BACKGROUND_ONLY). Blocking create here would short-circuit
+        // all of that with a blunt REQUIRES_OWNER — the bug that broke the agent capture
+        // path. Structural gated ops (tag_manage delete/merge) have no bypass and remain
+        // hard-blocked at dispatch below (defense-in-depth). 'deny' is always hard-blocked.
+        if (outcome === 'gate' && item.operation === 'create') {
+          continue;
+        }
+
         if (outcome === 'deny' || outcome === 'gate') {
           const isKnownDelete = item.operation === 'delete' || item.operation === 'bulk_delete';
           const errorPayload =
