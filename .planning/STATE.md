@@ -128,5 +128,6 @@ Last session: 2026-06-12T05:13:29.764Z
 
 ## Operator Next Steps
 
-- Execute Phase 1 with `/gsd-execute-phase 1` (4 plans, 4 waves — report scaffold → area findings + probes → consistency
-  checkpoint). `/clear` first for a fresh executor context.
+- Execute Phase 2 with `/gsd-execute-phase 2` (4 plans, 4 waves — Wave 0 test scaffolds → mode + policy flip + grant
+  state → lineage stamp + dual-schema + gate dispatch → predicate + integration proof + human checkpoint). `/clear`
+  first for a fresh executor context.
