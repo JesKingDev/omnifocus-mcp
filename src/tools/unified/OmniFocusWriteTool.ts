@@ -62,6 +62,7 @@ import { flattenBatchResults } from './batch-response-flatten.js';
 import { decide, normalizeArgsToPolicy } from '../../auth/operation-policy.js';
 import type { Role } from '../../contracts/roles.js';
 import { parseRole } from '../../auth/role-resolver.js';
+import { isAllowedAllThisSession } from '../../auth/session-state.js';
 import { WriteVerifier } from './verifier/WriteVerifier.js';
 
 // Convert string IDs to branded types for type safety (compile-time only, no runtime validation)
@@ -436,6 +437,11 @@ OPERATION POLICY (agent role):
         }
 
         if (outcome === 'gate') {
+          // Session-grant bypass: if an owner has already granted session-wide permission
+          // for agent creates, skip the gate and fall through to execution (D-02, PERM-02).
+          if (isAllowedAllThisSession()) {
+            continue;
+          }
           return createErrorResponseV2(
             'omnifocus_write',
             'POLICY_GATE_REQUIRES_OWNER',

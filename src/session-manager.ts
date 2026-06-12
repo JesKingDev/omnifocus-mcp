@@ -28,6 +28,12 @@ export interface SessionConfig {
    * (CR-01 privilege escalation). Enforced in HttpServerManager before dispatch.
    */
   principal: string | null;
+  /**
+   * Set only by an owner-authenticated call (D-02). Never settable by agent-supplied
+   * call arguments. When true, agent create operations bypass the session gate for
+   * the duration of this session (PERM-02 "allow all this session" grant).
+   */
+  allowAllThisSession?: boolean;
 }
 
 /**
@@ -139,6 +145,28 @@ export class SessionManager {
     logger.info('Session created successfully', { sessionId, activeSessions: this.sessions.size });
 
     return session;
+  }
+
+  /**
+   * Sets the allowAllThisSession grant for the given session.
+   *
+   * Throws if the caller's role is not 'owner' — this grant is forge-resistant and
+   * may only be set from an owner-authenticated code path (D-02, PERM-02).
+   * Throws if the session is not found.
+   *
+   * @param sessionId The session to grant
+   * @param role      The resolved caller role — must be 'owner'
+   */
+  setAllowAllThisSession(sessionId: string, role: Role): void {
+    if (role !== 'owner') {
+      throw new Error('Only owner-authenticated callers may set session grant (D-02)');
+    }
+    const session = this.sessions.get(sessionId);
+    if (!session) {
+      throw new Error(`Session not found: ${sessionId}`);
+    }
+    session.allowAllThisSession = true;
+    logger.info('Session grant set', { sessionId });
   }
 
   /**

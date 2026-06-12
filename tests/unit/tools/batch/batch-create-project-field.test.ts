@@ -8,7 +8,7 @@
  * inlined in OmniFocusWriteTool.
  */
 
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { OmniFocusWriteTool } from '../../../../src/tools/unified/OmniFocusWriteTool.js';
 import * as scriptBuilder from '../../../../src/contracts/ast/mutation-script-builder.js';
 
@@ -21,7 +21,16 @@ class StubCache {
   clear(): void {}
 }
 
+// These tests verify batch-create field routing (not permission gating).
+// Set owner role so create/task policy resolves to 'allow' (POLICY-06).
 describe('Batch create project field', () => {
+  beforeEach(() => {
+    process.env.OMNIFOCUS_MCP_ROLE = 'owner';
+  });
+
+  afterEach(() => {
+    delete process.env.OMNIFOCUS_MCP_ROLE;
+  });
   it('should pass project field to the batch-create fast path when provided', async () => {
     const cache = new StubCache();
     const tool = new OmniFocusWriteTool(cache as any);

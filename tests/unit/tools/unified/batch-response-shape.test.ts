@@ -334,6 +334,11 @@ describe('batch schema optional target', () => {
 
 describe('previewBatch per-operation target', () => {
   it('should use per-operation target in preview items, not top-level target', async () => {
+    // Use owner role so create/task policy resolves to 'allow' (POLICY-06);
+    // this test verifies dry-run target routing, not permission gating.
+    const savedRole = process.env.OMNIFOCUS_MCP_ROLE;
+    process.env.OMNIFOCUS_MCP_ROLE = 'owner';
+
     const { OmniFocusWriteTool } = await import('../../../../src/tools/unified/OmniFocusWriteTool.js');
     const { vi } = await import('vitest');
 
@@ -377,5 +382,8 @@ describe('previewBatch per-operation target', () => {
     // Bug fix: items should use per-operation target, not top-level
     expect(result.data.wouldAffect.items[0].type).toBe('project');
     expect(result.data.wouldAffect.items[1].type).toBe('task');
+
+    process.env.OMNIFOCUS_MCP_ROLE = savedRole ?? '';
+    if (!savedRole) delete process.env.OMNIFOCUS_MCP_ROLE;
   });
 });

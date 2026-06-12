@@ -46,7 +46,21 @@ const AGENT_POLICY: Record<string, PolicyOutcome | Record<string, PolicyOutcome>
   // the funnel today, kept (like tag_manage's perspective_delete) so a future
   // first-class 'drop' op resolves to 'allow' rather than fail-closed deny.
   drop: 'allow',
-  create: 'allow',
+
+  // -------------------------------------------------------------------------
+  // create: per-target — task creates are gated; other targets (project,
+  // folder) remain allowed. Agent task creation requires an explicit owner
+  // confirmation or session grant (D-01, PERM-01/PERM-02).
+  // -------------------------------------------------------------------------
+  create: {
+    /** agent create operations are gated — interactive mode prompts the user,
+     * background mode requires agent-okay tag (D-01, PERM-01/PERM-02). */
+    task: 'gate',
+    // All other create targets (project, folder, etc.) remain allowed
+    project: 'allow',
+    folder: 'allow',
+  },
+
   update: 'allow',
   batch: 'allow',
   create_folder: 'allow',
@@ -125,10 +139,15 @@ export function allowedOperations(role: Role): { operations: string[]; tagManage
     if (typeof entry === 'string') {
       if (entry !== 'deny') operations.push(op);
     } else {
-      // tag_manage subtable: the op itself is always advertised (D-05)
+      // Nested per-target table (tag_manage, create, etc.): the op itself is always advertised (D-05)
       operations.push(op);
-      for (const [action, outcome] of Object.entries(entry)) {
-        if (outcome !== 'deny') tagManageActions.push(action);
+      // Only tag_manage subtable actions are enumerated as tagManageActions — other nested
+      // tables (e.g. create) are not surfaced as tagManageActions since they use operation-level
+      // dispatch, not tag-action-level dispatch.
+      if (op === 'tag_manage') {
+        for (const [action, outcome] of Object.entries(entry)) {
+          if (outcome !== 'deny') tagManageActions.push(action);
+        }
       }
     }
   }
