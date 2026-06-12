@@ -7,8 +7,9 @@ phase: 1 — OmniFocus Capability Discovery
 
 # OmniFocus Capability Discovery Report
 
-> **Status:** Scaffold only. Findings are populated in Plans 02–03 and audited in Plan 04. Area-level verdicts shown in
-> the TL;DR below are **provisional** until each finding lands.
+> **Status:** Complete. All seven areas are populated and audited (Plan 04). Area-level verdicts below are final;
+> per-finding `build` verdicts (PERSP-03, MODEL-04, CAPTURE-04, AUTO-04) carry the nuance within `native`/`extend`
+> areas.
 
 ## TL;DR
 
@@ -17,7 +18,7 @@ flowchart TD
     R["OmniFocus Capability<br/>Discovery (7 areas)"]
     R --> N["native<br/>use OF as-is"]
     R --> E["extend<br/>thin MCP wrapper"]
-    R --> B["build<br/>custom logic"]
+    R --> B["build (per-finding only)<br/>PERSP-03 · MODEL-04<br/>CAPTURE-04 · AUTO-04"]
 
     N --> FIELD["FIELD · custom fields"]
     N --> MODEL["MODEL · data model"]
@@ -26,8 +27,7 @@ flowchart TD
     E --> TAG["TAG · tagging"]
     E --> FILTER["FILTER · filtering"]
     E --> CAPTURE["CAPTURE · capture"]
-
-    B --> PERSP["PERSP · perspectives*"]
+    E --> PERSP["PERSP · perspectives"]
 
     classDef native fill:#cfe8d8,stroke:#6b9080,color:#23423a;
     classDef extend fill:#d6e4f0,stroke:#5a7d9a,color:#243a4a;
@@ -36,13 +36,13 @@ flowchart TD
 
     class R root;
     class N,FIELD,MODEL,AUTO native;
-    class E,TAG,FILTER,CAPTURE extend;
-    class B,PERSP build;
+    class E,TAG,FILTER,CAPTURE,PERSP extend;
+    class B build;
 ```
 
-\* PERSP is mixed: list/read is `extend`, filter-rule write is `native` (pending probe), and perspective task-resolution
-is `build`. The diagram places it under its most distinctive verdict; per-finding verdicts carry the real nuance. This
-diagram is approximate and is refreshed in Plan 04 once all findings are recorded.
+Final area-level verdicts: **native** = FIELD, MODEL, AUTO · **extend** = TAG, FILTER, CAPTURE, PERSP. No area is
+`build` at the area level — the four `build` verdicts are per-finding (DISC-PERSP-03 perspective task-resolution,
+DISC-MODEL-04 cross-task dependencies, DISC-CAPTURE-04 templates, DISC-AUTO-04 plug-ins), each scoped to a later phase.
 
 ## Purpose and Scope
 
@@ -154,13 +154,13 @@ existing `mutation-script-builder.ts` find-or-create pattern already does this).
 
 #### DISC-TAG-03 — Tags are hierarchical first-class objects
 
-| Field           | Value                                                                                        |
-| --------------- | -------------------------------------------------------------------------------------------- |
-| Verdict         | native                                                                                       |
-| Rubric          | `Tag` class (name/id/parent/children/tasks) is complete; nested tags supported natively      |
-| Evidence        | evidence: doc                                                                                |
-| Source          | omni-automation.com/omnifocus/tag.html; codebase `tag-mutation-script-builder.ts`            |
-| Downstream cite | Phase 4 (REVIEW-01/02) — agent tags (agent-okay, review-output, archaeology) are conventions |
+| Field           | Value                                                                                                              |
+| --------------- | ------------------------------------------------------------------------------------------------------------------ |
+| Verdict         | native                                                                                                             |
+| Rubric          | `Tag` class (name/id/parent/children/tasks) is complete; nested tags supported natively                            |
+| Evidence        | evidence: doc                                                                                                      |
+| Source          | omni-automation.com/omnifocus/tag.html; codebase `tag-mutation-script-builder.ts`                                  |
+| Downstream cite | Phase 4 (REVIEW-01/02) and Phase 5 (ARCH-03) — agent tags (agent-okay, review-output, archaeology) are conventions |
 
 Agent-workflow tags are conventional names over the native tag model; no OF extension required.
 
@@ -598,4 +598,26 @@ Notes:
   reinforces OmniJS-first: evidence:verified probes in Plans 02-03 must use the OmniJS bridge, not JXA
   direct property access.
 - No user-visible names, task content, or perspective names appear in this block.
+-->
+
+<!-- AUDIT-LOG (Plan 04, Task 1 — consistency audit of the finalized report)
+Date: 2026-06-12 · OF build: 185.15
+Findings reviewed: 28 across 7 area codes (TAG 3, FILTER 3, FIELD 3, PERSP 4, MODEL 6, CAPTURE 4, AUTO 5).
+Result: structurally sound. Fixes applied this pass:
+  1. TL;DR Mermaid refreshed to final area-level verdicts: native = FIELD/MODEL/AUTO; extend = TAG/FILTER/CAPTURE/PERSP.
+     PERSP moved from the provisional "build" bucket to "extend"; "build" is now a per-finding-only node
+     (PERSP-03, MODEL-04, CAPTURE-04, AUTO-04). PERSP footnote replaced with the final-verdict statement.
+  2. Header status note changed from "Scaffold only / provisional" to "Complete / final".
+  3. DISC-TAG-03 Downstream cite strengthened to also name Phase 5 (ARCH-03) — closes a thin Phase-5 citation
+     gap (Phase 5 was previously cited only by DISC-FIELD-01).
+Checks passed (no fix needed):
+  - Zero slash-combined verdicts; every finding carries a single-value verdict + rubric + evidence + source + cite.
+  - Evidence discipline: evidence:verified only where a sanitized probe appendix is recorded in-report;
+    evidence:doc for codebase/official-doc citations; 3 evidence:unverified findings (PERSP-01 cross-restart,
+    CAPTURE-04 templates, AUTO-04 plug-ins), each with an explicit follow-up note — no silent gaps.
+  - Downstream citation coverage: Phase 2 (CAPTURE-01/FIELD-01/TAG-01-02), Phase 3 (MODEL-06/FILTER-01/TAG-02),
+    Phase 4 (TAG-01/03), Phase 5 (TAG-03/FIELD-01), Phase 6 (PERSP-01/02/03/04).
+  - No findings invalidated; no tombstones required.
+Open BUILD-DECISION gate carried to the Task 2 human checkpoint: DISC-PERSP-01 archivedFilterRules cross-restart
+  persistence (gates Phase 6 PROV-01) — resolved by the manual quit-reopen-read cycle.
 -->
