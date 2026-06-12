@@ -1,7 +1,8 @@
 ---
 target: 'OmniFocus 4.8.11 (build v185.15.0)'
 generated: 2026-06-11
-status: draft
+updated: 2026-06-12
+status: complete
 phase: 1 — OmniFocus Capability Discovery
 ---
 
@@ -615,8 +616,9 @@ Result: structurally sound. Fixes applied this pass:
 Checks passed (no fix needed):
   - Zero slash-combined verdicts; every finding carries a single-value verdict + rubric + evidence + source + cite.
   - Evidence discipline: evidence:verified only where a sanitized probe appendix is recorded in-report;
-    evidence:doc for codebase/official-doc citations; 3 evidence:unverified findings (PERSP-01 cross-restart,
-    CAPTURE-04 templates, AUTO-04 plug-ins), each with an explicit follow-up note — no silent gaps.
+    evidence:doc for codebase/official-doc citations. At audit time 3 findings were evidence:unverified
+    (PERSP-01 cross-restart, CAPTURE-04 templates, AUTO-04 plug-ins), each with a follow-up note — no silent gaps.
+    (PERSP-01 cross-restart was subsequently resolved to evidence:verified in Task 3, leaving 2 accepted gaps.)
   - Downstream citation coverage: Phase 2 (CAPTURE-01/FIELD-01/TAG-01-02), Phase 3 (MODEL-06/FILTER-01/TAG-02),
     Phase 4 (TAG-01/03), Phase 5 (TAG-03/FIELD-01), Phase 6 (PERSP-01/02/03/04).
   - No findings invalidated; no tombstones required.
