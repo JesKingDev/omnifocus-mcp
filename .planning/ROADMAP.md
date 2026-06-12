@@ -62,8 +62,8 @@ flowchart TD
 - [x] **Phase 1: OmniFocus Capability Discovery** — produce a capability-discovery report mapping OmniFocus native
       (completed 2026-06-12) behavior with a native-vs-build call per area; gates all workflow design.
 
-- [ ] **Phase 2: Capture & Permission Gating** — agent dumps items into the inbox under explicit permission gates, with
-      session lineage on every created task.
+- [x] **Phase 2: Capture & Permission Gating** — agent dumps items into the inbox under explicit permission gates, with
+      (completed 2026-06-12) session lineage on every created task.
 
 - [ ] **Phase 3: Routing & On-Demand Trigger** — agent routes inbox items (match → infer → create → leave), runnable
       on-demand via a manual trigger (the MVP path).
@@ -137,7 +137,7 @@ native capture vs. custom) **Requirements**: CAP-01, PERM-01, PERM-02, LINE-01 *
 
 **Wave 4** _(blocked on Wave 3 completion)_
 
-- [ ] 02-04-PLAN.md — agentOkayPredicate() + end-to-end capture verification checkpoint
+- [x] 02-04-PLAN.md — agentOkayPredicate() + end-to-end capture verification checkpoint
 
 > **Why gating lands here:** permission gating is a cross-cutting safety concern, but there is no agent _write_ before
 > this phase to protect. Capture (CAP-01) is the first surface where the agent mutates the store, so the gates (PERM-01,
@@ -204,7 +204,7 @@ Criteria** (what must be TRUE):
 | Phase                               | Plans Complete | Status      | Completed  |
 | ----------------------------------- | -------------- | ----------- | ---------- |
 | 1. OmniFocus Capability Discovery   | 4/4            | Complete    | 2026-06-12 |
-| 2. Capture & Permission Gating      | 3/4            | In Progress |            |
+| 2. Capture & Permission Gating      | 4/4            | Complete    | 2026-06-12 |
 | 3. Routing & On-Demand Trigger      | 0/?            | Not started | -          |
 | 4. Review Loops & Live Auto-Capture | 0/?            | Not started | -          |
 | 5. Session Archaeology              | 0/?            | Not started | -          |

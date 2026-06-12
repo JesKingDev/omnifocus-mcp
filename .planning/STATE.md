@@ -3,13 +3,13 @@ gsd_state_version: 1.0
 milestone: agent-workflow
 milestone_name: Agent Workflow System
 status: ready_to_execute
-last_updated: '2026-06-12T14:32:06.115Z'
+last_updated: '2026-06-12T14:40:00.322Z'
 progress:
   total_phases: 6
-  completed_phases: 1
+  completed_phases: 2
   total_plans: 8
-  completed_plans: 7
-  percent: 17
+  completed_plans: 8
+  percent: 33
 ---
 
 # Project State
@@ -24,10 +24,10 @@ Phase 1 = OmniFocus capability discovery, which gates all workflow design.
 
 ## Current Position
 
-Phase: 02 (capture-permission-gating) — EXECUTING Plan: 4 of 4 2026-06-12 — Wave 3 complete: lineage stamp (LINE-01),
-mode-aware gate dispatch (PERM-02, POLICY_GATE_CAPTURE_CONFIRM + POLICY_GATE_BACKGROUND_ONLY), agent-okay tag (D-06),
-dual-schema lineage wiring (D-11). All Wave 0 RED tests now GREEN except PERM-01 predicate (Wave 4). Wave 4 next:
-agent-okay predicate + integration + human checkpoint.
+Phase: 02 (capture-permission-gating) — HUMAN CHECKPOINT PENDING (02-04 automated tasks done 2026-06-12). Wave 4
+complete: agentOkayPredicate() (PERM-01, D-08a), D-08b integration test written. All Wave 0 unit tests GREEN (2396
+passed). Human verification of OmniFocus inbox round-trip pending: inbox task with agent-okay tag + of-mcp:lineage note
+block must be confirmed manually.
 
 ## Roadmap Summary (agent-workflow)
 
@@ -143,7 +143,7 @@ need a deliberate on-Mac session per `deploy/launchd/RUNBOOK.md`.
 
 ## Session Continuity
 
-Last session: 2026-06-12T14:33:00.000Z
+Last session: 2026-06-12T14:40:00.311Z
 
 ## Operator Next Steps
 
