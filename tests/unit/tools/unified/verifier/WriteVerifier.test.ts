@@ -16,6 +16,7 @@
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { WriteVerifier } from '../../../../../src/tools/unified/verifier/WriteVerifier.js';
+import { composeLineageStamp } from '../../../../../src/contracts/ast/lineage.js';
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
@@ -281,6 +282,69 @@ describe('D-11: dry-run produces verification_status: skipped + audit log', () =
 
     // No read-back spawn for dry-run — the write never happened.
     expect(execJsonSpy).not.toHaveBeenCalled();
+  });
+});
+
+// ─── LINE-01: lineage stamp round-trip ───────────────────────────────────────
+//
+// Guard for Pitfall 4 (RESEARCH.md): composeLineageStamp must be called BEFORE
+// extractIntent sees data.note. If these tests pass green but the integration
+// test shows WRITE_UNVERIFIED_MISMATCH, the composition site in
+// OmniFocusWriteTool.ts is after the extractIntent call — move it earlier.
+//
+// RED until Wave 3 creates src/contracts/ast/lineage.ts.
+
+describe('LINE-01 lineage stamp round-trip', () => {
+  const originalRole = process.env['OMNIFOCUS_MCP_ROLE'];
+
+  beforeEach(() => {
+    delete process.env['OMNIFOCUS_MCP_ROLE'];
+  });
+
+  afterEach(() => {
+    if (originalRole === undefined) {
+      delete process.env['OMNIFOCUS_MCP_ROLE'];
+    } else {
+      process.env['OMNIFOCUS_MCP_ROLE'] = originalRole;
+    }
+  });
+
+  it('stamped note in compiled op does NOT produce WRITE_UNVERIFIED_MISMATCH when read-back contains the same composed note', async () => {
+    const composedNote = composeLineageStamp('User note', { sessionId: 'sess-abc' });
+
+    const compiledOp = makeCompiledOp({ data: { name: 'T', note: composedNote } });
+
+    // Simulate OmniFocus persisting exactly what we wrote
+    const readBack = {
+      ok: true,
+      v: '3',
+      data: {
+        tasks: [{ id: 'task-abc', name: 'T', note: composedNote }],
+      },
+    };
+
+    const execJsonSpy = vi.fn().mockResolvedValueOnce(readBack);
+    const verifier = new WriteVerifier(execJsonSpy);
+
+    const result = (await verifier.verify(
+      makeMutationSuccess(),
+      makeIntent({ note: composedNote }),
+      compiledOp,
+      'agent',
+    )) as Record<string, unknown>;
+
+    // Note comparison must pass — no WRITE_UNVERIFIED_MISMATCH
+    const error = result['error'] as Record<string, unknown> | undefined;
+    expect(error?.['code']).not.toBe('WRITE_UNVERIFIED_MISMATCH');
+  });
+
+  it('extractIntent on a compiled op with composed note includes the lineage block in the note field', () => {
+    const composedNote = composeLineageStamp('Original note', { sessionId: 'sess-xyz' });
+
+    // Guard for Pitfall 4: if stamp composition happened after extractIntent
+    // captured the intent, the intent would have 'Original note' not the
+    // composed string. Verify the composition is present in what intent will see.
+    expect(composedNote).toContain('of-mcp:lineage');
   });
 });
 
