@@ -59,8 +59,8 @@ flowchart TD
 
 ### 📋 agent-workflow — Agent Workflow System (Phases 1–6)
 
-- [ ] **Phase 1: OmniFocus Capability Discovery** — produce a capability-discovery report mapping OmniFocus native
-      behavior with a native-vs-build call per area; gates all workflow design.
+- [x] **Phase 1: OmniFocus Capability Discovery** — produce a capability-discovery report mapping OmniFocus native
+      (completed 2026-06-12) behavior with a native-vs-build call per area; gates all workflow design.
 
 - [ ] **Phase 2: Capture & Permission Gating** — agent dumps items into the inbox under explicit permission gates, with
       session lineage on every created task.
@@ -108,7 +108,7 @@ solved problem. **Depends on**: Nothing (first phase, gates everything else) **R
 
 **Wave 4** _(blocked on Wave 3 completion)_
 
-- [ ] 01-04-PLAN.md — Consistency audit, human sign-off, VALIDATION.md finalization
+- [x] 01-04-PLAN.md — Consistency audit, human sign-off, VALIDATION.md finalization
 
 ### Phase 2: Capture & Permission Gating
 
@@ -185,14 +185,14 @@ Criteria** (what must be TRUE):
 
 ## Progress
 
-| Phase                               | Plans Complete | Status      | Completed |
-| ----------------------------------- | -------------- | ----------- | --------- |
-| 1. OmniFocus Capability Discovery   | 3/4            | In Progress |           |
-| 2. Capture & Permission Gating      | 0/?            | Not started | -         |
-| 3. Routing & On-Demand Trigger      | 0/?            | Not started | -         |
-| 4. Review Loops & Live Auto-Capture | 0/?            | Not started | -         |
-| 5. Session Archaeology              | 0/?            | Not started | -         |
-| 6. Surfaces & Migration             | 0/?            | Not started | -         |
+| Phase                               | Plans Complete | Status      | Completed  |
+| ----------------------------------- | -------------- | ----------- | ---------- |
+| 1. OmniFocus Capability Discovery   | 4/4            | Complete    | 2026-06-12 |
+| 2. Capture & Permission Gating      | 0/?            | Not started | -          |
+| 3. Routing & On-Demand Trigger      | 0/?            | Not started | -          |
+| 4. Review Loops & Live Auto-Capture | 0/?            | Not started | -          |
+| 5. Session Archaeology              | 0/?            | Not started | -          |
+| 6. Surfaces & Migration             | 0/?            | Not started | -          |
 
 | Milestone      | Phases | Plans | Status   | Completed  |
 | -------------- | ------ | ----- | -------- | ---------- |
