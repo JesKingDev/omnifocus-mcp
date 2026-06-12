@@ -988,4 +988,29 @@ describe('PERM-02 gate verdict dispatch', () => {
       result.success === true || (result.error && result.error.code !== 'POLICY_GATE_CAPTURE_CONFIRM');
     expect(didBypassGate).toBe(true);
   });
+
+  it('allows agent create when a lineage param is present (capture-attestation bypass, D-08b)', async () => {
+    // Background mode (async agent) — no interactive prompt is available, so the
+    // ONLY non-gated path for an agent capture is the lineage self-attestation.
+    // A create carrying a lineage param is an attested capture: it lands in the
+    // inbox (visible, recoverable) and is stamped agent-okay downstream, so it
+    // bypasses the gate exactly like the session-grant bypass above (D-02 vs D-08b).
+    delete process.env['OMNIFOCUS_MCP_INTERACTIVE']; // background mode
+
+    const result = (await tool.execute({
+      mutation: {
+        operation: 'create',
+        target: 'task',
+        data: { name: 'Lineage capture test', lineage: { sessionId: 'unit-test-session' } },
+      },
+    })) as any;
+
+    // Lineage present → the create must NOT return either gate verdict.
+    const didBypassGate =
+      result.success === true ||
+      (result.error &&
+        result.error.code !== 'POLICY_GATE_BACKGROUND_ONLY' &&
+        result.error.code !== 'POLICY_GATE_CAPTURE_CONFIRM');
+    expect(didBypassGate).toBe(true);
+  });
 });

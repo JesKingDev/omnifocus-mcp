@@ -1,6 +1,6 @@
 import { BaseTool } from '../base.js';
 import { CacheManager } from '../../cache/CacheManager.js';
-import { WriteSchema, type WriteInput , LineageInput } from './schemas/write-schema.js';
+import { WriteSchema, type WriteInput, LineageInput } from './schemas/write-schema.js';
 import { MutationCompiler, type CompiledMutation } from './compilers/MutationCompiler.js';
 import { TempIdResolver } from './utils/tempid-resolver.js';
 import { DependencyGraph, DependencyGraphError } from './utils/dependency-graph.js';
@@ -443,6 +443,24 @@ OPERATION POLICY (agent role):
           // Session-grant bypass: if an owner has already granted session-wide permission
           // for agent creates, skip the gate and fall through to execution (D-02, PERM-02).
           if (isAllowedAllThisSession()) {
+            continue;
+          }
+
+          // Lineage-attestation bypass (D-08b, PERM-02): a task create that carries a
+          // lineage param is a self-attested agent capture. It lands in the inbox
+          // (visible, recoverable) and is stamped agent-okay downstream (see the lineage
+          // block below), so it is allowed without an owner prompt or session grant —
+          // this is the CAP-01 async-capture path. Capture attestation is a distinct,
+          // lower-risk surface from the forge-resistant session grant (D-02): only the
+          // recoverable inbox-create op is bypassed; destructive/structural gated ops
+          // (delete, merge, tag_manage) are untouched. Scoped to the single create+task
+          // shape, mirroring the stamp path below.
+          if (
+            item.operation === 'create' &&
+            args.mutation.operation === 'create' &&
+            args.mutation.target === 'task' &&
+            (args.mutation.data as { lineage?: unknown } | undefined)?.lineage != null
+          ) {
             continue;
           }
 
