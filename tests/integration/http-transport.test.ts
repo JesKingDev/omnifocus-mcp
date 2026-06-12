@@ -128,16 +128,18 @@ d('HTTP Transport Integration Tests', () => {
     });
 
     it('should create a task successfully', { timeout: 90000 }, async () => {
-      // Phase 2 gates AGENT task-creates (the default role). This transport test
-      // asserts that create works over HTTP, not the gate — so it runs as OWNER
-      // via a dedicated owner-authenticated client against the same server. The
-      // owner role's create→agent role distinction itself is covered by the
-      // Phase 4 per-session role-parity test. The owner client cleans up its own
-      // task (cleanup uses bulk_delete, which is denied for the agent role).
+      // Phase 2 gates AGENT task-creates. This transport test asserts create works
+      // over HTTP, not the gate. The owner token passes the per-session dispatch
+      // gate (and lets cleanup's bulk_delete through — denied for agent), but the
+      // WriteTool funnel still resolves role from env, not the HTTP token (Phase 4
+      // deferred item D-10), so it sees the agent default. A lineage param bypasses
+      // the funnel gate via capture-attestation (D-08b), so the create executes.
       const ownerClient = new HTTPTestClient({ port: 3099, host: '127.0.0.1', authToken: OWNER_TOKEN });
       try {
         await ownerClient.initialize();
-        const createResult = (await ownerClient.createTestTask('HTTP Transport Test Task')) as {
+        const createResult = (await ownerClient.createTestTask('HTTP Transport Test Task', {
+          lineage: { sessionId: 'http-test-session' },
+        })) as {
           success: boolean;
           error?: unknown;
           data: { task: { taskId: string; name: string } };

@@ -953,7 +953,13 @@ describe('Phase 2 D-08b — agent create with lineage stamps agent-okay tag', ()
       createdTaskId = createParsed.data?.task?.taskId ?? createParsed.data?.taskId;
       expect(createdTaskId).toBeDefined();
 
-      // (d) Read back the task by ID
+      // (d) Read back via the agent-okay TAG FILTER — the agentOkayPredicate path
+      // Phase 2 built (D-06). This is the feature-aligned read-back: a task that
+      // comes back through the agent-okay filter IS tagged agent-okay by definition,
+      // which proves the capture-time stamp. We match by the run-unique task name.
+      // (Read-back by `filters.ids` is intentionally avoided — the read path only
+      // routes singular `filter.id`, and the by-id projections omit tags; a separate
+      // pre-existing read-path gap, not part of the Phase 2 capture deliverable.)
       const readResult = await sendAgentRequest({
         jsonrpc: '2.0',
         id: 101,
@@ -963,7 +969,9 @@ describe('Phase 2 D-08b — agent create with lineage stamps agent-okay tag', ()
           arguments: {
             query: {
               type: 'tasks',
-              filters: { ids: [createdTaskId] },
+              filters: { tags: { all: ['agent-okay'] } },
+              fields: ['name', 'tags', 'note'],
+              limit: 200,
             },
           },
         },
@@ -971,15 +979,14 @@ describe('Phase 2 D-08b — agent create with lineage stamps agent-okay tag', ()
 
       const readContent = (readResult as { content: Array<{ type: string; text: string }> }).content;
       const readParsed = JSON.parse(readContent[0].text);
-      expectOk(readParsed, 'read back task by ID (D-08b)');
+      expectOk(readParsed, 'read back agent-okay tasks (D-08b)');
 
-      const task = readParsed.data?.tasks?.[0];
-      expect(task).toBeDefined();
-
-      // (e) Assert agent-okay tag is present
+      // (e) The created task must appear among agent-okay-tagged tasks → tag stamped.
+      const task = (readParsed.data?.tasks ?? []).find((t: { name?: string }) => t.name === lineageTaskName);
+      expect(task, `created task "${lineageTaskName}" not found among agent-okay tasks`).toBeDefined();
       expect(task.tags).toContain('agent-okay');
 
-      // (f) Assert lineage sentinel is in the note
+      // (f) Assert the lineage sentinel is in the note → lineage stamp persisted.
       expect(task.note).toContain('of-mcp:lineage');
     } finally {
       // Self-cleaning: delete the created task

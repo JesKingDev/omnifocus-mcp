@@ -66,13 +66,15 @@ describe('WriteVerifier integration: task create response includes verification_
 
   beforeAll(async () => {
     const serverPath = path.join(__dirname, '../../../dist/index.js');
-    // OWNER role: the write-verifier round-trip creates a task to verify the
-    // post-mutation read-back. The Phase 2 policy flip gates AGENT task-creates,
-    // so owner is required for the create to execute (this suite tests
-    // verification, not the permission gate).
+    // AGENT role: the write-verifier's post-mutation read-back only runs for the
+    // agent role — the D-12 owner guard in WriteVerifier returns 'unverified' for
+    // owner (verification exists to catch agent mistakes). To get a successful
+    // agent create past the Phase 2 gate, the create carries a lineage param
+    // (capture-attestation bypass, D-08b); this also exercises the verifier on the
+    // new capture path. agent-okay is auto-stamped and exempt from the test guard.
     serverProcess = spawn('node', [serverPath], {
       stdio: ['pipe', 'pipe', 'pipe'],
-      env: { ...process.env, OMNIFOCUS_MCP_ROLE: 'owner' },
+      env: { ...process.env, OMNIFOCUS_MCP_ROLE: 'agent' },
     });
     await sendRequest({
       jsonrpc: '2.0',
@@ -106,7 +108,7 @@ describe('WriteVerifier integration: task create response includes verification_
           mutation: {
             operation: 'create',
             target: 'task',
-            data: { name: VERIFY_TASK_NAME },
+            data: { name: VERIFY_TASK_NAME, lineage: { sessionId: 'write-verifier-session' } },
           },
         },
       },
