@@ -3,12 +3,12 @@ gsd_state_version: 1.0
 milestone: agent-workflow
 milestone_name: Agent Workflow System
 status: ready_to_execute
-last_updated: '2026-06-12T05:13:29.769Z'
+last_updated: '2026-06-12T14:06:20.160Z'
 progress:
   total_phases: 6
   completed_phases: 1
-  total_plans: 4
-  completed_plans: 4
+  total_plans: 8
+  completed_plans: 5
   percent: 17
 ---
 
@@ -19,14 +19,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-06-11)
 
 **Core value:** The agent can read and write OmniFocus tasks safely — no silent write failures, no destructive deletes —
-so JessOS can trust OmniFocus as the source of truth. **Current focus:** Phase 2 — capture & permission gating (Phases
-1–6); Phase 1 = OmniFocus capability discovery, which gates all workflow design.
+so JessOS can trust OmniFocus as the source of truth. **Current focus:** Phase 02 — capture-permission-gating 1–6);
+Phase 1 = OmniFocus capability discovery, which gates all workflow design.
 
 ## Current Position
 
-Phase: 2 of 6 (capture & permission gating) **planned and verified**; ready for `/gsd-execute-phase 2`. Last activity:
-2026-06-12 — Phase 2 planned (4 plans / 4 waves; CAP-01/PERM-01/PERM-02/LINE-01 covered; plan-checker PASSED iteration
-2; RESEARCH + PATTERNS + VALIDATION committed). Phase 1 (capability discovery) complete 2026-06-12.
+Phase: 02 (capture-permission-gating) — EXECUTING Plan: 2 of 4 2026-06-12 — Phase 2 planned (4 plans / 4 waves;
+CAP-01/PERM-01/PERM-02/LINE-01 covered; plan-checker PASSED iteration 2; RESEARCH + PATTERNS + VALIDATION committed).
+Phase 1 (capability discovery) complete 2026-06-12.
 
 ## Roadmap Summary (agent-workflow)
 
@@ -61,6 +61,8 @@ Phase: 2 of 6 (capture & permission gating) **planned and verified**; ready for 
 
 - Last 5 plans: —
 - Trend: —
+
+| Phase 02-capture-permission-gating P01 | 5m | 3 tasks | 6 files |
 
 ## Accumulated Context
 
@@ -124,7 +126,7 @@ need a deliberate on-Mac session per `deploy/launchd/RUNBOOK.md`.
 
 ## Session Continuity
 
-Last session: 2026-06-12T05:13:29.764Z
+Last session: 2026-06-12T14:06:20.155Z
 
 ## Operator Next Steps
 

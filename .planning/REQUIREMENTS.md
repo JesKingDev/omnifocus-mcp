@@ -22,7 +22,7 @@ Requirements for the `agent-workflow` milestone. Each maps to exactly one roadma
 
 ### Capture
 
-- [ ] **CAP-01**: User can dump a messy item straight into the OmniFocus inbox without deciding project, tags, or dates.
+- [x] **CAP-01**: User can dump a messy item straight into the OmniFocus inbox without deciding project, tags, or dates.
 
 ### Routing
 
@@ -33,9 +33,9 @@ Requirements for the `agent-workflow` milestone. Each maps to exactly one roadma
 
 ### Permission Gating
 
-- [ ] **PERM-01**: In async/background runs, agent acts only on tasks explicitly tagged `agent-okay`; untagged tasks are
+- [x] **PERM-01**: In async/background runs, agent acts only on tasks explicitly tagged `agent-okay`; untagged tasks are
       left untouched.
-- [ ] **PERM-02**: In sync/live sessions, agent prompts before creating a task, offering an "allow all this session"
+- [x] **PERM-02**: In sync/live sessions, agent prompts before creating a task, offering an "allow all this session"
       option (mirrors the existing Jira-creation permission flow).
 
 ### Review Loops
@@ -59,7 +59,7 @@ Requirements for the `agent-workflow` milestone. Each maps to exactly one roadma
 
 ### Session Lineage
 
-- [ ] **LINE-01**: Every agent-created task stores its originating Claude Code session ID in the task notes, so context
+- [x] **LINE-01**: Every agent-created task stores its originating Claude Code session ID in the task notes, so context
       travels with the task across context-window boundaries.
 
 ### Trigger
@@ -114,10 +114,10 @@ Which phases cover which requirements. Populated during roadmap creation.
 | ----------- | ------------------------------------------ | -------- |
 | DISC-01     | Phase 1 — Capability Discovery             | Complete |
 | DISC-02     | Phase 1 — Capability Discovery             | Complete |
-| CAP-01      | Phase 2 — Capture & Permission Gating      | Pending  |
-| PERM-01     | Phase 2 — Capture & Permission Gating      | Pending  |
-| PERM-02     | Phase 2 — Capture & Permission Gating      | Pending  |
-| LINE-01     | Phase 2 — Capture & Permission Gating      | Pending  |
+| CAP-01      | Phase 2 — Capture & Permission Gating      | Complete |
+| PERM-01     | Phase 2 — Capture & Permission Gating      | Complete |
+| PERM-02     | Phase 2 — Capture & Permission Gating      | Complete |
+| LINE-01     | Phase 2 — Capture & Permission Gating      | Complete |
 | ROUTE-01    | Phase 3 — Routing & On-Demand Trigger      | Pending  |
 | ROUTE-02    | Phase 3 — Routing & On-Demand Trigger      | Pending  |
 | ROUTE-03    | Phase 3 — Routing & On-Demand Trigger      | Pending  |
