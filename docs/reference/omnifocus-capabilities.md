@@ -361,13 +361,75 @@ DISC-01 coverage: "perspectives"
 
 ### Area Verdict
 
-- Verdict: _to be determined in Plan 03_
-- Evidence: _pending_
-- Rubric: _pending_
+- Verdict: **extend**
+- Evidence: evidence: verified (Perspective.Custom.all enumeration + archivedFilterRules in-session write live-probed on
+  4.8.11)
+- Rubric: Perspective list/read is already implemented and `archivedFilterRules` write is available for repair;
+  task-resolution (DISC-PERSP-03) is `build` but scoped to Phase 6 only.
 
 ### Findings
 
-— to be populated in Plan 02 or Plan 03 —
+#### DISC-PERSP-01 — `archivedFilterRules` is read/write (in-session); cross-restart persistence unverified
+
+| Field           | Value                                                                                             |
+| --------------- | ------------------------------------------------------------------------------------------------- |
+| Verdict         | extend                                                                                            |
+| Rubric          | JSON rule archive (OF 4.2+) is writable; MCP wraps backup→write→restore for safe repair           |
+| Evidence        | evidence: verified (in-session write + read-back) / evidence: unverified (cross-restart)          |
+| Source          | Live probe `probes/disc-persp-01-filter-rules-persist.js` (Option A: disposable test perspective) |
+| Downstream cite | Phase 6 (PROV-01 — perspective repair)                                                            |
+
+**Follow-up note (cross-restart):** The probe confirmed the write API accepts the call and the value round-trips
+in-session (`writeAccepted: true`, `immediateReadBackMatch: true`, `originalRestored: true`). Writing the same value
+back does NOT prove rule mutation persists across an OmniFocus restart. Cross-restart persistence requires a manual
+write→quit→reopen→read cycle — this is the **Plan 04 human checkpoint** and a Phase 6 PROV-01 gate. Until then the
+cross-restart dimension stays `unverified`.
+
+#### DISC-PERSP-02 — `Perspective.Custom.all` enumerates user custom perspectives
+
+| Field           | Value                                                                          |
+| --------------- | ------------------------------------------------------------------------------ |
+| Verdict         | native                                                                         |
+| Rubric          | `Perspective.Custom.all` plus `byName()` / `byIdentifier()` are native lookups |
+| Evidence        | evidence: verified                                                             |
+| Source          | Live probe `probes/disc-persp-02-custom-all-enumerate.js`                      |
+| Downstream cite | Phase 6 (READAS-01, PROV-01)                                                   |
+
+The probe enumerated the custom-perspective collection and checked for a "JessOS" perspective: **not present yet**
+(`jessosFound: false`) — expected, since JessOS is provisioned in Phase 6.
+
+#### DISC-PERSP-03 — No `perspective.tasks` / `matchingTasks` API (task resolution must be built)
+
+| Field           | Value                                                                                           |
+| --------------- | ----------------------------------------------------------------------------------------------- |
+| Verdict         | build                                                                                           |
+| Rubric          | No direct API; READAS-01 requires building a filter-rule interpreter over `archivedFilterRules` |
+| Evidence        | evidence: doc                                                                                   |
+| Source          | omni-automation.com/omnifocus/perspective.html (property absent)                                |
+| Downstream cite | Phase 6 (READAS-01)                                                                             |
+
+The underlying data (`archivedFilterRules`) is native, but the task-resolution _operation_ is not surfaced natively —
+hence `build`. The agent must replicate the perspective's filter logic as OmniJS predicates against `flattenedTasks`.
+
+#### DISC-PERSP-04 — Custom perspectives cannot be created programmatically (repair is native)
+
+| Field           | Value                                                                                          |
+| --------------- | ---------------------------------------------------------------------------------------------- |
+| Verdict         | native                                                                                         |
+| Rubric          | Writing `archivedFilterRules` on an existing perspective is the native repair path             |
+| Evidence        | evidence: doc                                                                                  |
+| Source          | omni-automation.com (no `Perspective.Custom` constructor)                                      |
+| Downstream cite | Phase 6 (PROV-01 — "provision or repair": repair is implementable; create-from-scratch is not) |
+
+`Perspective.Custom` has no constructor — create-from-scratch is not supported (it requires the OmniFocus UI, as
+exercised in this plan's checkpoint). PROV-01 maps to the supported _repair_ path.
+
+<!-- DISC-PERSP sanitized probe evidence (counts / booleans / identifiers / probe-target name only; no real perspective names) -->
+
+| Probe                                   | Timestamp (UTC)   | Sanitized result                                                                    | Cleanup               | OF build |
+| --------------------------------------- | ----------------- | ----------------------------------------------------------------------------------- | --------------------- | -------- |
+| `disc-persp-02-custom-all-enumerate.js` | 2026-06-11T20:34Z | customPerspectiveCount=18; jessosFound=false (read-only)                            | n/a (read-only)       | 185.15   |
+| `disc-persp-01-filter-rules-persist.js` | 2026-06-12T00:12Z | target=disc-probe-test-perspective; writeAccepted=true; immediateReadBackMatch=true | originalRestored=true | 185.15   |
 
 ---
 
