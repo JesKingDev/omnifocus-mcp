@@ -55,7 +55,9 @@ d('HTTP Transport Integration Tests', () => {
 
   describe('Sessions Endpoint', () => {
     it('should return session statistics', async () => {
-      const sessions = await client.sessions();
+      // /sessions is owner-gated (Phase 4, 847616e5) — query it with the owner token.
+      const ownerClient = new HTTPTestClient({ port: 3099, host: '127.0.0.1', authToken: OWNER_TOKEN });
+      const sessions = await ownerClient.sessions();
 
       expect(sessions).toHaveProperty('activeSessions');
       expect(sessions).toHaveProperty('sessionIds');
@@ -238,6 +240,11 @@ d('HTTP Transport Authentication Tests', () => {
 
 d('HTTP Transport Concurrent Sessions', () => {
   const CONCURRENT_PORT = 3087; // Use different port to avoid conflicts
+  // Phase 4 made HTTP auth mandatory. client1/client2 connect to (not start) the
+  // server, so they must send the same agent token the server registers, or every
+  // request 401s. The owner token lets the /sessions stats query (owner-gated) run.
+  const CONCURRENT_AGENT_TOKEN = 'concurrent-agent-token-aaaaaaaaaaaaaaaaaaaa';
+  const CONCURRENT_OWNER_TOKEN = 'concurrent-owner-token-bbbbbbbbbbbbbbbbbbbb';
   let serverClient: HTTPTestClient;
   let client1: HTTPTestClient;
   let client2: HTTPTestClient;
@@ -251,6 +258,8 @@ d('HTTP Transport Concurrent Sessions', () => {
     serverClient = new HTTPTestClient({
       port: CONCURRENT_PORT,
       host: '127.0.0.1',
+      authToken: CONCURRENT_AGENT_TOKEN,
+      ownerToken: CONCURRENT_OWNER_TOKEN,
       enableCacheWarming: false,
     });
     await serverClient.startServer();
@@ -259,11 +268,13 @@ d('HTTP Transport Concurrent Sessions', () => {
     client1 = new HTTPTestClient({
       port: CONCURRENT_PORT,
       host: '127.0.0.1',
+      authToken: CONCURRENT_AGENT_TOKEN,
       enableCacheWarming: false,
     });
     client2 = new HTTPTestClient({
       port: CONCURRENT_PORT,
       host: '127.0.0.1',
+      authToken: CONCURRENT_AGENT_TOKEN,
       enableCacheWarming: false,
     });
 
@@ -300,8 +311,14 @@ d('HTTP Transport Concurrent Sessions', () => {
 
   it('should track sessions correctly', async () => {
     // Sessions should already be initialized from previous test
-    // Server should show at least 2 active sessions
-    const sessions = await client1.sessions();
+    // Server should show at least 2 active sessions. /sessions is owner-gated
+    // (Phase 4), so query it with the owner token rather than client1's agent token.
+    const ownerClient = new HTTPTestClient({
+      port: CONCURRENT_PORT,
+      host: '127.0.0.1',
+      authToken: CONCURRENT_OWNER_TOKEN,
+    });
+    const sessions = await ownerClient.sessions();
     expect(sessions.activeSessions).toBeGreaterThanOrEqual(2);
   });
 });
