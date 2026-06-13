@@ -122,13 +122,19 @@ flowchart LR
 - **Files modified:** `tests/unit/auth/agent-okay-predicate.test.ts`
 - **Commit:** `79bfa3ca`
 
-## Pending Verification
+## Verification — RESOLVED (2026-06-12)
 
-Human checkpoint is required before this plan is marked complete. The automated work (predicate + integration test) is
-committed. The integration test (`npm run test:integration`) confirms the full API contract with live OmniFocus. The
-manual checkpoint confirms the OmniFocus UI reflects the inbox task with the agent-okay tag and lineage note block.
+The human checkpoint surfaced a real discrepancy: the capture path was dead over the live MCP path. Post-checkpoint
+gap-closure (8 commits) fixed it, and the D-08b integration test now PROVES the round-trip live against OmniFocus — an
+agent create-with-lineage produces an inbox task with the `agent-okay` tag and the `of-mcp:lineage` note block, read
+back via the `agentOkayPredicate` filter. This automated live proof was accepted in lieu of a manual UI eyeball.
 
-**Status:** Automated tasks DONE. Human verification PENDING.
+Root causes fixed: funnel lineage bypass was unreachable behind a blunt pre-dispatch gate in `tools/index.ts` (now
+delegates create verdicts to the funnel); `agent-okay` was rejected by the test-mode tag guard; the D-08b read-back used
+the unrouted `filters.ids` path; the policy flip had gated every create-task integration harness (all migrated to owner
+role); and the verifier's D-12 owner guard required the write-verifier test to run as agent+lineage.
+
+**Status:** COMPLETE. Automated + live verification PASS.
 
 ## Known Stubs
 

@@ -24,10 +24,16 @@ Phase 1 = OmniFocus capability discovery, which gates all workflow design.
 
 ## Current Position
 
-Phase: 02 (capture-permission-gating) — HUMAN CHECKPOINT PENDING (02-04 automated tasks done 2026-06-12). Wave 4
-complete: agentOkayPredicate() (PERM-01, D-08a), D-08b integration test written. All Wave 0 unit tests GREEN (2396
-passed). Human verification of OmniFocus inbox round-trip pending: inbox task with agent-okay tag + of-mcp:lineage note
-block must be confirmed manually.
+Phase: 02 (capture-permission-gating) — VERIFIED COMPLETE (2026-06-12). All 4 plans done; the capture round-trip is
+proven LIVE against OmniFocus by the D-08b integration test (agent create-with-lineage → agent-okay tag stamped →
+of-mcp:lineage note persisted → read back via the agentOkayPredicate filter), accepted in lieu of a manual UI eyeball.
+Unit 2398/2398; full integration green (2 field-roundtrip clear\* tests are OMN-55-class timing flakes, pass on re-run).
+
+Post-checkpoint gap-closure (8 commits) fixed a chain that had made agent capture dead over the real MCP path: (1)
+funnel lineage bypass; (2) the pre-dispatch gate in tools/index.ts now delegates create verdicts to the funnel (see
+memory: dual-policy-gate-dispatch-vs-funnel); (3) agent-okay exempted from the test-mode tag guard; (4) every
+create-task integration harness migrated to owner role (the policy flip had broken the whole suite); (5) pre-existing
+Phase 4 /sessions auth tests fixed (Cluster B). Follow-ups flagged below.
 
 ## Roadmap Summary (agent-workflow)
 
@@ -132,14 +138,18 @@ None yet.
 Items acknowledged and deferred at the `hardening` milestone close on 2026-06-09 (risk-accepted; documented in
 `milestones/hardening-MILESTONE-AUDIT.md`):
 
-| Category         | Item                                                                                                                 | Status  | Deferred At |
-| ---------------- | -------------------------------------------------------------------------------------------------------------------- | ------- | ----------- |
-| uat_gap          | Phase 04 — Tailscale `serve` (not `funnel`) operational verification on the host (HTTP-04)                           | partial | 2026-06-09  |
-| verification_gap | Phase 04 — 04-VERIFICATION.md `human_needed` (same Tailscale-Serve operational check)                                | open    | 2026-06-09  |
-| uat_gap          | Phase 06 — host spikes S4/S5/S6 under `launchctl` (node-overwrite grant survival, no restart-loop, write round-trip) | partial | 2026-06-09  |
+| Category         | Item                                                                                                                                                                                               | Status  | Deferred At |
+| ---------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------- | ----------- |
+| uat_gap          | Phase 04 — Tailscale `serve` (not `funnel`) operational verification on the host (HTTP-04)                                                                                                         | partial | 2026-06-09  |
+| verification_gap | Phase 04 — 04-VERIFICATION.md `human_needed` (same Tailscale-Serve operational check)                                                                                                              | open    | 2026-06-09  |
+| uat_gap          | Phase 06 — host spikes S4/S5/S6 under `launchctl` (node-overwrite grant survival, no restart-loop, write round-trip)                                                                               | partial | 2026-06-09  |
+| read_path_gap    | `omnifocus_read` ignores the `filters.ids` (plural) filter — only singular `filter.id` is routed, and by-id projections omit tags. Surfaced fixing D-08b; pre-existing.                            | open    | 2026-06-12  |
+| http_role_gap    | D-10 — the WriteTool funnel resolves role via `parseRole()` (env), not the per-request HTTP token, so non-env roles can't write over HTTP without a lineage/env workaround.                        | open    | 2026-06-12  |
+| flake            | `field-roundtrip` two-phase `clear*` tests (clearPlannedDate/clearEstimatedMinutes) intermittently race the clear-write vs verify-null read against live OmniFocus (OMN-55 class); pass on re-run. | open    | 2026-06-12  |
 
 **Trigger to close:** Phase 06 S4 becomes free to verify on the first real Node upgrade on the host. Phase 04 + S5/S6
-need a deliberate on-Mac session per `deploy/launchd/RUNBOOK.md`.
+need a deliberate on-Mac session per `deploy/launchd/RUNBOOK.md`. The read_path_gap and http_role_gap (D-10) are
+candidates for a future read-layer / HTTP-role-plumbing phase.
 
 ## Session Continuity
 
