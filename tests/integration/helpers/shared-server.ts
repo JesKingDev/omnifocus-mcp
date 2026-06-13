@@ -164,7 +164,12 @@ export async function getSharedClient(): Promise<MCPTestClient> {
 
   initPromise = (async () => {
     console.log('🚀 Starting shared MCP server for integration tests (with cache warming)...');
-    sharedClient = new MCPTestClient({ enableCacheWarming: true });
+    // OWNER role: the shared server backs CRUD/validation/batch/analytics suites
+    // (and the warm-up create below), none of which test the permission gate. The
+    // Phase 2 policy flip gates AGENT task-creates, so without owner the warm-up
+    // create fails and every shared-server consumer cascades. Gate behavior is
+    // covered by PERM-02 unit tests and the agent-mode capture tests.
+    sharedClient = new MCPTestClient({ enableCacheWarming: true, extraEnv: { OMNIFOCUS_MCP_ROLE: 'owner' } });
     await sharedClient.startServer();
     console.log('🔥 Warming up OmniFocus (read + mutation paths)...');
     await warmupOmniFocus(sharedClient);

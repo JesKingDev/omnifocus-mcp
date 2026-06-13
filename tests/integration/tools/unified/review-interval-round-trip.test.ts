@@ -76,7 +76,13 @@ describe('Review interval round-trip (OMN-60)', () => {
 
   beforeAll(async () => {
     const serverPath = path.join(__dirname, '../../../../dist/index.js');
-    serverProcess = spawn('node', [serverPath], { stdio: ['pipe', 'pipe', 'pipe'] });
+    // OWNER role: review-interval write→read round-trip, not the permission gate.
+    // The Phase 2 policy flip gates AGENT task-creates, so owner is required for
+    // the create to execute.
+    serverProcess = spawn('node', [serverPath], {
+      stdio: ['pipe', 'pipe', 'pipe'],
+      env: { ...process.env, OMNIFOCUS_MCP_ROLE: 'owner' },
+    });
     await sendRequest({
       jsonrpc: '2.0',
       id: 1,

@@ -434,8 +434,11 @@ d('Real LLM Integration Tests', () => {
     }
 
     // Start the MCP server
+    // OWNER role: real-LLM CRUD simulation, not the permission gate. Phase 2 gates
+    // AGENT task-creates, so owner is required for creates to execute.
     server = spawn('node', ['dist/index.js'], {
       stdio: ['pipe', 'pipe', 'pipe'],
+      env: { ...process.env, OMNIFOCUS_MCP_ROLE: 'owner' },
     });
 
     // Wait for server to initialize
