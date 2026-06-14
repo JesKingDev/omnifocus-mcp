@@ -109,13 +109,16 @@ The agent reads `~/vaults/jess-os/` directly with `Grep` / `Read` — no MCP lay
 | ------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Read agent-okay inbox items          | `omnifocus_read` `type:"tasks"`, `filters.tags.all:["agent-okay"]`, `filters.inInbox:true`, `details:true`                                                             |
 | Active projects with notes           | `omnifocus_read` `type:"projects"`, `filters.status:"active"`, `fields:["id","name","folderPath","note"]`                                                              |
-| File task to project (MATCH / INFER) | `omnifocus_write` `operation:"update"`, `target:"task"`, `data:{id:"<id>", project:"<project-name-or-id>"}`                                                            |
+| File task to project (MATCH / INFER) | `omnifocus_write` `operation:"update"`, `target:"task"`, `id:"<id>"`, `changes:{project:"<project-name-or-id>"}`                                                       |
 | Create project (INFER branch)        | `omnifocus_write` `operation:"create"`, `target:"project"`, `data:{name:"<name>", folder:"<folder-name>"}` — omit the `folder` key when there is no `omnifocus-folder` |
-| Apply marker tag (LEAVE branch)      | `omnifocus_write` `operation:"update"`, `target:"task"`, `data:{id:"<id>", addTags:["routing-unplaced"]}`                                                              |
+| Apply marker tag (LEAVE branch)      | `omnifocus_write` `operation:"update"`, `target:"task"`, `id:"<id>"`, `changes:{addTags:["routing-unplaced"]}`                                                         |
 
 Notes that matter:
 
 - `omnifocus_read` takes `{query:{…}}`; `omnifocus_write` takes `{mutation:{…}}`.
+- Mind the write shapes: **update** puts `id` at the top level of the mutation with the fields to change in a `changes`
+  object (`{operation:"update", target:"task", id:"<id>", changes:{…}}`); **create** has no `id` and puts the new
+  entity's fields in `data`. Do not nest `id` inside `changes`/`data` — the changes container is strict and rejects it.
 - Default reads truncate task notes to 200 chars — pass `details:true` to get full notes for vault-match context.
 - Project notes come back in full through the `fields:["note"]` projection — no truncation on the projects query.
 - The write-verifier fires automatically for every agent-role write through the funnel. Do not call it explicitly.
