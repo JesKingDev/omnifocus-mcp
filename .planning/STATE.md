@@ -3,7 +3,7 @@ gsd_state_version: 1.0
 milestone: agent-workflow
 milestone_name: Agent Workflow System
 status: ready_to_execute
-last_updated: '2026-06-14T17:10:47.019Z'
+last_updated: '2026-06-14T17:26:51.610Z'
 progress:
   total_phases: 6
   completed_phases: 2
@@ -19,15 +19,15 @@ progress:
 See: .planning/PROJECT.md (updated 2026-06-11)
 
 **Core value:** The agent can read and write OmniFocus tasks safely — no silent write failures, no destructive deletes —
-so JessOS can trust OmniFocus as the source of truth. **Current focus:** Phase 02 — capture-permission-gating 1–6);
-Phase 1 = OmniFocus capability discovery, which gates all workflow design.
+so JessOS can trust OmniFocus as the source of truth. **Current focus:** Phase 03 — routing-on-demand-trigger Phase 1 =
+OmniFocus capability discovery, which gates all workflow design.
 
 ## Current Position
 
-Phase: 02 (capture-permission-gating) — VERIFIED COMPLETE (2026-06-12). All 4 plans done; the capture round-trip is
-proven LIVE against OmniFocus by the D-08b integration test (agent create-with-lineage → agent-okay tag stamped →
-of-mcp:lineage note persisted → read back via the agentOkayPredicate filter), accepted in lieu of a manual UI eyeball.
-Unit 2398/2398; full integration green (2 field-roundtrip clear\* tests are OMN-55-class timing flakes, pass on re-run).
+Phase: 03 (routing-on-demand-trigger) — EXECUTING Plan: 1 of 2 proven LIVE against OmniFocus by the D-08b integration
+test (agent create-with-lineage → agent-okay tag stamped → of-mcp:lineage note persisted → read back via the
+agentOkayPredicate filter), accepted in lieu of a manual UI eyeball. Unit 2398/2398; full integration green (2
+field-roundtrip clear\* tests are OMN-55-class timing flakes, pass on re-run).
 
 Post-checkpoint gap-closure (8 commits) fixed a chain that had made agent capture dead over the real MCP path: (1)
 funnel lineage bypass; (2) the pre-dispatch gate in tools/index.ts now delegates create verdicts to the funnel (see

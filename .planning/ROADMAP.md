@@ -65,8 +65,8 @@ flowchart TD
 - [x] **Phase 2: Capture & Permission Gating** — agent dumps items into the inbox under explicit permission gates, with
       (completed 2026-06-12) session lineage on every created task.
 
-- [ ] **Phase 3: Routing & On-Demand Trigger** — agent routes inbox items (match → infer → create → leave), runnable
-      on-demand via a manual trigger (the MVP path).
+- [x] **Phase 3: Routing & On-Demand Trigger** — agent routes inbox items (match → infer → create → leave), runnable
+      (completed 2026-06-14) on-demand via a manual trigger (the MVP path).
 
 - [ ] **Phase 4: Review Loops & Live Auto-Capture** — review tags surface agent work in a today view, distinguishing
       output from capture; live sessions capture blockers in real time.
@@ -161,9 +161,9 @@ ROUTE-04, TRIG-01 **Success Criteria** (what must be TRUE):
 
 **Wave 1** _(both plans are independent — run in parallel)_
 
-- [ ] 03-01-PLAN.md — Server-side prep: add routing-unplaced to FUNCTIONAL_TAG_ALLOWLIST + routing write integration
+- [x] 03-01-PLAN.md — Server-side prep: add routing-unplaced to FUNCTIONAL_TAG_ALLOWLIST + routing write integration
       tests
-- [ ] 03-02-PLAN.md — On-demand routing skill: route-inbox-to-projects SKILL.md (match → infer → leave two-pass
+- [x] 03-02-PLAN.md — On-demand routing skill: route-inbox-to-projects SKILL.md (match → infer → leave two-pass
       procedure)
 
 ### Phase 4: Review Loops & Live Auto-Capture
@@ -212,7 +212,7 @@ Criteria** (what must be TRUE):
 | ----------------------------------- | -------------- | ----------- | ---------- |
 | 1. OmniFocus Capability Discovery   | 4/4            | Complete    | 2026-06-12 |
 | 2. Capture & Permission Gating      | 4/4            | Complete    | 2026-06-12 |
-| 3. Routing & On-Demand Trigger      | 0/?            | Not started | -          |
+| 3. Routing & On-Demand Trigger      | 2/2            | Complete    | 2026-06-14 |
 | 4. Review Loops & Live Auto-Capture | 0/?            | Not started | -          |
 | 5. Session Archaeology              | 0/?            | Not started | -          |
 | 6. Surfaces & Migration             | 0/?            | Not started | -          |
