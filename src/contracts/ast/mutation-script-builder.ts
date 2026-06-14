@@ -64,11 +64,14 @@ const TEST_INBOX_PREFIX = '__TEST__';
  * Functional/system tags the product legitimately applies (not arbitrary user
  * content), exempt from the test-mode tag-prefix guard. The Phase 2 capture path
  * stamps `agent-okay` on agent-created tasks; the D-08b integration test must be
- * able to create and read that tag back live. The task itself still obeys the
- * sandbox name/folder guards, and tests clean up the tasks they create, so the
- * blast radius is one shared, idempotent functional tag.
+ * able to create and read that tag back live. The Phase 3 routing path stamps
+ * `routing-unplaced` (D-12) as a durable marker on inbox items it leaves in
+ * place; its integration tests must apply and read that tag back live. The task
+ * itself still obeys the sandbox name/folder guards, and tests clean up the
+ * tasks they create, so the blast radius is a small set of shared, idempotent
+ * functional tags.
  */
-export const FUNCTIONAL_TAG_ALLOWLIST: readonly string[] = ['agent-okay'];
+export const FUNCTIONAL_TAG_ALLOWLIST: readonly string[] = ['agent-okay', 'routing-unplaced'];
 
 /** A tag is allowed in test mode if it is sandbox-prefixed OR a known functional tag. */
 export function isTestTagAllowed(tag: string): boolean {
