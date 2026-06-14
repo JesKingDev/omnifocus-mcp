@@ -11,6 +11,8 @@ import {
   buildBatchCreateTasksScript,
   buildBulkDeleteScript,
   validateBatchCreateOps,
+  FUNCTIONAL_TAG_ALLOWLIST,
+  isTestTagAllowed,
   type GeneratedMutationScript,
 } from '../../../../src/contracts/ast/mutation-script-builder.js';
 
@@ -1209,5 +1211,25 @@ describe('validateBatchCreateOps (OMN-119: batch creates must honor the sandbox 
     await expect(
       validateBatchCreateOps([{ operation: 'create', target: 'task', data: { name: 'Unscoped Production Task' } }]),
     ).resolves.toBeUndefined();
+  });
+});
+
+describe('FUNCTIONAL_TAG_ALLOWLIST / isTestTagAllowed (Phase 3 routing-unplaced — D-12)', () => {
+  it('allows routing-unplaced (Phase 3 marker tag) in test mode', () => {
+    expect(FUNCTIONAL_TAG_ALLOWLIST).toContain('routing-unplaced');
+    expect(isTestTagAllowed('routing-unplaced')).toBe(true);
+  });
+
+  it('still allows agent-okay (Phase 2 capture tag — regression guard)', () => {
+    expect(FUNCTIONAL_TAG_ALLOWLIST).toContain('agent-okay');
+    expect(isTestTagAllowed('agent-okay')).toBe(true);
+  });
+
+  it('rejects an arbitrary non-allowlisted tag', () => {
+    expect(isTestTagAllowed('some-random-tag')).toBe(false);
+  });
+
+  it('still allows sandbox-prefixed tags via the prefix path', () => {
+    expect(isTestTagAllowed('__test-foo')).toBe(true);
   });
 });
