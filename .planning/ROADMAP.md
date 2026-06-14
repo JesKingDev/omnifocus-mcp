@@ -157,7 +157,14 @@ ROUTE-04, TRIG-01 **Success Criteria** (what must be TRUE):
 
 3. When no project can be inferred, the agent leaves the item in the inbox rather than guessing.
 4. The routing workflow can be invoked on demand by a manual trigger — proving gating + routing before any scheduler.
-   **Plans**: TBD
+   **Plans**: 2 plans
+
+**Wave 1** _(both plans are independent — run in parallel)_
+
+- [ ] 03-01-PLAN.md — Server-side prep: add routing-unplaced to FUNCTIONAL_TAG_ALLOWLIST + routing write integration
+      tests
+- [ ] 03-02-PLAN.md — On-demand routing skill: route-inbox-to-projects SKILL.md (match → infer → leave two-pass
+      procedure)
 
 ### Phase 4: Review Loops & Live Auto-Capture
 
