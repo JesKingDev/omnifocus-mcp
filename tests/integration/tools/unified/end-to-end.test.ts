@@ -3,6 +3,7 @@ import { spawn, ChildProcess } from 'child_process';
 import path from 'path';
 import { expectOk } from '../../helpers/expect-ok.js';
 import { runScopedName, runScopedTag } from '../../helpers/run-id.js';
+import { SANDBOX_FOLDER_NAME, ensureSandboxFolder, fullCleanup } from '../../helpers/sandbox-manager.js';
 
 // OMN-84: per-run scoped fixture names so concurrent / aborted runs cannot
 // collide on the literal "__TEST__ ..." names that used to be hardcoded.
@@ -1011,4 +1012,205 @@ describe('Phase 2 D-08b — agent create with lineage stamps agent-okay tag', ()
       }
     }
   }, 60000);
+});
+
+// ---------------------------------------------------------------------------
+// Phase 3 Routing — write operations (ROUTE-01, ROUTE-03, ROUTE-04)
+//
+// Proves the three server-side write paths the route-inbox-to-projects skill
+// (Plan 03-02) drives, all through the AGENT role + write funnel:
+//   A. ROUTE-01 — file a task to an existing project via update+project
+//      (moveTasks dispatch). D-11: native moveTasks, no custom mover.
+//   B. ROUTE-04 — apply the durable routing-unplaced marker tag via
+//      update+addTags (OmniJS addTag bridge; JXA addTags silently no-ops).
+//      D-12: marker on left items. The tag passes the test-mode sandbox guard
+//      only because FUNCTIONAL_TAG_ALLOWLIST gained 'routing-unplaced' (Plan
+//      03-01 Task 1).
+//   C. ROUTE-03 — create a project for the infer branch via create/project.
+//
+// Role discipline (mirrors D-08b): tasks are created with a lineage param so
+// the agent-create gate's capture-attestation bypass fires (agent task-create
+// is gated; project-create and update are 'allow' for agent). Agent cannot
+// delete (policy: deny), so fixture teardown runs through fullCleanup() — the
+// osascript sandbox sweep — not server-side deletes. A residue assertion fails
+// loud on fixture leak (OMN-46 discipline).
+// ---------------------------------------------------------------------------
+
+describe('Phase 3 Routing — write operations', () => {
+  let agentServerProcess: ChildProcess;
+  let nextId = 200;
+
+  async function sendAgentRequest(request: unknown): Promise<any> {
+    return new Promise((resolve, reject) => {
+      const requestStr = JSON.stringify(request) + '\n';
+      let response = '';
+      const timeout = setTimeout(() => reject(new Error('Request timeout after 120s')), 120000);
+
+      const onData = (data: Buffer) => {
+        response += data.toString();
+        for (const line of response.split('\n')) {
+          if (line.trim().startsWith('{')) {
+            try {
+              const parsed = JSON.parse(line);
+              if (parsed.jsonrpc === '2.0' && 'result' in parsed) {
+                clearTimeout(timeout);
+                agentServerProcess.stdout?.off('data', onData);
+                resolve(parsed.result);
+                return;
+              }
+              if (parsed.jsonrpc === '2.0' && 'error' in parsed) {
+                clearTimeout(timeout);
+                agentServerProcess.stdout?.off('data', onData);
+                reject(new Error(`MCP error: ${JSON.stringify(parsed.error)}`));
+                return;
+              }
+            } catch {
+              /* keep collecting */
+            }
+          }
+        }
+      };
+      agentServerProcess.stdout?.on('data', onData);
+      agentServerProcess.stdin?.write(requestStr);
+    });
+  }
+
+  // tools/call → parsed StandardResponseV2.
+  async function callTool(name: string, args: unknown): Promise<any> {
+    const result = await sendAgentRequest({
+      jsonrpc: '2.0',
+      id: ++nextId,
+      method: 'tools/call',
+      params: { name, arguments: args },
+    });
+    const content = (result as { content: Array<{ text: string }> }).content;
+    return JSON.parse(content[0].text);
+  }
+
+  function extractId(res: any): string {
+    const d = res.data ?? {};
+    const id = d.task?.id ?? d.task?.taskId ?? d.taskId ?? d.project?.id ?? d.project?.projectId ?? d.projectId ?? d.id;
+    expect(id, `created entity id (response: ${JSON.stringify(d).slice(0, 300)})`).toBeTruthy();
+    return id as string;
+  }
+
+  // Agent task-create: lineage param triggers the capture-attestation bypass.
+  async function createAgentTask(data: Record<string, unknown>): Promise<string> {
+    const res = await callTool('omnifocus_write', {
+      mutation: {
+        operation: 'create',
+        target: 'task',
+        data: { lineage: { sessionId: 'integration-test-routing' }, ...data },
+      },
+    });
+    expectOk(res, `agent create task (${JSON.stringify(data).slice(0, 120)})`);
+    return extractId(res);
+  }
+
+  beforeAll(async () => {
+    const serverPath = path.join(__dirname, '../../../../dist/index.js');
+    // AGENT role — the real routing path the skill runs under. Explicit 'agent'
+    // so an inherited OMNIFOCUS_MCP_ROLE=owner cannot leak in.
+    agentServerProcess = spawn('node', [serverPath], {
+      stdio: ['pipe', 'pipe', 'pipe'],
+      env: { ...process.env, OMNIFOCUS_MCP_ROLE: 'agent' },
+    });
+    await sendAgentRequest({
+      jsonrpc: '2.0',
+      id: 1,
+      method: 'initialize',
+      params: {
+        protocolVersion: '2025-06-18',
+        capabilities: {},
+        clientInfo: { name: 'test-phase3-routing', version: '1.0.0' },
+      },
+    });
+    await ensureSandboxFolder();
+  }, 60000);
+
+  afterAll(async () => {
+    agentServerProcess?.kill();
+    // Agent role cannot delete (policy: deny); fullCleanup sweeps the sandbox
+    // via osascript (no server). Assert no residue OUTSIDE try/catch so a real
+    // fixture leak fails the suite loud (OMN-46).
+    const report = await fullCleanup();
+    expect(report.errors, `sandbox cleanup errors (fixture leak): ${JSON.stringify(report.errors)}`).toHaveLength(0);
+  }, 120000);
+
+  describe('ROUTE-01 — file task to existing project via update+project', () => {
+    it('files an agent inbox task into a sandbox project (moveTasks dispatch)', async () => {
+      const projectName = runScopedName('route01-target-project');
+      const projRes = await callTool('omnifocus_write', {
+        mutation: { operation: 'create', target: 'project', data: { name: projectName, folder: SANDBOX_FOLDER_NAME } },
+      });
+      expectOk(projRes, 'create ROUTE-01 target project');
+      const projectId = extractId(projRes);
+
+      const taskId = await createAgentTask({ name: runScopedName('route01-inbox-item') });
+
+      // File it: update + project. The write-verifier fires automatically; a
+      // 'failed' verification would surface as success:false → expectOk throws.
+      const fileRes = await callTool('omnifocus_write', {
+        mutation: { operation: 'update', target: 'task', id: taskId, changes: { project: projectId } },
+      });
+      expectOk(fileRes, 'file task to project (ROUTE-01)');
+
+      // Independent read-back: the task's projectId must be the target project.
+      const readRes = await callTool('omnifocus_read', {
+        query: { type: 'tasks', filters: { id: taskId }, fields: ['id', 'projectId'] },
+      });
+      expectOk(readRes, 'read back filed task (ROUTE-01)');
+      const task = (readRes.data?.tasks ?? readRes.data?.items ?? []).find((t: any) => t.id === taskId);
+      expect(task, `filed task ${taskId} not found on read-back`).toBeDefined();
+      expect(task.projectId).toBe(projectId);
+    }, 120000);
+  });
+
+  describe('ROUTE-04 — apply routing-unplaced marker tag via update+addTags', () => {
+    it('marks a left inbox item and reads it back through the tag filter (bridge, not JXA)', async () => {
+      const taskName = runScopedName('route04-left-item');
+      const taskId = await createAgentTask({ name: taskName });
+
+      const tagRes = await callTool('omnifocus_write', {
+        mutation: { operation: 'update', target: 'task', id: taskId, changes: { addTags: ['routing-unplaced'] } },
+      });
+      expectOk(tagRes, 'apply routing-unplaced marker (ROUTE-04)');
+
+      // Tag-filtered read-back proves the tag PERSISTED (not silently no-op'd
+      // via JXA). A task returned by the routing-unplaced filter carries it.
+      const readRes = await callTool('omnifocus_read', {
+        query: {
+          type: 'tasks',
+          filters: { tags: { all: ['routing-unplaced'] } },
+          fields: ['name', 'tags'],
+          limit: 200,
+        },
+      });
+      expectOk(readRes, 'read back routing-unplaced tasks (ROUTE-04)');
+      const task = (readRes.data?.tasks ?? readRes.data?.items ?? []).find((t: any) => t.name === taskName);
+      expect(task, `task "${taskName}" not found among routing-unplaced tasks → tag did not persist`).toBeDefined();
+      expect(task.tags).toContain('routing-unplaced');
+    }, 120000);
+  });
+
+  describe('ROUTE-03 — create project for infer branch via create/project', () => {
+    it('creates a sandbox project and reads it back by name', async () => {
+      const projectName = runScopedName('route03-infer-project');
+      const createRes = await callTool('omnifocus_write', {
+        mutation: { operation: 'create', target: 'project', data: { name: projectName, folder: SANDBOX_FOLDER_NAME } },
+      });
+      expectOk(createRes, 'create infer-branch project (ROUTE-03)');
+      const projectId = extractId(createRes);
+
+      // Independent read-back scoped to the sandbox folder, found by id.
+      const readRes = await callTool('omnifocus_read', {
+        query: { type: 'projects', filters: { folder: SANDBOX_FOLDER_NAME }, fields: ['id', 'name'] },
+      });
+      expectOk(readRes, 'read back infer-branch project (ROUTE-03)');
+      const project = (readRes.data?.projects ?? readRes.data?.items ?? []).find((p: any) => p.id === projectId);
+      expect(project, `created project ${projectId} not found on read-back`).toBeDefined();
+      expect(project.name).toBe(projectName);
+      // Cleanup handled by fullCleanup() in afterAll (agent cannot delete).
+    }, 120000);
+  });
 });
