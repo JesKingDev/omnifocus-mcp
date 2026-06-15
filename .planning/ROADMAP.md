@@ -178,7 +178,14 @@ must be TRUE):
    decided should exist).
 
 3. During a live session, the agent captures a concrete blocker or open question as an OmniFocus task in real time (with
-   permission), without the `archaeology` tag. **Plans**: TBD
+   permission), without the `archaeology` tag. **Plans**: 2 plans
+
+Plans:
+
+- [ ] 04-01-PLAN.md — Server slice: extend FUNCTIONAL_TAG_ALLOWLIST (review-output / review-capture / capture-live) +
+      allowlist unit test + review-tag round-trip integration spec (active review-capture, completed review-output)
+- [ ] 04-02-PLAN.md — Skills slice: standalone capture-live-blocker SKILL.md + live-capture integration case (inbox +
+      lineage + capture-live + auto-stamped agent-okay, no archaeology)
 
 ### Phase 5: Session Archaeology
 
