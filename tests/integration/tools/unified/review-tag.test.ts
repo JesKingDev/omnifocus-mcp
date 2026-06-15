@@ -36,7 +36,6 @@ import { runScopedName } from '../../helpers/run-id.js';
 // We avoid a fixed future datetime here because plannedDate=today is the meaningful
 // signal (surfaces in OmniFocus "Today" perspective), not a distant test date.
 const TODAY_DATE = new Date().toISOString().slice(0, 10); // YYYY-MM-DD
-const TODAY_EPOCH = new Date(TODAY_DATE).getTime();
 
 const TS = Date.now();
 
@@ -46,6 +45,8 @@ describe('Phase 4 REVIEW-01/02 — review-tag round-trip', () => {
   const createdTaskIds: string[] = [];
 
   async function sendRequest(request: unknown): Promise<any> {
+    const req = request as { id?: number | string };
+    const requestId = req.id;
     return new Promise((resolve, reject) => {
       const requestStr = JSON.stringify(request) + '\n';
       let response = '';
@@ -57,13 +58,14 @@ describe('Phase 4 REVIEW-01/02 — review-tag round-trip', () => {
           if (line.trim().startsWith('{')) {
             try {
               const parsed = JSON.parse(line);
-              if (parsed.jsonrpc === '2.0' && 'result' in parsed) {
+              // Filter by request ID to prevent response bleed between sequential calls
+              if (parsed.jsonrpc === '2.0' && parsed.id === requestId && 'result' in parsed) {
                 clearTimeout(timeout);
                 serverProcess.stdout?.off('data', onData);
                 resolve(parsed.result);
                 return;
               }
-              if (parsed.jsonrpc === '2.0' && 'error' in parsed) {
+              if (parsed.jsonrpc === '2.0' && parsed.id === requestId && 'error' in parsed) {
                 clearTimeout(timeout);
                 serverProcess.stdout?.off('data', onData);
                 reject(new Error(`MCP error: ${JSON.stringify(parsed.error)}`));
@@ -96,7 +98,8 @@ describe('Phase 4 REVIEW-01/02 — review-tag round-trip', () => {
 
   function extractId(res: any): string {
     const d = res.data ?? {};
-    const id = d.task?.id ?? d.task?.taskId ?? d.taskId ?? d.id;
+    // Handle both singular {task: {id}} and plural {tasks: [{id}]} response shapes.
+    const id = d.task?.id ?? d.task?.taskId ?? d.taskId ?? d.id ?? d.tasks?.[0]?.id ?? d.items?.[0]?.id;
     expect(id, `created entity id (response: ${JSON.stringify(d).slice(0, 300)})`).toBeTruthy();
     return id as string;
   }
@@ -189,16 +192,18 @@ describe('Phase 4 REVIEW-01/02 — review-tag round-trip', () => {
       context: 'review-capture task.flagged',
     });
 
-    // Independent read-back: plannedDate (epoch comparison, ±60s tolerance baked into
-    // assertFieldPersisted via deepEqual on epoch — we compare epochs to avoid TZ issues)
+    // Independent read-back: plannedDate — compare date portion only (YYYY-MM-DD).
+    // OmniFocus may add a default time component (e.g., 9am local) when only a date
+    // is written; comparing the ISO date slice avoids false failures from time offsets.
     await assertFieldPersisted(client, {
       readTool: 'omnifocus_read',
       readParams: taskQuery(id, ['plannedDate']),
       extract: (r) => {
         const val = findTask(r, id)?.plannedDate;
-        return val ? Math.round(new Date(val).getTime() / 60000) * 60000 : val;
+        // Slice the YYYY-MM-DD from whatever ISO string OmniFocus returns
+        return val ? new Date(val).toISOString().slice(0, 10) : val;
       },
-      expected: Math.round(TODAY_EPOCH / 60000) * 60000,
+      expected: TODAY_DATE,
       context: 'review-capture task.plannedDate',
     });
 
@@ -224,28 +229,51 @@ describe('Phase 4 REVIEW-01/02 — review-tag round-trip', () => {
     // Complete the task via the native complete path
     await completeTask(id);
 
-    // Apply review-output tag ONLY — no flag, no plannedDate (Discretion #2)
+    // Apply review-output tag ONLY — no flag, no plannedDate (Discretion #2).
+    // Task.byIdentifier in OmniJS finds completed tasks; the update itself works.
     await updateTask(id, {
       addTags: ['review-output'],
     });
 
-    // Read back completed tasks — need status: 'completed' filter to see them
+    // Read back: search completed tasks by tag + name.
+    // Note: buildTaskByIdScript uses flattenedTasks which excludes completed tasks
+    // (an OmniJS limitation), so we cannot use an id filter here. Instead we query
+    // by the review-output tag with status: 'completed' and find by task name.
     await assertFieldPersisted(client, {
       readTool: 'omnifocus_read',
-      readParams: taskQuery(id, ['tags'], true),
+      readParams: {
+        query: {
+          type: 'tasks',
+          filters: { tags: { any: ['review-output'] }, status: 'completed' },
+          fields: ['id', 'name', 'tags', 'plannedDate'],
+          limit: 200,
+        },
+      },
       extract: (r) => {
-        const tags: string[] = findTask(r, id)?.tags ?? [];
-        return tags.includes('review-output');
+        const tasks: any[] = (r as any).data?.tasks ?? [];
+        const found = tasks.find((t: any) => t.name === taskName);
+        return found ? (found.tags ?? []).includes('review-output') : false;
       },
       expected: true,
-      context: 'review-output task.tags includes review-output',
+      context: 'review-output completed task.tags includes review-output',
     });
 
-    // Assert no plannedDate was written (Discretion #2: completed work gets tag only)
+    // Assert no plannedDate on the completed task (Discretion #2)
     await assertFieldPersisted(client, {
       readTool: 'omnifocus_read',
-      readParams: taskQuery(id, ['plannedDate'], true),
-      extract: (r) => findTask(r, id)?.plannedDate ?? null,
+      readParams: {
+        query: {
+          type: 'tasks',
+          filters: { tags: { any: ['review-output'] }, status: 'completed' },
+          fields: ['id', 'name', 'tags', 'plannedDate'],
+          limit: 200,
+        },
+      },
+      extract: (r) => {
+        const tasks: any[] = (r as any).data?.tasks ?? [];
+        const found = tasks.find((t: any) => t.name === taskName);
+        return found?.plannedDate ?? null;
+      },
       expected: null,
       context: 'review-output task.plannedDate is null (no date on completed work)',
     });
