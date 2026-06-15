@@ -40,8 +40,8 @@ Requirements for the `agent-workflow` milestone. Each maps to exactly one roadma
 
 ### Review Loops
 
-- [ ] **REVIEW-01**: Agent flags created/completed work with a review tag so it surfaces in the user's today view.
-- [ ] **REVIEW-02**: Review flags distinguish **review-output** (verify work the agent did) from
+- [x] **REVIEW-01**: Agent flags created/completed work with a review tag so it surfaces in the user's today view.
+- [x] **REVIEW-02**: Review flags distinguish **review-output** (verify work the agent did) from
       **review-capture/archaeology** (verify a task the agent decided should exist).
 
 ### Session Archaeology
@@ -123,8 +123,8 @@ Which phases cover which requirements. Populated during roadmap creation.
 | ROUTE-03    | Phase 3 — Routing & On-Demand Trigger      | Complete |
 | ROUTE-04    | Phase 3 — Routing & On-Demand Trigger      | Pending  |
 | TRIG-01     | Phase 3 — Routing & On-Demand Trigger      | Pending  |
-| REVIEW-01   | Phase 4 — Review Loops & Live Auto-Capture | Pending  |
-| REVIEW-02   | Phase 4 — Review Loops & Live Auto-Capture | Pending  |
+| REVIEW-01   | Phase 4 — Review Loops & Live Auto-Capture | Complete |
+| REVIEW-02   | Phase 4 — Review Loops & Live Auto-Capture | Complete |
 | LIVE-01     | Phase 4 — Review Loops & Live Auto-Capture | Pending  |
 | ARCH-01     | Phase 5 — Session Archaeology              | Pending  |
 | ARCH-02     | Phase 5 — Session Archaeology              | Pending  |
