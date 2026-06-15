@@ -26,9 +26,9 @@ Requirements for the `agent-workflow` milestone. Each maps to exactly one roadma
 
 ### Routing
 
-- [ ] **ROUTE-01**: Agent matches an inbox item to an existing project and files the task there.
-- [ ] **ROUTE-02**: When no project matches, agent checks the vault for a signal on where the item belongs.
-- [ ] **ROUTE-03**: When the vault gives a signal, agent creates the project and files the task under it.
+- [x] **ROUTE-01**: Agent matches an inbox item to an existing project and files the task there.
+- [x] **ROUTE-02**: When no project matches, agent checks the vault for a signal on where the item belongs.
+- [x] **ROUTE-03**: When the vault gives a signal, agent creates the project and files the task under it.
 - [ ] **ROUTE-04**: When no project can be inferred, agent leaves the item in the inbox rather than guessing.
 
 ### Permission Gating
@@ -118,9 +118,9 @@ Which phases cover which requirements. Populated during roadmap creation.
 | PERM-01     | Phase 2 — Capture & Permission Gating      | Complete |
 | PERM-02     | Phase 2 — Capture & Permission Gating      | Complete |
 | LINE-01     | Phase 2 — Capture & Permission Gating      | Complete |
-| ROUTE-01    | Phase 3 — Routing & On-Demand Trigger      | Pending  |
-| ROUTE-02    | Phase 3 — Routing & On-Demand Trigger      | Pending  |
-| ROUTE-03    | Phase 3 — Routing & On-Demand Trigger      | Pending  |
+| ROUTE-01    | Phase 3 — Routing & On-Demand Trigger      | Complete |
+| ROUTE-02    | Phase 3 — Routing & On-Demand Trigger      | Complete |
+| ROUTE-03    | Phase 3 — Routing & On-Demand Trigger      | Complete |
 | ROUTE-04    | Phase 3 — Routing & On-Demand Trigger      | Pending  |
 | TRIG-01     | Phase 3 — Routing & On-Demand Trigger      | Pending  |
 | REVIEW-01   | Phase 4 — Review Loops & Live Auto-Capture | Pending  |

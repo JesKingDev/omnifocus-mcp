@@ -212,7 +212,7 @@ Criteria** (what must be TRUE):
 | ----------------------------------- | -------------- | ----------- | ---------- |
 | 1. OmniFocus Capability Discovery   | 4/4            | Complete    | 2026-06-12 |
 | 2. Capture & Permission Gating      | 4/4            | Complete    | 2026-06-12 |
-| 3. Routing & On-Demand Trigger      | 2/2            | Complete    | 2026-06-14 |
+| 3. Routing & On-Demand Trigger      | 2/2            | Complete    | 2026-06-15 |
 | 4. Review Loops & Live Auto-Capture | 0/?            | Not started | -          |
 | 5. Session Archaeology              | 0/?            | Not started | -          |
 | 6. Surfaces & Migration             | 0/?            | Not started | -          |
