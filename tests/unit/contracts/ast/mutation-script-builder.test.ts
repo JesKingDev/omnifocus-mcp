@@ -1232,4 +1232,19 @@ describe('FUNCTIONAL_TAG_ALLOWLIST / isTestTagAllowed (Phase 3 routing-unplaced 
   it('still allows sandbox-prefixed tags via the prefix path', () => {
     expect(isTestTagAllowed('__test-foo')).toBe(true);
   });
+
+  it('allows review-output (Phase 4 review tag) in test mode', () => {
+    expect(FUNCTIONAL_TAG_ALLOWLIST).toContain('review-output');
+    expect(isTestTagAllowed('review-output')).toBe(true);
+  });
+
+  it('allows review-capture (Phase 4 review tag) in test mode', () => {
+    expect(FUNCTIONAL_TAG_ALLOWLIST).toContain('review-capture');
+    expect(isTestTagAllowed('review-capture')).toBe(true);
+  });
+
+  it('allows the live-capture marker (Phase 4 D-10) in test mode', () => {
+    expect(FUNCTIONAL_TAG_ALLOWLIST).toContain('capture-live');
+    expect(isTestTagAllowed('capture-live')).toBe(true);
+  });
 });

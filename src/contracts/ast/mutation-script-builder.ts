@@ -66,12 +66,21 @@ const TEST_INBOX_PREFIX = '__TEST__';
  * stamps `agent-okay` on agent-created tasks; the D-08b integration test must be
  * able to create and read that tag back live. The Phase 3 routing path stamps
  * `routing-unplaced` (D-12) as a durable marker on inbox items it leaves in
- * place; its integration tests must apply and read that tag back live. The task
- * itself still obeys the sandbox name/folder guards, and tests clean up the
- * tasks they create, so the blast radius is a small set of shared, idempotent
- * functional tags.
+ * place; its integration tests must apply and read that tag back live. The Phase
+ * 4 review path stamps `review-output` (D-01/D-02) on completed agent work and
+ * `review-capture` (D-01/D-02) on active work that surfaces in today's review;
+ * the live-capture path stamps `capture-live` (D-10) as a provenance marker on
+ * inbox items captured in real time during a session. The task itself still obeys
+ * the sandbox name/folder guards, and tests clean up the tasks they create, so
+ * the blast radius is a small set of shared, idempotent functional tags.
  */
-export const FUNCTIONAL_TAG_ALLOWLIST: readonly string[] = ['agent-okay', 'routing-unplaced'];
+export const FUNCTIONAL_TAG_ALLOWLIST: readonly string[] = [
+  'agent-okay',
+  'routing-unplaced',
+  'review-output', // Phase 4 D-01/D-02
+  'review-capture', // Phase 4 D-01/D-02
+  'capture-live', // Phase 4 D-10 live-capture marker
+];
 
 /** A tag is allowed in test mode if it is sandbox-prefixed OR a known functional tag. */
 export function isTestTagAllowed(tag: string): boolean {
