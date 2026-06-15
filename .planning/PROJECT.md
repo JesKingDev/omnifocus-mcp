@@ -72,6 +72,14 @@ trigger) to prove gating + routing; the hardened version polls every 15 min via 
   (hardening); on-host spikes S4/S5/S6 + Phase 4 Tailscale-Serve check deferred, risk-accepted (see STATE.md Deferred
   Items)_
 
+<!-- agent-workflow milestone — in progress. -->
+
+- ✓ **On-demand inbox routing** — the `route-inbox-to-projects` skill runs a two-pass summarize-then-approve loop that
+  matches an agent-okay inbox item to an existing project, else infers + creates from vault `omnifocus-project`
+  frontmatter, else leaves it stamped with the durable `routing-unplaced` marker; runnable on demand via a manual
+  trigger (ROUTE-01…04, TRIG-01) — _Validated in Phase 3: Routing & On-Demand Trigger (spec + live write-path proofs;
+  end-to-end UAT tracked in 03-HUMAN-UAT.md)_
+
 ### Active
 
 <!-- agent-workflow milestone — started 2026-06-11. Full REQ-IDs + acceptance criteria in REQUIREMENTS.md. -->
@@ -84,8 +92,8 @@ trigger) to prove gating + routing; the hardened version polls every 15 min via 
 **Capture & routing:**
 
 - [ ] Frictionless inbox capture — dump items without deciding anything (CAP-01)
-- [ ] Agent routes inbox items: match existing project, else infer from the vault, else create project+task, else leave
-      in inbox (ROUTE-01…04)
+- [x] Agent routes inbox items: match existing project, else infer from the vault, else create project+task, else leave
+      in inbox (ROUTE-01…04) — _validated in Phase 3 (see Validated above)_
 
 **Permission gating:**
 
@@ -201,7 +209,8 @@ This document evolves at phase transitions and milestone boundaries.
 
 ---
 
-_Last updated: 2026-06-11 — started the `agent-workflow` milestone (OmniFocus as single source of truth + agent
-capture/route/execute/review loop + session archaeology). Phase 1 = OmniFocus capability discovery, which gates all
-workflow design. Carried in: READAS-01, PROV-01, MIG-01. Deferred: SURF-01, WORK-01. Prior `hardening` milestone shipped
-2026-06-09 (6 phases)._
+_Last updated: 2026-06-15 — Phase 3 (Routing & On-Demand Trigger) complete: the `route-inbox-to-projects` skill plus the
+proven routing write paths deliver the MVP match→infer→create→leave loop (ROUTE-01…04, TRIG-01); end-to-end UAT tracked
+in 03-HUMAN-UAT.md. Started the `agent-workflow` milestone 2026-06-11 (OmniFocus as single source of truth + agent
+capture/route/execute/review loop + session archaeology). Carried in: READAS-01, PROV-01, MIG-01. Deferred: SURF-01,
+WORK-01. Prior `hardening` milestone shipped 2026-06-09 (6 phases)._
