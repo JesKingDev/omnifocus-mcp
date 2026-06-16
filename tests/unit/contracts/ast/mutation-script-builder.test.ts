@@ -1247,4 +1247,9 @@ describe('FUNCTIONAL_TAG_ALLOWLIST / isTestTagAllowed (Phase 3 routing-unplaced 
     expect(FUNCTIONAL_TAG_ALLOWLIST).toContain('capture-live');
     expect(isTestTagAllowed('capture-live')).toBe(true);
   });
+
+  it('allows archaeology (Phase 5 D-05) in test mode', () => {
+    expect(FUNCTIONAL_TAG_ALLOWLIST).toContain('archaeology');
+    expect(isTestTagAllowed('archaeology')).toBe(true);
+  });
 });
