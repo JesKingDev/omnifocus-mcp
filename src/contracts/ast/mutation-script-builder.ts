@@ -72,7 +72,9 @@ const TEST_INBOX_PREFIX = '__TEST__';
  * the live-capture path stamps `capture-live` (D-10) as a provenance marker on
  * inbox items captured in real time during a session. The task itself still obeys
  * the sandbox name/folder guards, and tests clean up the tasks they create, so
- * the blast radius is a small set of shared, idempotent functional tags.
+ * the blast radius is a small set of shared, idempotent functional tags. The Phase 5
+ * archaeology path stamps `archaeology` (D-05) as a provenance marker on every
+ * session-archaeology task it creates.
  */
 export const FUNCTIONAL_TAG_ALLOWLIST: readonly string[] = [
   'agent-okay',
@@ -80,6 +82,7 @@ export const FUNCTIONAL_TAG_ALLOWLIST: readonly string[] = [
   'review-output', // Phase 4 D-01/D-02
   'review-capture', // Phase 4 D-01/D-02
   'capture-live', // Phase 4 D-10 live-capture marker
+  'archaeology', // Phase 5 D-05 session-archaeology marker
 ];
 
 /** A tag is allowed in test mode if it is sandbox-prefixed OR a known functional tag. */
