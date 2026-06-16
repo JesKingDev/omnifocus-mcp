@@ -68,8 +68,8 @@ flowchart TD
 - [x] **Phase 3: Routing & On-Demand Trigger** — agent routes inbox items (match → infer → create → leave), runnable
       (completed 2026-06-14) on-demand via a manual trigger (the MVP path).
 
-- [ ] **Phase 4: Review Loops & Live Auto-Capture** — review tags surface agent work in a today view, distinguishing
-      output from capture; live sessions capture blockers in real time.
+- [x] **Phase 4: Review Loops & Live Auto-Capture** — review tags surface agent work in a today view, distinguishing
+      (completed 2026-06-16) output from capture; live sessions capture blockers in real time.
 
 - [ ] **Phase 5: Session Archaeology** — summarize-then-approve scan of the last 7 days of Claude Code sessions;
       approved open loops become `archaeology`-tagged tasks.
@@ -184,7 +184,7 @@ Plans:
 
 - [x] 04-01-PLAN.md — Server slice: extend FUNCTIONAL_TAG_ALLOWLIST (review-output / review-capture / capture-live) +
       allowlist unit test + review-tag round-trip integration spec (active review-capture, completed review-output)
-- [ ] 04-02-PLAN.md — Skills slice: standalone capture-live-blocker SKILL.md + live-capture integration case (inbox +
+- [x] 04-02-PLAN.md — Skills slice: standalone capture-live-blocker SKILL.md + live-capture integration case (inbox +
       lineage + capture-live + auto-stamped agent-okay, no archaeology)
 
 ### Phase 5: Session Archaeology
@@ -220,7 +220,7 @@ Criteria** (what must be TRUE):
 | 1. OmniFocus Capability Discovery   | 4/4            | Complete    | 2026-06-12 |
 | 2. Capture & Permission Gating      | 4/4            | Complete    | 2026-06-12 |
 | 3. Routing & On-Demand Trigger      | 2/2            | Complete    | 2026-06-15 |
-| 4. Review Loops & Live Auto-Capture | 1/2            | In Progress |            |
+| 4. Review Loops & Live Auto-Capture | 2/2            | Complete    | 2026-06-16 |
 | 5. Session Archaeology              | 0/?            | Not started | -          |
 | 6. Surfaces & Migration             | 0/?            | Not started | -          |
 

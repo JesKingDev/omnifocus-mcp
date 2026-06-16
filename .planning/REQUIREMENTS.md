@@ -54,7 +54,7 @@ Requirements for the `agent-workflow` milestone. Each maps to exactly one roadma
 
 ### Live Auto-Capture
 
-- [ ] **LIVE-01**: During a live session, agent captures a concrete blocker or open question as an OmniFocus task in
+- [x] **LIVE-01**: During a live session, agent captures a concrete blocker or open question as an OmniFocus task in
       real time (with permission), without the `archaeology` tag.
 
 ### Session Lineage
@@ -125,7 +125,7 @@ Which phases cover which requirements. Populated during roadmap creation.
 | TRIG-01     | Phase 3 — Routing & On-Demand Trigger      | Pending  |
 | REVIEW-01   | Phase 4 — Review Loops & Live Auto-Capture | Complete |
 | REVIEW-02   | Phase 4 — Review Loops & Live Auto-Capture | Complete |
-| LIVE-01     | Phase 4 — Review Loops & Live Auto-Capture | Pending  |
+| LIVE-01     | Phase 4 — Review Loops & Live Auto-Capture | Complete |
 | ARCH-01     | Phase 5 — Session Archaeology              | Pending  |
 | ARCH-02     | Phase 5 — Session Archaeology              | Pending  |
 | ARCH-03     | Phase 5 — Session Archaeology              | Pending  |
