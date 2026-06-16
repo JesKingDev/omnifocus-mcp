@@ -127,3 +127,72 @@ describe('filterTranscriptLines', () => {
     expect(ids).toContain('session-drop-out-of-window');
   });
 });
+
+// An in-window timestamp for synthetic lines (2026-06-15, within the 7-day window).
+const IN_WINDOW_TS = '2026-06-15T10:00:00.000Z';
+
+describe('extractText — multi-text-block concatenation (WR-01)', () => {
+  it('concatenates all assistant text blocks when interleaved with tool_use', () => {
+    const lines = [
+      {
+        type: 'assistant',
+        sessionId: 'session-multi-text',
+        timestamp: IN_WINDOW_TS,
+        message: {
+          role: 'assistant',
+          content: [
+            { type: 'text', text: 'FIRST block' },
+            { type: 'tool_use', name: 'Read', input: {} },
+            { type: 'text', text: 'SECOND block after tool' },
+          ],
+        },
+      },
+    ];
+    const result = filterTranscriptLines(lines, REFERENCE_NOW_MS);
+    expect(result).toHaveLength(1);
+    expect(result[0].text).toContain('FIRST block');
+    expect(result[0].text).toContain('SECOND block after tool');
+  });
+});
+
+describe('extractText — leading empty text block does not hide later content (WR-04)', () => {
+  it('keeps content from a later block when the first text block is whitespace/empty', () => {
+    const lines = [
+      {
+        type: 'assistant',
+        sessionId: 'session-empty-first',
+        timestamp: IN_WINDOW_TS,
+        message: {
+          role: 'assistant',
+          content: [
+            { type: 'text', text: '   ' },
+            { type: 'tool_use', name: 'Bash', input: {} },
+            { type: 'text', text: 'next: ship the dedup fix' },
+          ],
+        },
+      },
+    ];
+    const result = filterTranscriptLines(lines, REFERENCE_NOW_MS);
+    expect(result).toHaveLength(1);
+    expect(result[0].text).toContain('next: ship the dedup fix');
+  });
+
+  it('drops a message whose only text blocks are all whitespace/empty', () => {
+    const lines = [
+      {
+        type: 'assistant',
+        sessionId: 'session-all-empty',
+        timestamp: IN_WINDOW_TS,
+        message: {
+          role: 'assistant',
+          content: [
+            { type: 'text', text: '' },
+            { type: 'text', text: '   ' },
+          ],
+        },
+      },
+    ];
+    const result = filterTranscriptLines(lines, REFERENCE_NOW_MS);
+    expect(result).toHaveLength(0);
+  });
+});

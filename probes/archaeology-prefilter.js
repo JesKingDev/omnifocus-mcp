@@ -55,13 +55,21 @@ function extractText(content, role) {
     return trimmed.length > 0 ? { text: trimmed } : null;
   }
 
-  // Array content: look for a {type:'text'} item
+  // Array content: concatenate ALL {type:'text'} items, not just the first.
+  // Real Claude Code assistant turns interleave text -> tool_use -> text; the
+  // trailing text blocks often hold the actual conclusion, next step, or open
+  // question. Returning on the first block dropped them and undercut the
+  // "bias to recall" guaranteed-catch floor (WR-01). Concatenating also means
+  // a leading empty/whitespace block no longer hides real content in a later
+  // block (WR-04) — empty items are simply skipped.
   if (Array.isArray(content)) {
+    const parts = [];
     for (const item of content) {
       if (item && item.type === 'text' && typeof item.text === 'string' && item.text.trim().length > 0) {
-        return { text: item.text.trim() };
+        parts.push(item.text.trim());
       }
     }
+    return parts.length > 0 ? { text: parts.join('\n\n') } : null;
   }
 
   return null;
