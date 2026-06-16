@@ -117,7 +117,8 @@ Key server behaviors triggered by this call (verified against `OmniFocusWriteToo
 - **Routing** — a captured inbox item routes later via the Phase 3 loop (`route-inbox-to-projects` skill). This skill
   does not route, file to a project, or apply `routing-unplaced`.
 - **Review tags (`review-output`, `review-capture`)** — a captured blocker is not yet review work. Those tags are for
-  work the agent flags for the user's review, not for items the agent captures to remember. Do not add them.
+  work the agent flags for the user's review (see `surface-work-for-review`), not for items the agent captures to
+  remember. Do not add them.
 - **Dates** — a captured blocker is intentionally undated (D-05). The agent has no authority to invent a deadline or
   defer date. Do not add `dueDate` or `deferDate`.
 - **Background mode** — this skill requires a live interactive session. The PERM-02 gate cannot render a prompt in
