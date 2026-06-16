@@ -3,13 +3,14 @@ gsd_state_version: 1.0
 milestone: agent-workflow
 milestone_name: Agent Workflow System
 status: ready_to_plan
-last_updated: '2026-06-15T23:11:20.792Z'
+last_updated: 2026-06-16T15:27:18.432Z
 progress:
   total_phases: 6
-  completed_phases: 3
+  completed_phases: 1
   total_plans: 12
-  completed_plans: 11
-  percent: 50
+  completed_plans: 12
+  percent: 17
+stopped_at: Phase 04 complete (2/2) — ready to discuss Phase 5
 ---
 
 # Project State
@@ -19,14 +20,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-06-11)
 
 **Core value:** The agent can read and write OmniFocus tasks safely — no silent write failures, no destructive deletes —
-so JessOS can trust OmniFocus as the source of truth. **Current focus:** Phase 4 — review loops & live auto capture
-OmniFocus capability discovery, which gates all workflow design.
+so JessOS can trust OmniFocus as the source of truth. **Current focus:** Phase 5 — session archaeology OmniFocus
+capability discovery, which gates all workflow design.
 
 ## Current Position
 
-Phase: 4 of 2 (review loops & live auto capture) test (agent create-with-lineage → agent-okay tag stamped →
-of-mcp:lineage note persisted → read back via the agentOkayPredicate filter), accepted in lieu of a manual UI eyeball.
-Unit 2398/2398; full integration green (2 field-roundtrip clear\* tests are OMN-55-class timing flakes, pass on re-run).
+Phase: 5 of 2 (session archaeology) of-mcp:lineage note persisted → read back via the agentOkayPredicate filter),
+accepted in lieu of a manual UI eyeball. Unit 2398/2398; full integration green (2 field-roundtrip clear\* tests are
+OMN-55-class timing flakes, pass on re-run).
 
 Post-checkpoint gap-closure (8 commits) fixed a chain that had made agent capture dead over the real MCP path: (1)
 funnel lineage bypass; (2) the pre-dispatch gate in tools/index.ts now delegates create verdicts to the funnel (see
@@ -49,7 +50,7 @@ Phase 4 /sessions auth tests fixed (Cluster B). Follow-ups flagged below.
 
 **Velocity:**
 
-- Total plans completed: 21
+- Total plans completed: 23
 - Average duration: —
 - Total execution time: —
 
@@ -59,7 +60,7 @@ Phase 4 /sessions auth tests fixed (Cluster B). Follow-ups flagged below.
 | ----- | ----- | ----- | -------- |
 | 02    | 3     | -     | -        |
 | 03    | 2     | -     | -        |
-| 04    | 4     | -     | -        |
+| 04    | 2     | -     | -        |
 | 06    | 4     | -     | -        |
 | 01    | 4     | -     | -        |
 
