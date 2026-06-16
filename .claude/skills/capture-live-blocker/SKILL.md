@@ -67,12 +67,14 @@ On a `POLICY_GATE_CAPTURE_CONFIRM` response from `omnifocus_write`:
    - **Tags:** `capture-live` (agent-okay stamped automatically by the server)
    - **Placement:** inbox (no project)
 2. Ask: "Capture this to OmniFocus? (yes / no)"
-3. If yes — re-invoke `omnifocus_write` with an allow-all-this-session grant already set, or the funnel will bypass the
-   gate for the current session on owner approval.
+3. If yes — re-invoke `omnifocus_write` with the same create payload, carrying `lineage.sessionId`. The lineage param is
+   a self-attested agent capture (D-08b): the funnel admits the inbox create without an owner prompt or session grant.
+   Do NOT try to set a session grant yourself — that endpoint is owner-only and rejects agent callers.
 4. If no — acknowledge and proceed without creating the task.
 
-If the owner has already granted allow-all-this-session, the gate does not fire and the create proceeds immediately.
-Never build a second permission mechanism — the PERM-02 funnel gate is the only consent layer.
+If the owner has separately granted allow-all-this-session, the gate does not fire and the create proceeds immediately —
+but the lineage attestation is the agent's own path and needs no owner action. Never build a second permission mechanism
+— the PERM-02 funnel gate is the only consent layer.
 
 The write-verifier fires automatically for every agent write. Do not call it explicitly.
 

@@ -1172,14 +1172,13 @@ describe('Phase 4 LIVE-01 — live capture stamps capture-live + agent-okay + li
       // (g) No archaeology tag — D-08/D-10: live capture stays distinct from Phase 5 archaeology
       expect(task.tags).not.toContain('archaeology');
 
-      // (h) Inbox placement: no project key was passed, so the task should land in the inbox.
-      //     If the 'project' projection returns a usable value, assert null/undefined.
-      //     If the read path does not surface project on inbox tasks, the create response
-      //     carrying no project key is sufficient evidence (DISC-CAPTURE-01 create-path contract).
-      if ('project' in task) {
-        expect(task.project).toBeFalsy(); // null or undefined → inbox
-      }
-      // fallback: create response had no project key (proven by the create call above having no project)
+      // (h) Inbox placement: no project key was passed, so the task MUST land in the inbox.
+      //     The read projection requests 'project' (fields above), so the field is in the response
+      //     shape. Assert unconditionally: a project-placed task surfaces a truthy project name, an
+      //     inbox task surfaces null (or the key is absent → undefined). Both null and undefined are
+      //     falsy, so this is the strongest placement assertion that holds across both read-path
+      //     shapes — it can no longer be skipped (DISC-CAPTURE-01 create-path contract).
+      expect(task.project, 'live-capture task must land in inbox (no project key passed)').toBeFalsy();
     } finally {
       // Self-clean: delete the created task so no orphan remains in the live inbox.
       // Agent role CAN delete in this context because the write funnel allows it.

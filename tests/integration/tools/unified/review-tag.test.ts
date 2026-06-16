@@ -29,7 +29,7 @@ import { spawn, ChildProcess } from 'child_process';
 import path from 'path';
 import { expectOk } from '../../helpers/expect-ok.js';
 import { assertFieldPersisted } from '../../helpers/assert-field-persisted.js';
-import { SANDBOX_FOLDER_NAME, ensureSandboxFolder, fullCleanup } from '../../helpers/sandbox-manager.js';
+import { ensureSandboxFolder, fullCleanup } from '../../helpers/sandbox-manager.js';
 import { runScopedName } from '../../helpers/run-id.js';
 
 // Today's date in YYYY-MM-DD — the plannedDate value for the active review case.
@@ -173,8 +173,10 @@ describe('Phase 4 REVIEW-01/02 — review-tag round-trip', () => {
 
   it('REVIEW-01 (active/review-capture): one update sets flagged=true + plannedDate=today + review-capture; all three read back', async () => {
     const taskName = runScopedName(`review-capture-active-${TS}`);
-    // Create an active sandbox task (folder places it in the sandbox, not inbox)
-    const id = await createTask(taskName, { folder: SANDBOX_FOLDER_NAME });
+    // Create an active task. TaskCreateData has no `folder` field, so tasks land in the inbox;
+    // the sandbox guard admits it via the runScopedName `__TEST__` prefix, not placement.
+    // Placement is irrelevant to REVIEW-01/02 — the assertion is the flag/plannedDate/tag round-trip.
+    const id = await createTask(taskName);
 
     // One update: set all three review-surfacing fields together (D-04)
     await updateTask(id, {
@@ -224,7 +226,8 @@ describe('Phase 4 REVIEW-01/02 — review-tag round-trip', () => {
 
   it('REVIEW-01 (completed/review-output, Discretion #2): complete task, apply review-output, tag reads back; no future plannedDate', async () => {
     const taskName = runScopedName(`review-output-completed-${TS}`);
-    const id = await createTask(taskName, { folder: SANDBOX_FOLDER_NAME });
+    // Inbox task (no `folder` field on TaskCreateData); sandbox guard admits via `__TEST__` name prefix.
+    const id = await createTask(taskName);
 
     // Complete the task via the native complete path
     await completeTask(id);
