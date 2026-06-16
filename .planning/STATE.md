@@ -6,10 +6,10 @@ status: ready_to_plan
 last_updated: 2026-06-16T15:27:18.432Z
 progress:
   total_phases: 6
-  completed_phases: 1
+  completed_phases: 4
   total_plans: 12
   completed_plans: 12
-  percent: 17
+  percent: 67
 stopped_at: Phase 04 complete (2/2) — ready to discuss Phase 5
 ---
 
@@ -25,15 +25,18 @@ capability discovery, which gates all workflow design.
 
 ## Current Position
 
-Phase: 5 of 2 (session archaeology) of-mcp:lineage note persisted → read back via the agentOkayPredicate filter),
-accepted in lieu of a manual UI eyeball. Unit 2398/2398; full integration green (2 field-roundtrip clear\* tests are
-OMN-55-class timing flakes, pass on re-run).
+Phase: 5 of 6 (Session Archaeology) — ready to plan/discuss.
 
-Post-checkpoint gap-closure (8 commits) fixed a chain that had made agent capture dead over the real MCP path: (1)
-funnel lineage bypass; (2) the pre-dispatch gate in tools/index.ts now delegates create verdicts to the funnel (see
-memory: dual-policy-gate-dispatch-vs-funnel); (3) agent-okay exempted from the test-mode tag guard; (4) every
-create-task integration harness migrated to owner role (the policy flip had broken the whole suite); (5) pre-existing
-Phase 4 /sessions auth tests fixed (Cluster B). Follow-ups flagged below.
+Phase 4 (Review Loops & Live Auto-Capture) complete: server allowlist extended with `review-output` / `review-capture` /
+`capture-live`; live-capture skill (`capture-live-blocker`) + review-surfacing skill (`surface-work-for-review`)
+authored; REVIEW-01/02 + LIVE-01 met. 2405/2405 unit tests green; code review clean after WR-01/02/03 fixes.
+
+**Open from Phase 4 (non-blocking):**
+
+- 3 human-eyeball items parked in `04-HUMAN-UAT.md` (today-view rendering, PERM-02 interactive prompt, tag-browser
+  naming) — surface in `/gsd-audit-uat`.
+- Follow-up todo: reconcile `review-tag.test.ts` Case 2 with the locked open-flagged `review-output` convention
+  (`.planning/todos/pending/reconcile-review-output-test-with-locked-convention.md`).
 
 ## Roadmap Summary (agent-workflow)
 
