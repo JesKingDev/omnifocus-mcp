@@ -87,6 +87,33 @@ describe('composeLineageStamp — idempotency (strip-before-reappend)', () => {
     expect(matches).not.toBeNull();
     expect(matches!.length).toBe(1);
   });
+
+  it('collapses a note that already carries TWO lineage blocks to exactly one (WR-03)', () => {
+    // Seed a malformed note that already contains two lineage blocks (legacy
+    // data, manual edit, or two racing stamps). The strip-before-reappend
+    // invariant must remove ALL existing blocks, not just the first.
+    const blockFor = (session: string) =>
+      `\n\n<!-- of-mcp:lineage\n${JSON.stringify({ v: 1, agent: 'claude-code', session, created_at: '2026-06-15T12:00:00.000Z' })}\n-->`;
+    const twoBlockNote = `Base note${blockFor('session-FIRST')}${blockFor('session-SECOND')}`;
+
+    // Sanity: the seeded note genuinely has two blocks.
+    const globalRe = new RegExp(LINEAGE_RE.source, 'gs');
+    expect(twoBlockNote.match(globalRe)!.length).toBe(2);
+
+    const restamped = composeLineageStamp(twoBlockNote, { sessionId: 'session-LATEST' });
+
+    // After re-stamping there must be exactly one block left.
+    const afterRe = new RegExp(LINEAGE_RE.source, 'gs');
+    const matches = restamped.match(afterRe);
+    expect(matches).not.toBeNull();
+    expect(matches!.length).toBe(1);
+
+    // And the surviving block keys on the most recent session, not the oldest.
+    const sessionMatch = LINEAGE_RE.exec(restamped);
+    const json = sessionMatch![0].replace(/^\n\n<!-- of-mcp:lineage\n/, '').replace(/\n-->$/, '');
+    const payload = JSON.parse(json) as { session: string };
+    expect(payload.session).toBe('session-LATEST');
+  });
 });
 
 describe('buildExtractedSessionSet — dedup mechanics', () => {

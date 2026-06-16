@@ -45,7 +45,12 @@ export function composeLineageStamp(
   lineage: { sessionId: string; agent?: string; createdAt?: string },
 ): string {
   // Strip any existing lineage block (D-10 strip-before-reappend invariant).
-  const base = (userNote ?? '').replace(LINEAGE_RE, '').trimEnd();
+  // Use a global+dotAll variant so that a note carrying *multiple* lineage
+  // blocks (legacy data, manual edits, or two stamps that raced) has ALL of
+  // them removed before re-appending — a single replace would leave the
+  // second block behind and produce a two-block note (WR-03).
+  const STRIP_RE = new RegExp(LINEAGE_RE.source, 'gs');
+  const base = (userNote ?? '').replace(STRIP_RE, '').trimEnd();
 
   const payload = JSON.stringify({
     v: 1,
