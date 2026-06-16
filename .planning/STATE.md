@@ -3,12 +3,12 @@ gsd_state_version: 1.0
 milestone: agent-workflow
 milestone_name: Agent Workflow System
 status: ready_to_execute
-last_updated: '2026-06-16T16:43:25.760Z'
+last_updated: '2026-06-16T16:55:45.017Z'
 progress:
   total_phases: 6
   completed_phases: 4
   total_plans: 15
-  completed_plans: 12
+  completed_plans: 13
   percent: 67
 ---
 
@@ -19,12 +19,12 @@ progress:
 See: .planning/PROJECT.md (updated 2026-06-11)
 
 **Core value:** The agent can read and write OmniFocus tasks safely — no silent write failures, no destructive deletes —
-so JessOS can trust OmniFocus as the source of truth. **Current focus:** Phase 5 — session archaeology OmniFocus
-capability discovery, which gates all workflow design.
+so JessOS can trust OmniFocus as the source of truth. **Current focus:** Phase 05 — session-archaeology capability
+discovery, which gates all workflow design.
 
 ## Current Position
 
-Phase: 5 of 6 (Session Archaeology) — **planned, ready to execute** (3 plans, 2 waves).
+Phase: 05 (session-archaeology) — EXECUTING Plan: 2 of 3
 
 Phase 4 (Review Loops & Live Auto-Capture) complete: server allowlist extended with `review-output` / `review-capture` /
 `capture-live`; live-capture skill (`capture-live-blocker`) + review-surfacing skill (`surface-work-for-review`)
@@ -73,7 +73,8 @@ authored; REVIEW-01/02 + LIVE-01 met. 2405/2405 unit tests green; code review cl
 - Trend: —
 
 | Phase 02-capture-permission-gating P01 | 5m | 3 tasks | 6 files | | Phase 02-capture-permission-gating P02 | 25m | 2
-tasks | 11 files | | Phase 02-capture-permission-gating P03 | 35m | 2 tasks | 6 files |
+tasks | 11 files | | Phase 02-capture-permission-gating P03 | 35m | 2 tasks | 6 files | | Phase 05-session-archaeology
+P01 | 3m | 2 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -121,6 +122,9 @@ Decisions are logged in PROJECT.md Key Decisions table. Recent decisions affecti
 - [Phase 2, Wave 3]: PERM-02 bypass test fixed to use direct setAllowAllThisSession() — vi.doMock cannot intercept ESM
   static bindings after module load.
 
+- [Phase ?]: D-07 Open Q1 resolved: dedup Set built from UNION of active + completed archaeology-task notes; completed
+  sessions stay suppressed
+
 ### Pending Todos
 
 None yet.
@@ -156,7 +160,7 @@ candidates for a future read-layer / HTTP-role-plumbing phase.
 
 ## Session Continuity
 
-Last session: 2026-06-16T16:10:56.546Z
+Last session: 2026-06-16T16:55:45.011Z
 
 ## Operator Next Steps
 
