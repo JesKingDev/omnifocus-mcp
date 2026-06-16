@@ -46,7 +46,7 @@ Requirements for the `agent-workflow` milestone. Each maps to exactly one roadma
 
 ### Session Archaeology
 
-- [ ] **ARCH-01**: Agent scans the last 7 days of active (non-archived) Claude Code sessions for unresolved open loops.
+- [x] **ARCH-01**: Agent scans the last 7 days of active (non-archived) Claude Code sessions for unresolved open loops.
 - [ ] **ARCH-02**: The first pass summarizes per session (what it was about + whether open loops exist) and waits for
       the user to approve which sessions to extract from — it never bulk auto-creates tasks.
 - [x] **ARCH-03**: Approved open loops become OmniFocus tasks in the correct project (inbox only as fallback), tagged
@@ -126,7 +126,7 @@ Which phases cover which requirements. Populated during roadmap creation.
 | REVIEW-01   | Phase 4 — Review Loops & Live Auto-Capture | Complete |
 | REVIEW-02   | Phase 4 — Review Loops & Live Auto-Capture | Complete |
 | LIVE-01     | Phase 4 — Review Loops & Live Auto-Capture | Complete |
-| ARCH-01     | Phase 5 — Session Archaeology              | Pending  |
+| ARCH-01     | Phase 5 — Session Archaeology              | Complete |
 | ARCH-02     | Phase 5 — Session Archaeology              | Pending  |
 | ARCH-03     | Phase 5 — Session Archaeology              | Complete |
 | READAS-01   | Phase 6 — Surfaces & Migration             | Pending  |

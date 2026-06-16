@@ -3,12 +3,12 @@ gsd_state_version: 1.0
 milestone: agent-workflow
 milestone_name: Agent Workflow System
 status: ready_to_execute
-last_updated: '2026-06-16T16:55:45.017Z'
+last_updated: '2026-06-16T17:04:28.339Z'
 progress:
   total_phases: 6
   completed_phases: 4
   total_plans: 15
-  completed_plans: 13
+  completed_plans: 14
   percent: 67
 ---
 
@@ -24,7 +24,7 @@ discovery, which gates all workflow design.
 
 ## Current Position
 
-Phase: 05 (session-archaeology) — EXECUTING Plan: 2 of 3
+Phase: 05 (session-archaeology) — EXECUTING Plan: 3 of 3
 
 Phase 4 (Review Loops & Live Auto-Capture) complete: server allowlist extended with `review-output` / `review-capture` /
 `capture-live`; live-capture skill (`capture-live-blocker`) + review-surfacing skill (`surface-work-for-review`)
@@ -74,7 +74,7 @@ authored; REVIEW-01/02 + LIVE-01 met. 2405/2405 unit tests green; code review cl
 
 | Phase 02-capture-permission-gating P01 | 5m | 3 tasks | 6 files | | Phase 02-capture-permission-gating P02 | 25m | 2
 tasks | 11 files | | Phase 02-capture-permission-gating P03 | 35m | 2 tasks | 6 files | | Phase 05-session-archaeology
-P01 | 3m | 2 tasks | 3 files |
+P01 | 3m | 2 tasks | 3 files | | Phase 05-session-archaeology P02 | 25m | 2 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -125,6 +125,12 @@ Decisions are logged in PROJECT.md Key Decisions table. Recent decisions affecti
 - [Phase ?]: D-07 Open Q1 resolved: dedup Set built from UNION of active + completed archaeology-task notes; completed
   sessions stay suppressed
 
+- [Phase 05-02]: ESM over CommonJS for probes under probes/ — project has "type":"module"; require.main === module
+  throws in Vitest's ESM runtime. Use `export function` + `import.meta.url` CLI guard instead.
+
+- [Phase 05-02]: nowMs as a parameter to filterTranscriptLines() keeps the 7-day window deterministic for unit tests;
+  the CLI wrapper calls Date.now() and passes it in.
+
 ### Pending Todos
 
 None yet.
@@ -160,7 +166,7 @@ candidates for a future read-layer / HTTP-role-plumbing phase.
 
 ## Session Continuity
 
-Last session: 2026-06-16T16:55:45.011Z
+Last session: 2026-06-16T17:04:28.334Z
 
 ## Operator Next Steps
 

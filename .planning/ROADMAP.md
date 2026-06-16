@@ -205,7 +205,7 @@ places loops in the right project) and Phase 4 (review/tagging conventions) **Re
 
 - [x] 05-01-PLAN.md — Server slice: add `archaeology` to FUNCTIONAL_TAG_ALLOWLIST + allowlist test + lineage round-trip
       / dedup-skip spec (active+completed union)
-- [ ] 05-02-PLAN.md — Transcript pre-filter probe (`probes/archaeology-prefilter.js`) + fixture JSONL + noise-strip /
+- [x] 05-02-PLAN.md — Transcript pre-filter probe (`probes/archaeology-prefilter.js`) + fixture JSONL + noise-strip /
       isSidechain / 7-day-window spec
 
 **Wave 2** _(blocked on Wave 1 completion)_
@@ -233,7 +233,7 @@ Criteria** (what must be TRUE):
 | 2. Capture & Permission Gating      | 4/4            | Complete    | 2026-06-12 |
 | 3. Routing & On-Demand Trigger      | 2/2            | Complete    | 2026-06-15 |
 | 4. Review Loops & Live Auto-Capture | 2/2            | Complete    | 2026-06-16 |
-| 5. Session Archaeology              | 1/3            | In Progress |            |
+| 5. Session Archaeology              | 2/3            | In Progress |            |
 | 6. Surfaces & Migration             | 0/?            | Not started | -          |
 
 | Milestone      | Phases | Plans | Status   | Completed  |
