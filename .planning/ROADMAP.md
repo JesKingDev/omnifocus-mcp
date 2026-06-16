@@ -199,7 +199,19 @@ places loops in the right project) and Phase 4 (review/tagging conventions) **Re
    approve which sessions to extract from — it never bulk auto-creates tasks.
 
 3. Approved open loops become OmniFocus tasks in the correct project (inbox only as fallback), tagged `archaeology`.
-   **Plans**: TBD
+   **Plans**: 3 plans
+
+**Wave 1** _(both plans independent — run in parallel; no file overlap)_
+
+- [ ] 05-01-PLAN.md — Server slice: add `archaeology` to FUNCTIONAL_TAG_ALLOWLIST + allowlist test + lineage round-trip
+      / dedup-skip spec (active+completed union)
+- [ ] 05-02-PLAN.md — Transcript pre-filter probe (`probes/archaeology-prefilter.js`) + fixture JSONL + noise-strip /
+      isSidechain / 7-day-window spec
+
+**Wave 2** _(blocked on Wave 1 completion)_
+
+- [ ] 05-03-PLAN.md — `session-archaeology` SKILL.md: scan → dedup → detect (D-03 rubric) → ONE merged gate → place
+      (inline routing ladder, archaeology + lineage)
 
 ### Phase 6: Surfaces & Migration
 
@@ -221,7 +233,7 @@ Criteria** (what must be TRUE):
 | 2. Capture & Permission Gating      | 4/4            | Complete    | 2026-06-12 |
 | 3. Routing & On-Demand Trigger      | 2/2            | Complete    | 2026-06-15 |
 | 4. Review Loops & Live Auto-Capture | 2/2            | Complete    | 2026-06-16 |
-| 5. Session Archaeology              | 0/?            | Not started | -          |
+| 5. Session Archaeology              | 0/3            | Planned     | -          |
 | 6. Surfaces & Migration             | 0/?            | Not started | -          |
 
 | Milestone      | Phases | Plans | Status   | Completed  |

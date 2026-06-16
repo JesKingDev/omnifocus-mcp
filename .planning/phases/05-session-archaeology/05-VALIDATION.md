@@ -2,7 +2,7 @@
 phase: 5
 slug: session-archaeology
 status: draft
-nyquist_compliant: false
+nyquist_compliant: true
 wave_0_complete: false
 created: 2026-06-16
 ---
@@ -40,11 +40,12 @@ created: 2026-06-16
 
 ## Per-Task Verification Map
 
-| Task ID             | Plan | Wave | Requirement | Threat Ref | Secure Behavior                           | Test Type | Automated Command   | File Exists | Status     |
-| ------------------- | ---- | ---- | ----------- | ---------- | ----------------------------------------- | --------- | ------------------- | ----------- | ---------- |
-| TBD (planner fills) | —    | —    | ARCH-03     | —          | `archaeology` only via allowlisted addTag | unit      | `npm run test:unit` | ❌ W0       | ⬜ pending |
-| TBD (planner fills) | —    | —    | LINE-01     | —          | lineage round-trips session ID            | unit      | `npm run test:unit` | ❌ W0       | ⬜ pending |
-| TBD (planner fills) | —    | —    | ARCH-01     | —          | pre-filter strips noise line types        | unit      | `npm run test:unit` | ❌ W0       | ⬜ pending |
+| Task ID  | Plan | Wave | Requirement | Threat Ref | Secure Behavior                                          | Test Type | Automated Command                              | File Exists | Status     |
+| -------- | ---- | ---- | ----------- | ---------- | -------------------------------------------------------- | --------- | ---------------------------------------------- | ----------- | ---------- |
+| 05-01-T1 | 01   | 1    | ARCH-03     | T-05-01    | `archaeology` only via allowlisted tag (sandbox-bounded) | unit      | `npm run test:unit -- mutation-script-builder` | ❌ W0       | ⬜ pending |
+| 05-01-T2 | 01   | 1    | LINE-01     | —          | lineage round-trips session ID; dedup unions completed   | unit      | `npm run test:unit -- lineage-dedup`           | ❌ W0       | ⬜ pending |
+| 05-02-T2 | 02   | 1    | ARCH-01     | T-05-03    | pre-filter strips tool_result + noise + isSidechain      | unit      | `npm run test:unit -- archaeology-prefilter`   | ❌ W0       | ⬜ pending |
+| 05-03-T1 | 03   | 2    | ARCH-02     | T-05-07    | merged gate; no `omnifocus_write` before `yes`           | human     | structural grep + live run-through             | ❌          | ⬜ pending |
 
 _Status: ⬜ pending · ✅ green · ❌ red · ⚠️ flaky_
 
@@ -79,10 +80,14 @@ _Status: ⬜ pending · ✅ green · ❌ red · ⚠️ flaky_
 
 ## Wave 0 Requirements
 
-- [ ] `archaeology` assertion added to `tests/unit/contracts/ast/mutation-script-builder.test.ts`
-- [ ] New unit spec: lineage round-trip + dedup-skip over fixture notes
-- [ ] Unit spec: pre-filter noise-strip over a fixture JSONL (committed helper)
-- [ ] Decide + test the completed-task dedup polarity (Open Question 1)
+- [x] `archaeology` assertion added to `tests/unit/contracts/ast/mutation-script-builder.test.ts` _(planned: 05-01
+      Task 1)_
+- [x] New unit spec: lineage round-trip + dedup-skip over fixture notes _(planned: 05-01 Task 2 →
+      `lineage-dedup.test.ts`)_
+- [x] Unit spec: pre-filter noise-strip over a fixture JSONL (committed helper) _(planned: 05-02 →
+      `archaeology-prefilter.test.ts`; Open Q2 resolved = committed `.js` probe)_
+- [x] Decide + test the completed-task dedup polarity (Open Question 1) _(resolved: union-completed into dedup set;
+      tested in 05-01 Task 2)_
 
 _Existing Vitest infrastructure covers the framework; the above are the new test stubs this phase introduces._
 
@@ -100,11 +105,11 @@ _Existing Vitest infrastructure covers the framework; the above are the new test
 
 ## Validation Sign-Off
 
-- [ ] All tasks have `<automated>` verify or Wave 0 dependencies
-- [ ] Sampling continuity: no 3 consecutive tasks without automated verify
-- [ ] Wave 0 covers all MISSING references
-- [ ] No watch-mode flags
-- [ ] Feedback latency < ~30s (unit)
-- [ ] `nyquist_compliant: true` set in frontmatter
+- [x] All tasks have `<automated>` verify or Wave 0 dependencies
+- [x] Sampling continuity: no 3 consecutive tasks without automated verify
+- [x] Wave 0 covers all MISSING references
+- [x] No watch-mode flags
+- [x] Feedback latency < ~30s (unit)
+- [x] `nyquist_compliant: true` set in frontmatter
 
-**Approval:** pending
+**Approval:** planner-approved 2026-06-16 (Wave-0 stubs assigned; nyquist_compliant)
