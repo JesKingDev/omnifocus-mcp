@@ -19,8 +19,8 @@
  *     - session-drop-sidechain:       isSidechain:true (D-02 exclusion)
  *     - session-drop-out-of-window:   timestamp 2026-06-01 (>7 days before reference)
  *
- * Reference nowMs: 2026-06-16T12:00:00.000Z = 1750075200000
- * 7-day cutoff:    2026-06-09T12:00:00.000Z = 1749470400000
+ * Reference nowMs: 2026-06-16T12:00:00.000Z = 1781611200000
+ * 7-day cutoff:    2026-06-09T12:00:00.000Z = 1781006400000
  * All KEEP lines have timestamps on 2026-06-15 (within window).
  * The out-of-window line has timestamp 2026-06-01T08:00:00.000Z = 1748764800000 (outside window).
  */
@@ -28,19 +28,16 @@
 import { describe, it, expect } from 'vitest';
 import * as fs from 'fs';
 import * as path from 'path';
-import { createRequire } from 'module';
-
-// Import the probe as CommonJS (it uses module.exports, not ESM)
-const require = createRequire(import.meta.url);
-const { filterTranscriptLines } = require('../../../probes/archaeology-prefilter.js');
+import { fileURLToPath } from 'url';
+import { filterTranscriptLines } from '../../../probes/archaeology-prefilter.js';
 
 // Fixed reference time: 2026-06-16T12:00:00.000Z
-const REFERENCE_NOW_MS = 1750075200000;
+const REFERENCE_NOW_MS = 1781611200000;
 
 // Load and parse fixture
 const fixturePath = path.resolve(
-  path.dirname(new URL(import.meta.url).pathname),
-  '../../../tests/fixtures/archaeology/sample-transcript.jsonl',
+  path.dirname(fileURLToPath(import.meta.url)),
+  '../../fixtures/archaeology/sample-transcript.jsonl',
 );
 const fixtureLines = fs
   .readFileSync(fixturePath, 'utf8')
@@ -120,12 +117,13 @@ describe('filterTranscriptLines', () => {
   });
 
   it('the probe function is pure: nowMs controls the window, not Date.now()', () => {
-    // Passing a farFuture reference should include the out-of-window line
-    // (2026-06-01T08:00:00.000Z = 1748764800000; 7d before farFuture = 2199-01-01)
-    const farFuture = Date.UTC(2199, 0, 1);
-    const result = filterTranscriptLines(fixtureLines, farFuture);
+    // The out-of-window line has timestamp 2026-06-01T08:00:00.000Z.
+    // Use a nowMs of 2026-06-07T12:00:00.000Z (6 days after) so the line is within 7d.
+    // This proves nowMs is the window anchor, not Date.now() inside the function.
+    const earlyNowMs = Date.UTC(2026, 5, 7, 12, 0, 0, 0); // 2026-06-07T12:00:00.000Z
+    const result = filterTranscriptLines(fixtureLines, earlyNowMs);
     const ids = result.map((r: { session_id: string }) => r.session_id);
-    // The out-of-window line should now pass (it's within 7d of year 2199)
+    // The out-of-window line (2026-06-01) is now within the 7-day window of 2026-06-07
     expect(ids).toContain('session-drop-out-of-window');
   });
 });
