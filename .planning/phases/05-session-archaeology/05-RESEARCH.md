@@ -498,16 +498,24 @@ set, or accept re-surfacing as intended.
 
 _(All other claims are `[VERIFIED: filesystem/source]` or `[CITED: …]`.)_
 
-## Open Questions
+## Open Questions (RESOLVED)
+
+All three questions were settled during planning. Resolutions recorded inline below.
 
 1. **Completed-task dedup polarity** — should a _completed_ archaeology task suppress re-surfacing, or should only an
    _existing_ (active) one? Recommendation: union completed into the dedup set so handled loops stay handled; let
-   _deleted_ tasks re-surface (matches D-07's self-healing intent). Planner decides + tests.
+   _deleted_ tasks re-surface (matches D-07's self-healing intent). **RESOLVED:** union completed archaeology tasks into
+   the dedup set (deleted tasks re-surface, matching D-07 self-healing). Settled in `05-01-PLAN.md` Task 2 with a
+   deterministic completed-task fixture test.
 2. **Pre-filter: inline vs committed helper** — inline matches the zero-artifact skill pattern; committed helper is
    unit-testable. The Validation section favors a committed helper for the deterministic noise-strip test.
    Recommendation: small committed `.js`/`.py` under `probes/` so the strip is testable, invoked by the skill.
+   **RESOLVED:** committed `probes/archaeology-prefilter.js` (CommonJS, per the CLAUDE.md probe exception and the
+   `probes/disc-*.js` precedent), invoked inline by the skill, unit-tested via its pure function. Settled in
+   `05-02-PLAN.md`.
 3. **`ai-title` line as "What it was about" source** — present in transcripts and cheap; could populate the summary
-   column directly instead of agent-summarizing. Worth a quick try during planning.
+   column directly instead of agent-summarizing. **RESOLVED:** use the transcript `ai-title` line as the default "What
+   it was about" column when present, with agent summary as fallback. Settled in `05-03-PLAN.md` Task 1.
 
 ## Sources
 

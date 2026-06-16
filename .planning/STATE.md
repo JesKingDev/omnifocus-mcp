@@ -2,12 +2,12 @@
 gsd_state_version: 1.0
 milestone: agent-workflow
 milestone_name: Agent Workflow System
-status: ready_to_plan
-last_updated: '2026-06-16T16:10:56.554Z'
+status: ready_to_execute
+last_updated: '2026-06-16T16:43:25.760Z'
 progress:
   total_phases: 6
   completed_phases: 4
-  total_plans: 12
+  total_plans: 15
   completed_plans: 12
   percent: 67
 ---
@@ -24,7 +24,7 @@ capability discovery, which gates all workflow design.
 
 ## Current Position
 
-Phase: 5 of 6 (Session Archaeology) — ready to plan/discuss.
+Phase: 5 of 6 (Session Archaeology) — **planned, ready to execute** (3 plans, 2 waves).
 
 Phase 4 (Review Loops & Live Auto-Capture) complete: server allowlist extended with `review-output` / `review-capture` /
 `capture-live`; live-capture skill (`capture-live-blocker`) + review-surfacing skill (`surface-work-for-review`)
