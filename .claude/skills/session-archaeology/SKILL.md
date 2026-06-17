@@ -13,6 +13,19 @@ description:
 
 # Session Archaeology
 
+## Install (one-time, global)
+
+This skill is global via symlink from the omnifocus-mcp repo (single source of truth):
+
+```bash
+ln -sfn "$HOME/projects/omnifocus-mcp/.claude/skills/session-archaeology" "$HOME/.claude/skills/session-archaeology"
+mkdir -p "$HOME/.claude/commands"
+ln -sfn "$HOME/projects/omnifocus-mcp/.claude/commands/archaeology.md" "$HOME/.claude/commands/archaeology.md"
+```
+
+The probe is invoked by absolute path so the skill works from any cwd:
+`$HOME/projects/omnifocus-mcp/probes/archaeology-prefilter.js`.
+
 ## Overview
 
 Retrospective batch scan of the last 7 days of Claude Code transcripts to surface unresolved open loops before they die
@@ -45,7 +58,8 @@ only after you approve. Pass 3 reports results.
 > **EXECUTION GUARD — read before doing anything.** This skill's knowledge of past sessions comes EXCLUSIVELY from the
 > probe in Pass 1 Step 1. You have NO knowledge of past sessions from your own context.
 >
-> - The FIRST action of Pass 1 is to run `node probes/archaeology-prefilter.js` via the Bash tool. No exceptions.
+> - The FIRST action of Pass 1 is to run `node "$HOME/projects/omnifocus-mcp/probes/archaeology-prefilter.js"` via the
+>   Bash tool. No exceptions.
 > - NEVER answer from the current conversation. The session you are in right now is not the subject — the probe output
 >   over the last 7 days of transcripts is. Introspecting the live chat is the #1 failure mode for this skill.
 > - If you have not run the probe, no scan has happened. Do not present a table, claim "no open loops", or report
@@ -57,19 +71,15 @@ only after you approve. Pass 3 reports results.
 
 **Step 1: Resolve active dirs + pre-filter (D-01, D-02, D-03) — MANDATORY FIRST ACTION**
 
-Run the pre-filter probe from the repo root. The probe encodes the current working directory, resolves the main
-transcript dir (`~/.claude/projects/<encoded-cwd>`) plus any `…--claude-worktrees-agent-*` sibling dirs, reads all
-`.jsonl` files within them, and emits noise-stripped, isSidechain-excluded, 7-day content-date-windowed records grouped
-by session:
+Run the pre-filter probe (scan mode) by absolute path. It enumerates ALL `~/.claude/projects/*` transcript dirs, reads
+each session's `.jsonl`, applies the D-03 strip rule and the D-02 7-day content-date window, AND drops any message at or
+before that session's stored watermark (`~/.claude/session-archaeology/state.json`). It emits only NEW records, grouped
+by session, newest-first, and writes a `pending` watermark for this run. The trailing summary line reports how many new
+records and sessions were found. If it reports zero sessions, there is nothing new since the last run — say so and stop.
 
 ```
-node probes/archaeology-prefilter.js
+node "$HOME/projects/omnifocus-mcp/probes/archaeology-prefilter.js"
 ```
-
-The probe applies the D-03 strip rule (isSidechain excluded; `user` lines kept only if content is a string or has a
-`text` item; `assistant` lines kept only if content has a `text` item; all other line types dropped; records with
-content-date `timestamp` older than 7 days from now dropped). Do NOT re-describe or re-implement the filter rule — defer
-to the probe. The probe outputs `{ session_id, timestamp, role, text }` records grouped by session.
 
 **Step 2: Dedup read (D-07, LINE-01)**
 
@@ -145,37 +155,40 @@ Apply the ladder in order for each loop:
 **Bias to leave.** When in doubt between MATCH and LEAVE, choose LEAVE. A misplaced task is harder to find than an inbox
 item.
 
-**Step 5: Show ONE merged table (D-06)**
+**Step 5: Process in batches of 5 sessions, newest-first (resumable gate)**
 
-Present a single table combining session summaries and per-loop placements. Do not split these into two gates.
+Group the new sessions (probe output is already newest-first) into batches of **5**. For EACH batch, in order:
 
-Session-level rows:
+1. For each session in the batch, run Steps 2–4 (dedup-check candidates against the OF lineage backstop, detect loops,
+   compute placement).
+2. Show ONE merged table for this batch (session rows + per-loop placement rows, as below). Include a per-placement
+   count and a batch task total.
+3. Ask, in plain text (NOT `AskUserQuestion`): `Approve this batch? (yes / edit / abort)`
+   - **abort** — stop the entire run. Do NOT commit this batch. Report what was done so far. Uncommitted batches
+     re-surface next run.
+   - **edit** — apply row-level corrections (drop/trim loops, override placement, remove a session row), re-show the
+     batch table, ask again.
+   - **yes** — create the approved loops (Pass 2), THEN commit this batch's watermark:
+     ```
+     node "$HOME/projects/omnifocus-mcp/probes/archaeology-prefilter.js" --commit <sid1>,<sid2>,...
+     ```
+     Pass the session IDs of EVERY session in this batch (including sessions that yielded no loops — "reviewed-empty"
+     still advances their watermark so they don't re-surface).
+4. Continue to the next batch until all batches are processed.
+
+Session-level rows (per batch):
 
 | Session               | What it was about             | Open loops? | Count |
 | --------------------- | ----------------------------- | ----------- | ----- |
 | `<session_id_prefix>` | `<ai-title or agent summary>` | yes / no    | N     |
 
-Immediately following, for each session with loops, list the per-loop details:
+Per-loop rows (per batch, for sessions with loops):
 
 | Loop                             | Proposed placement                                                |
 | -------------------------------- | ----------------------------------------------------------------- |
 | `<abstractive loop description>` | MATCH: `<project>` / INFER+CREATE: `<project>` / Inbox (fallback) |
 
-Include a count per placement type and a total task count.
-
-If all sessions were already extracted (dedup set covers everything), report "All sessions in the last 7 days have
-already been extracted. Nothing new to surface." and stop.
-
-**Step 6: ONE gate (D-04, D-04a)**
-
-"Approve this plan? (yes / edit / abort)"
-
-Wait for a plain-text reply. Do NOT use `AskUserQuestion`.
-
-- **abort** — stop; no writes. Report "Aborted. No tasks created."
-- **edit** — accept row-level corrections (drop/trim loops, override a placement, remove a session row). Re-show the
-  updated table. Then ask again. Repeat until `yes` or `abort`.
-- **yes** — proceed to Pass 2.
+If the probe returned zero new sessions, report "Nothing new since the last run." and stop.
 
 ### Pass 2 — Execute (after approval only)
 
@@ -256,14 +269,15 @@ plainly in the Step 5 table.
 
 ## Tool call reference
 
-| Goal                                     | Call shape                                                                                                                                   |
-| ---------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
-| Pre-filter + group by session            | `node probes/archaeology-prefilter.js` (CLI) — emits `{ session_id, timestamp, role, text }` records grouped by session                      |
-| Dedup read — active archaeology tasks    | `omnifocus_read` `type:"tasks"`, `filters.tags.all:["archaeology"]`, `details:true`                                                          |
-| Dedup read — completed archaeology tasks | `omnifocus_read` `type:"tasks"`, `filters.tags.all:["archaeology"]`, `filters.status:"completed"`, `details:true`                            |
-| Active projects with notes               | `omnifocus_read` `type:"projects"`, `filters.status:"active"`, `fields:["id","name","folderPath","note"]`                                    |
-| Create task (MATCH / INFER / LEAVE)      | `omnifocus_write` `operation:"create"`, `target:"task"`, `data:{ name, note, tags:["archaeology"], lineage:{ sessionId }, project?:<name> }` |
-| Create project (INFER branch only)       | `omnifocus_write` `operation:"create"`, `target:"project"`, `data:{ name:<omnifocus-project>, folder?:<omnifocus-folder> }`                  |
+| Goal                                                    | Call shape                                                                                                                                                                               |
+| ------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Pre-filter + group by session                           | `node "$HOME/projects/omnifocus-mcp/probes/archaeology-prefilter.js"` (scan; absolute path) — emits NEW `{ session_id, timestamp, role, text }` records grouped by session, newest-first |
+| Commit a batch's watermark (after `yes`/reviewed-empty) | `node "$HOME/projects/omnifocus-mcp/probes/archaeology-prefilter.js" --commit <sid,sid,…>`                                                                                               |
+| Dedup read — active archaeology tasks                   | `omnifocus_read` `type:"tasks"`, `filters.tags.all:["archaeology"]`, `details:true`                                                                                                      |
+| Dedup read — completed archaeology tasks                | `omnifocus_read` `type:"tasks"`, `filters.tags.all:["archaeology"]`, `filters.status:"completed"`, `details:true`                                                                        |
+| Active projects with notes                              | `omnifocus_read` `type:"projects"`, `filters.status:"active"`, `fields:["id","name","folderPath","note"]`                                                                                |
+| Create task (MATCH / INFER / LEAVE)                     | `omnifocus_write` `operation:"create"`, `target:"task"`, `data:{ name, note, tags:["archaeology"], lineage:{ sessionId }, project?:<name> }`                                             |
+| Create project (INFER branch only)                      | `omnifocus_write` `operation:"create"`, `target:"project"`, `data:{ name:<omnifocus-project>, folder?:<omnifocus-folder> }`                                                              |
 
 Notes that matter:
 
@@ -290,15 +304,16 @@ Notes that matter:
 
 ## Common mistakes
 
-| Mistake                                                     | Fix                                                                                                                                                               |
-| ----------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Chaining `route-inbox-to-projects` for placement proposals  | That skill fires its own `yes / edit / abort` gate (Pitfall 1 — double gate, violates D-06). Follow the routing ladder inline as documented above.                |
-| Keeping all `user` lines from the transcript                | 87% of `user` lines are `tool_result`-only echoes. Use `node probes/archaeology-prefilter.js` — do not re-implement the filter rule inline.                       |
-| Dedup read without `details:true`                           | The `of-mcp:lineage` block lives at note-end; a 200-char truncated note silently drops it. The dedup set becomes empty and every session re-surfaces (Pitfall 3). |
-| Passing `agent-okay` explicitly in `data.tags`              | The funnel auto-stamps `agent-okay` when `role=agent` and `lineage` is present. Pass only `["archaeology"]`.                                                      |
-| Pasting raw transcript text verbatim into task name or note | Transcripts may carry secrets or PII (T-05-06). Loop extraction is abstractive — describe in your own words.                                                      |
-| Filtering transcripts by file mtime                         | D-02 forbids it — mtime drifts hours-to-days from content date. The probe uses per-message ISO `timestamp` only.                                                  |
-| Using `AskUserQuestion` for the approval gate               | D-04a mandates plain-text reply (`yes / edit / abort`). No `AskUserQuestion`.                                                                                     |
-| Creating a project without checking existence               | The INFER branch must check the active-projects list from Step 4 before calling create, or it will make duplicate projects.                                       |
-| Applying a second approval gate                             | There is exactly ONE gate (Step 6). Do not add a second "Are you sure?" after `yes`.                                                                              |
-| Assigning tags via JXA `task.addTags()`                     | JXA tag assignment silently no-ops. Use `omnifocus_write` with the `tags` field in `data` — the funnel routes through OmniJS `addTag` find-or-create.             |
+| Mistake                                                        | Fix                                                                                                                                                                        |
+| -------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Chaining `route-inbox-to-projects` for placement proposals     | That skill fires its own `yes / edit / abort` gate (Pitfall 1 — double gate, violates D-06). Follow the routing ladder inline as documented above.                         |
+| Keeping all `user` lines from the transcript                   | 87% of `user` lines are `tool_result`-only echoes. Use `node "$HOME/projects/omnifocus-mcp/probes/archaeology-prefilter.js"` — do not re-implement the filter rule inline. |
+| Dedup read without `details:true`                              | The `of-mcp:lineage` block lives at note-end; a 200-char truncated note silently drops it. The dedup set becomes empty and every session re-surfaces (Pitfall 3).          |
+| Passing `agent-okay` explicitly in `data.tags`                 | The funnel auto-stamps `agent-okay` when `role=agent` and `lineage` is present. Pass only `["archaeology"]`.                                                               |
+| Pasting raw transcript text verbatim into task name or note    | Transcripts may carry secrets or PII (T-05-06). Loop extraction is abstractive — describe in your own words.                                                               |
+| Filtering transcripts by file mtime                            | D-02 forbids it — mtime drifts hours-to-days from content date. The probe uses per-message ISO `timestamp` only.                                                           |
+| Using `AskUserQuestion` for the approval gate                  | D-04a mandates plain-text reply (`yes / edit / abort`). No `AskUserQuestion`.                                                                                              |
+| Creating a project without checking existence                  | The INFER branch must check the active-projects list from Step 4 before calling create, or it will make duplicate projects.                                                |
+| Applying a second approval gate                                | There is exactly one gate per batch (Step 5). Do not add a second "Are you sure?" after `yes`.                                                                             |
+| Committing the watermark on abort, or before tasks are created | Only `--commit` a batch AFTER `yes` (tasks created) or reviewed-empty. Never on abort/stop — uncommitted batches must re-surface.                                          |
+| Assigning tags via JXA `task.addTags()`                        | JXA tag assignment silently no-ops. Use `omnifocus_write` with the `tags` field in `data` — the funnel routes through OmniJS `addTag` find-or-create.                      |
