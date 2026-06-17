@@ -1,7 +1,7 @@
 ---
 title: Session Archaeology — Global Scope + Token-Efficient, Resumable Scan
 date: 2026-06-16
-status: approved-pending-review
+status: approved
 phase: 05-session-archaeology
 supersedes_decisions:
   [D-06 (single merged gate → per-batch gate), D-08 (deferred per-loop dedup → superseded by watermark)]
