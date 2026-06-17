@@ -1,10 +1,14 @@
 ---
 name: session-archaeology
 description:
-  Use when Jess says "scan my sessions", "session archaeology", "find open loops", "what did I leave undone", "what did
-  I forget", or "recover unresolved work from my sessions" — scans the last 7 days of active Claude Code transcripts for
-  unresolved open loops, presents a summarize-then-approve table, and on approval creates archaeology-tagged OmniFocus
-  tasks in the right project (or inbox fallback).
+  Use ONLY when Jess explicitly uses the word "archaeology" — e.g. "archaeology", "session archaeology", "run
+  archaeology", "archaeology scan", "dig up open loops (archaeology)". The trigger word is deliberately distinctive so it
+  never collides with conversational phrases. Do NOT trigger on generic phrasing like "scan my sessions", "find open
+  loops", or "what did I forget" — those collide with other skills (e.g. remember) and must NOT route here unless the
+  word "archaeology" is present. Scans the last 7 days of active Claude Code transcripts for unresolved open loops via the
+  pre-filter probe, presents one summarize-then-approve table, and on approval creates archaeology-tagged OmniFocus tasks
+  in the right project (or inbox fallback). Deterministic alias: Jess can also type the slash invocation
+  `/session-archaeology`.
 ---
 
 # Session Archaeology
@@ -38,9 +42,20 @@ Key design decisions embedded:
 Three passes in order. Pass 1 is read-only — it scans, deduplicates, detects, and computes placements. Pass 2 executes
 only after you approve. Pass 3 reports results.
 
+> **EXECUTION GUARD — read before doing anything.** This skill's knowledge of past sessions comes EXCLUSIVELY from the
+> probe in Pass 1 Step 1. You have NO knowledge of past sessions from your own context.
+>
+> - The FIRST action of Pass 1 is to run `node probes/archaeology-prefilter.js` via the Bash tool. No exceptions.
+> - NEVER answer from the current conversation. The session you are in right now is not the subject — the probe output
+>   over the last 7 days of transcripts is. Introspecting the live chat is the #1 failure mode for this skill.
+> - If you have not run the probe, no scan has happened. Do not present a table, claim "no open loops", or report
+>   results before the probe output is in hand.
+> - If the probe errors or returns zero records, say so explicitly and stop — do not silently fall back to summarizing
+>   the current conversation.
+
 ### Pass 1 — Scan, Dedup, Detect, Propose (read-only)
 
-**Step 1: Resolve active dirs + pre-filter (D-01, D-02, D-03)**
+**Step 1: Resolve active dirs + pre-filter (D-01, D-02, D-03) — MANDATORY FIRST ACTION**
 
 Run the pre-filter probe from the repo root. The probe encodes the current working directory, resolves the main
 transcript dir (`~/.claude/projects/<encoded-cwd>`) plus any `…--claude-worktrees-agent-*` sibling dirs, reads all
