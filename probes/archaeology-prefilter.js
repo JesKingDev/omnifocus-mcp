@@ -155,6 +155,7 @@ function encodeCwd(cwdPath) {
  *   - ~/.claude/projects/<encoded-cwd>
  *   - ~/.claude/projects/<encoded-cwd>--claude-worktrees-agent-* siblings
  * T-05-04: scoped to this repo only, no traversal outside.
+ * Used in --cwd-only mode (current-repo scan).
  */
 function resolveActiveDirs(encodedCwd) {
   const projectsBase = path.join(os.homedir(), '.claude', 'projects');
@@ -176,6 +177,30 @@ function resolveActiveDirs(encodedCwd) {
     // projectsBase unreadable — return what we have
   }
 
+  return dirs;
+}
+
+/**
+ * Resolve ALL Claude Code project transcript directories under ~/.claude/projects.
+ * Default mode for the global session-archaeology skill: open loops live across
+ * every repo Jess works in, not just the cwd she happens to launch from.
+ * Still scoped to ~/.claude/projects (no traversal outside the user's own
+ * transcript store) — T-05-04 intent preserved at the projects-base boundary.
+ */
+function resolveAllProjectDirs() {
+  const projectsBase = path.join(os.homedir(), '.claude', 'projects');
+  const dirs = [];
+  try {
+    const entries = fs.readdirSync(projectsBase, { withFileTypes: true });
+    for (const entry of entries) {
+      // Follow symlinked project dirs too (withFileTypes reports the link itself).
+      if (entry.isDirectory() || entry.isSymbolicLink()) {
+        dirs.push(path.join(projectsBase, entry.name));
+      }
+    }
+  } catch {
+    // projectsBase unreadable — return empty
+  }
   return dirs;
 }
 
