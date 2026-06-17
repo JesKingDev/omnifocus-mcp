@@ -68,4 +68,10 @@ total: 3 passed: 0 issues: 1 pending: 0 skipped: 0 blocked: 2
     (2) Rewrote SKILL.md description to anchor on the distinctive word 'archaeology' and explicitly NOT route on
     collision-prone phrases ('scan my sessions' etc.). (3) Added an EXECUTION GUARD to Pass 1: running the probe is the
     mandatory first action; answering from the current conversation is prohibited. Re-test required from a BRAND-NEW
-    session via /archaeology."
+    session via /archaeology." fix_applied_phase2: "Token-efficient + global redesign implemented on branch
+    05-archaeology-token-efficient-scan (spec/plan under docs/superpowers/). Probe now: per-session watermark dedup
+    (only NEW content re-emitted), scans ALL ~/.claude/projects/\* dirs, newest-first, source-dir shown at the gate, CLI
+    modes scan/--commit/--reset backed by ~/.claude/session-archaeology/state.json. Skill drives a per-batch (5-session)
+    resumable approval gate that commits each batch's watermark only after yes/reviewed-empty (never on abort). Skill +
+    /archaeology installed globally via symlink. 2444 unit tests green; final code review issues fixed. VERIFICATION
+    STILL PENDING: brand-new-session /archaeology run (UAT Test 1) — unblocks Tests 2 and 3."
