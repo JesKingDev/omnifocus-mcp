@@ -27,8 +27,8 @@
  *
  * Threat mitigations (T-05-03, T-05-04, T-05-05):
  *   T-05-03: All tool_result content is dropped before any text reaches the model.
- *   T-05-04: CLI dir resolution globs only ~/.claude/projects/<encoded-cwd> + sibling
- *            worktree-agent-* dirs; no user-supplied path traversal.
+ *   T-05-04: CLI dir resolution enumerates only ~/.claude/projects (all subdirs);
+ *            no user-supplied path traversal.
  *   T-05-05: The pure function receives already-parsed objects; the CLI wrapper skips
  *            lines that fail JSON.parse rather than aborting.
  *
@@ -41,6 +41,33 @@ import os from 'os';
 import { fileURLToPath } from 'url';
 
 const SEVEN_DAYS_MS = 7 * 24 * 60 * 60 * 1000;
+
+const STATE_DIR = path.join(os.homedir(), '.claude', 'session-archaeology');
+const STATE_FILE = path.join(STATE_DIR, 'state.json');
+const PENDING_FILE = path.join(STATE_DIR, 'state.json.pending');
+
+function readJsonFile(file, fallback) {
+  try {
+    return JSON.parse(fs.readFileSync(file, 'utf8'));
+  } catch {
+    return fallback;
+  }
+}
+
+function writeJsonFile(file, obj) {
+  fs.mkdirSync(STATE_DIR, { recursive: true });
+  fs.writeFileSync(file, JSON.stringify(obj, null, 2));
+}
+
+/** Build { sessionId: lastScannedTs } from a state object for filterTranscriptLines. */
+function watermarkMapFromState(state) {
+  const map = {};
+  const sessions = state && state.sessions ? state.sessions : {};
+  for (const [sid, entry] of Object.entries(sessions)) {
+    if (entry && typeof entry.lastScannedTs === 'string') map[sid] = entry.lastScannedTs;
+  }
+  return map;
+}
 
 /**
  * Extract text from a user or assistant message.content value.
@@ -180,48 +207,9 @@ export function mergeWatermark(state, pending, sessionIds) {
 
 // ---------------------------------------------------------------------------
 // CLI wrapper — only runs when invoked directly (not when imported).
-// Resolves active transcript dirs, streams .jsonl files, prints filtered records
-// grouped by session. The skill invokes this inline (mirrors route skill's vault grep).
+// Resolves all project transcript dirs, streams .jsonl files, prints filtered
+// records grouped by session (newest-first). The skill invokes this inline.
 // ---------------------------------------------------------------------------
-
-/**
- * Encode a filesystem path to the Claude Code projects dir format.
- * Claude Code encodes cwd as the path with '/' replaced by '-', with a leading '-'.
- * Example: /Users/foo/projects/bar -> -Users-foo-projects-bar
- */
-function encodeCwd(cwdPath) {
-  return cwdPath.replace(/\//g, '-');
-}
-
-/**
- * Resolve active transcript directories for this repo:
- *   - ~/.claude/projects/<encoded-cwd>
- *   - ~/.claude/projects/<encoded-cwd>--claude-worktrees-agent-* siblings
- * T-05-04: scoped to this repo only, no traversal outside.
- * Used in --cwd-only mode (current-repo scan).
- */
-function resolveActiveDirs(encodedCwd) {
-  const projectsBase = path.join(os.homedir(), '.claude', 'projects');
-  const mainDir = path.join(projectsBase, encodedCwd);
-  const dirs = [];
-
-  if (fs.existsSync(mainDir)) {
-    dirs.push(mainDir);
-  }
-
-  try {
-    const entries = fs.readdirSync(projectsBase, { withFileTypes: true });
-    for (const entry of entries) {
-      if (entry.isDirectory() && entry.name.startsWith(encodedCwd + '--claude-worktrees-agent-')) {
-        dirs.push(path.join(projectsBase, entry.name));
-      }
-    }
-  } catch {
-    // projectsBase unreadable — return what we have
-  }
-
-  return dirs;
-}
 
 /**
  * Resolve ALL Claude Code project transcript directories under ~/.claude/projects.
@@ -284,23 +272,26 @@ function readJsonlDir(dirPath) {
 }
 
 /**
- * Group filtered records by session_id and print them.
+ * Group filtered records by session_id and print them, newest session first.
  */
 function printGrouped(records) {
   const bySession = new Map();
   for (const rec of records) {
-    if (!bySession.has(rec.session_id)) {
-      bySession.set(rec.session_id, []);
-    }
+    if (!bySession.has(rec.session_id)) bySession.set(rec.session_id, []);
     bySession.get(rec.session_id).push(rec);
   }
 
-  for (const [sessionId, sessionRecords] of bySession) {
+  // Newest-first: recent sessions can supersede earlier ones, so resolve current
+  // truth first (matches batch order in the skill).
+  const ordered = [...bySession.entries()].sort((a, b) => {
+    const maxA = Math.max(...a[1].map((r) => Date.parse(r.timestamp)));
+    const maxB = Math.max(...b[1].map((r) => Date.parse(r.timestamp)));
+    return maxB - maxA;
+  });
+
+  for (const [sessionId, sessionRecords] of ordered) {
     console.log(`\n=== Session: ${sessionId} ===`);
     for (const rec of sessionRecords) {
-      // Print the full text. A 200-char truncation could cut off the exact
-      // TODO / blocker / next: / unanswered question the guaranteed-catch
-      // floor must surface when the loop lives past character 200 (WR-05).
       console.log(`[${rec.timestamp}] ${rec.role}: ${rec.text}`);
     }
   }
@@ -308,25 +299,53 @@ function printGrouped(records) {
 
 // Guard: only execute CLI logic when run directly as main
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
+  const arg = process.argv[2];
+
+  if (arg === '--reset') {
+    writeJsonFile(STATE_FILE, { version: 1, sessions: {} });
+    console.log(`Reset watermark state at ${STATE_FILE}`);
+    process.exit(0);
+  }
+
+  if (arg === '--commit') {
+    const ids = (process.argv[3] || '')
+      .split(',')
+      .map((s) => s.trim())
+      .filter(Boolean);
+    if (ids.length === 0) {
+      console.error('--commit requires a comma-separated list of session IDs');
+      process.exit(1);
+    }
+    const state = readJsonFile(STATE_FILE, { version: 1, sessions: {} });
+    const pending = readJsonFile(PENDING_FILE, {});
+    const next = mergeWatermark(state, pending, ids);
+    writeJsonFile(STATE_FILE, next);
+    console.log(`Committed watermark for ${ids.length} session(s).`);
+    process.exit(0);
+  }
+
+  // Default: scan mode (all projects, watermark-filtered, newest-first)
   const nowMs = Date.now();
-  const cwd = process.cwd();
-  const encodedCwd = encodeCwd(cwd);
-
-  const activeDirs = resolveActiveDirs(encodedCwd);
-
-  if (activeDirs.length === 0) {
-    console.error(`No active transcript dirs found for: ${encodedCwd}`);
-    console.error(`Looked in: ${path.join(os.homedir(), '.claude', 'projects')}`);
+  const dirs = resolveAllProjectDirs();
+  if (dirs.length === 0) {
+    console.error(`No project dirs found under ${path.join(os.homedir(), '.claude', 'projects')}`);
     process.exit(1);
   }
 
-  const allLines = [];
-  for (const dir of activeDirs) {
-    allLines.push(...readJsonlDir(dir));
-  }
+  const state = readJsonFile(STATE_FILE, { version: 1, sessions: {} });
+  const watermarkMap = watermarkMapFromState(state);
 
-  const filtered = filterTranscriptLines(allLines, nowMs);
+  const allLines = [];
+  for (const dir of dirs) allLines.push(...readJsonlDir(dir));
+
+  const filtered = filterTranscriptLines(allLines, nowMs, watermarkMap);
+  const pending = maxTsPerSession(filtered);
+  writeJsonFile(PENDING_FILE, pending);
+
   printGrouped(filtered);
 
-  console.log(`\n--- ${filtered.length} records from ${allLines.length} lines across ${activeDirs.length} dir(s) ---`);
+  const sessionCount = Object.keys(pending).length;
+  console.log(
+    `\n--- ${filtered.length} new records across ${sessionCount} session(s) from ${dirs.length} project dir(s) ---`,
+  );
 }
