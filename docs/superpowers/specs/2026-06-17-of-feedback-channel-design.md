@@ -40,7 +40,7 @@ GSD workflow.
 
 ```mermaid
 flowchart TD
-  A[Jess: /of-feedback text] --> W[of-feedback.js writer]
+  A[Jess: /of-feedback text] --> W[command/skill writes<br/>entry from template]
   B[Agent hits tooling bug/gap] --> W
   W --> S[(.feedback/inbox/&lt;id&gt;.md<br/>status: new)]
   S --> N[Repo session start:<br/>report open-new count]
