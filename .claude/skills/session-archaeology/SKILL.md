@@ -6,9 +6,9 @@ description:
   never collides with conversational phrases. Do NOT trigger on generic phrasing like "scan my sessions", "find open
   loops", or "what did I forget" — those collide with other skills (e.g. remember) and must NOT route here unless the
   word "archaeology" is present. Scans the last 7 days of active Claude Code transcripts for unresolved open loops via the
-  pre-filter probe, presents one summarize-then-approve table, and on approval creates archaeology-tagged OmniFocus tasks
-  in the right project (or inbox fallback). Deterministic alias: Jess can also type the slash invocation
-  `/session-archaeology`.
+  pre-filter probe, presents resumable per-batch (5-session) summarize-then-approve gates, and on approval creates
+  archaeology-tagged OmniFocus tasks in the right project (or inbox fallback). Deterministic alias: Jess can also type
+  the slash invocation `/session-archaeology`.
 ---
 
 # Session Archaeology
@@ -45,8 +45,9 @@ Key design decisions embedded:
 - **D-03 rubric** — semantic four-category detection with a guaranteed-catch floor.
 - **D-04/D-04a gate** — plain-text `yes / edit / abort`; NOT `AskUserQuestion`.
 - **D-05 placement** — `archaeology` + `agent-okay` (auto-stamped by funnel) + `of-mcp:lineage` lineage stamp.
-- **D-06 merged gate** — ONE table (session + loops + proposed placement); one `yes / edit / abort`; routing proposal
-  computed inline without chaining `route-inbox-to-projects`.
+- **D-06 per-batch gate** — one merged table (session + loops + proposed placement) per batch of 5 sessions; one
+  `yes / edit / abort` per batch (revises the original single-gate D-06 for the all-projects scope so a large scan stays
+  digestible and resumable); routing proposal computed inline without chaining `route-inbox-to-projects`.
 - **D-07 dedup** — `omnifocus_read` archaeology-tagged tasks (active + completed), parse session IDs via `LINEAGE_RE`,
   skip already-extracted sessions.
 
