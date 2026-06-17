@@ -86,7 +86,7 @@ function extractText(content, role) {
  *                         The 7-day window cutoff is nowMs - SEVEN_DAYS_MS.
  * @returns {Array<{session_id: string, timestamp: string, role: string, text: string}>}
  */
-export function filterTranscriptLines(lines, nowMs) {
+export function filterTranscriptLines(lines, nowMs, watermarkMap = {}) {
   const cutoffMs = nowMs - SEVEN_DAYS_MS;
   const result = [];
 
@@ -123,6 +123,16 @@ export function filterTranscriptLines(lines, nowMs) {
     if (typeof ts !== 'string') continue; // no usable date -> drop (fail closed)
     const tsMs = Date.parse(ts);
     if (isNaN(tsMs) || tsMs < cutoffMs) continue; // unparseable or stale -> drop
+
+    // Per-session watermark (token dedup): drop messages already scanned in a
+    // prior run. Strictly-greater so a message exactly at the watermark is not
+    // re-emitted. Sessions absent from the map have no watermark and emit all
+    // in-window messages.
+    const wmIso = watermarkMap[line.sessionId];
+    if (typeof wmIso === 'string') {
+      const wmMs = Date.parse(wmIso);
+      if (!isNaN(wmMs) && tsMs <= wmMs) continue;
+    }
 
     result.push({
       session_id: line.sessionId || '',

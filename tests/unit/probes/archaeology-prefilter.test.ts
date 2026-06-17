@@ -197,6 +197,40 @@ describe('extractText — leading empty text block does not hide later content (
   });
 });
 
+describe('filterTranscriptLines — watermark', () => {
+  const nowMs = Date.UTC(2026, 5, 16, 12, 0, 0, 0); // 2026-06-16T12:00:00Z
+  const mkUser = (sid: string, iso: string, text: string) => ({
+    type: 'user',
+    sessionId: sid,
+    timestamp: iso,
+    message: { role: 'user', content: text },
+  });
+
+  it('drops messages at or before the session watermark, keeps newer ones', () => {
+    const lines = [mkUser('S1', '2026-06-14T00:00:00Z', 'old'), mkUser('S1', '2026-06-15T00:00:00Z', 'new')];
+    const out = filterTranscriptLines(lines, nowMs, { S1: '2026-06-14T12:00:00Z' });
+    expect(out.map((r) => r.text)).toEqual(['new']);
+  });
+
+  it('keeps all in-window messages for a session absent from the watermark map', () => {
+    const lines = [mkUser('S2', '2026-06-14T00:00:00Z', 'a'), mkUser('S2', '2026-06-15T00:00:00Z', 'b')];
+    const out = filterTranscriptLines(lines, nowMs, { S1: '2026-06-15T00:00:00Z' });
+    expect(out.map((r) => r.text)).toEqual(['a', 'b']);
+  });
+
+  it('boundary: a message exactly at the watermark is dropped (strictly greater)', () => {
+    const lines = [mkUser('S1', '2026-06-15T00:00:00Z', 'exact')];
+    const out = filterTranscriptLines(lines, nowMs, { S1: '2026-06-15T00:00:00Z' });
+    expect(out).toHaveLength(0);
+  });
+
+  it('empty watermark map reproduces current behavior (no extra drops)', () => {
+    const lines = [mkUser('S1', '2026-06-15T00:00:00Z', 'keep')];
+    const out = filterTranscriptLines(lines, nowMs, {});
+    expect(out.map((r) => r.text)).toEqual(['keep']);
+  });
+});
+
 describe('filterTranscriptLines — timestamp window fails closed (WR-02)', () => {
   it('drops a line with no timestamp field', () => {
     const lines = [
