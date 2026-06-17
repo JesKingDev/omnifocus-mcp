@@ -145,6 +145,23 @@ export function filterTranscriptLines(lines, nowMs, watermarkMap = {}) {
   return result;
 }
 
+/**
+ * Given filtered records, return { sessionId: maxIsoTimestamp } — the newest
+ * message timestamp seen per session this run. Used to advance the watermark.
+ */
+export function maxTsPerSession(records) {
+  const out = {};
+  for (const rec of records) {
+    const sid = rec.session_id;
+    if (!sid) continue;
+    const cur = out[sid];
+    if (cur === undefined || Date.parse(rec.timestamp) > Date.parse(cur)) {
+      out[sid] = rec.timestamp;
+    }
+  }
+  return out;
+}
+
 // ---------------------------------------------------------------------------
 // CLI wrapper — only runs when invoked directly (not when imported).
 // Resolves active transcript dirs, streams .jsonl files, prints filtered records
