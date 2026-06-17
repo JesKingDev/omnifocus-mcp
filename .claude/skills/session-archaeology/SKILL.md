@@ -160,8 +160,10 @@ item.
 
 Group the new sessions (probe output is already newest-first) into batches of **5**. For EACH batch, in order:
 
-1. For each session in the batch, run Steps 2–4 (dedup-check candidates against the OF lineage backstop, detect loops,
-   compute placement).
+1. Read the active project list ONCE for the whole run (Step 4) and reuse it for every batch and session — do NOT
+   re-read it per session (OmniFocus queries take 10+ seconds). Then, for each session in the batch, detect loops
+   (Step 3) and compute placement against that already-loaded project list (Step 4 ladder) + the OF lineage dedup
+   backstop.
 2. Show ONE merged table for this batch (session rows + per-loop placement rows, as below). Include a per-placement
    count and a batch task total.
 3. Ask, in plain text (NOT `AskUserQuestion`): `Approve this batch? (yes / edit / abort)`
@@ -173,6 +175,8 @@ Group the new sessions (probe output is already newest-first) into batches of **
      ```
      node "$HOME/projects/omnifocus-mcp/probes/archaeology-prefilter.js" --commit <sid1>,<sid2>,...
      ```
+     Use the FULL session UUIDs from the `=== Session: <uuid> [<project>] ===` probe output headers — never the
+     shortened prefix shown in the table (a prefix is absent from the pending watermark and `--commit` will reject it).
      Pass the session IDs of EVERY session in this batch (including sessions that yielded no loops — "reviewed-empty"
      still advances their watermark so they don't re-surface).
 4. Continue to the next batch until all batches are processed.

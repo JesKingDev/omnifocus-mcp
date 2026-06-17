@@ -224,9 +224,11 @@ function resolveAllProjectDirs() {
   try {
     const entries = fs.readdirSync(projectsBase, { withFileTypes: true });
     for (const entry of entries) {
-      // Follow symlinked project dirs too (withFileTypes reports the link itself).
-      if (entry.isDirectory() || entry.isSymbolicLink()) {
-        dirs.push(path.join(projectsBase, entry.name));
+      const full = path.join(projectsBase, entry.name);
+      try {
+        if (fs.statSync(full).isDirectory()) dirs.push(full);
+      } catch {
+        // unreadable / dangling symlink — skip
       }
     }
   } catch {
@@ -274,7 +276,7 @@ function readJsonlDir(dirPath) {
 /**
  * Group filtered records by session_id and print them, newest session first.
  */
-function printGrouped(records) {
+function printGrouped(records, sessionDirs = {}) {
   const bySession = new Map();
   for (const rec of records) {
     if (!bySession.has(rec.session_id)) bySession.set(rec.session_id, []);
@@ -290,7 +292,8 @@ function printGrouped(records) {
   });
 
   for (const [sessionId, sessionRecords] of ordered) {
-    console.log(`\n=== Session: ${sessionId} ===`);
+    const src = sessionDirs[sessionId] ? ` [${sessionDirs[sessionId]}]` : '';
+    console.log(`\n=== Session: ${sessionId}${src} ===`);
     for (const rec of sessionRecords) {
       console.log(`[${rec.timestamp}] ${rec.role}: ${rec.text}`);
     }
@@ -303,6 +306,11 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
 
   if (arg === '--reset') {
     writeJsonFile(STATE_FILE, { version: 1, sessions: {} });
+    try {
+      fs.unlinkSync(PENDING_FILE);
+    } catch {
+      // pending file may not exist — fine
+    }
     console.log(`Reset watermark state at ${STATE_FILE}`);
     process.exit(0);
   }
@@ -317,7 +325,16 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
       process.exit(1);
     }
     const state = readJsonFile(STATE_FILE, { version: 1, sessions: {} });
-    const pending = readJsonFile(PENDING_FILE, {});
+    const pending = readJsonFile(PENDING_FILE, null);
+    if (!pending || typeof pending !== 'object') {
+      console.error(`No pending watermark at ${PENDING_FILE}. Run a scan before --commit.`);
+      process.exit(1);
+    }
+    const missing = ids.filter((sid) => typeof pending[sid] !== 'string');
+    if (missing.length) {
+      console.error(`Sessions absent from pending (re-run the scan?): ${missing.join(', ')}`);
+      process.exit(1);
+    }
     const next = mergeWatermark(state, pending, ids);
     writeJsonFile(STATE_FILE, next);
     console.log(`Committed watermark for ${ids.length} session(s).`);
@@ -336,13 +353,26 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
   const watermarkMap = watermarkMapFromState(state);
 
   const allLines = [];
-  for (const dir of dirs) allLines.push(...readJsonlDir(dir));
+  const sessionDirs = {};
+  for (const dir of dirs) {
+    const lines = readJsonlDir(dir);
+    const base = path.basename(dir);
+    for (const l of lines) {
+      if (l.sessionId && !sessionDirs[l.sessionId]) sessionDirs[l.sessionId] = base;
+    }
+    allLines.push(...lines);
+  }
 
   const filtered = filterTranscriptLines(allLines, nowMs, watermarkMap);
   const pending = maxTsPerSession(filtered);
-  writeJsonFile(PENDING_FILE, pending);
+  try {
+    writeJsonFile(PENDING_FILE, pending);
+  } catch (err) {
+    console.error(`Failed to write pending watermark at ${PENDING_FILE}: ${err.message}`);
+    process.exit(1);
+  }
 
-  printGrouped(filtered);
+  printGrouped(filtered, sessionDirs);
 
   const sessionCount = Object.keys(pending).length;
   console.log(
