@@ -162,6 +162,22 @@ export function maxTsPerSession(records) {
   return out;
 }
 
+/**
+ * Pure merge: return a new state object with lastScannedTs updated for each
+ * sessionId in `sessionIds` that has an entry in `pending`. Does not mutate
+ * inputs. State shape: { version, sessions: { [sid]: { lastScannedTs } } }.
+ */
+export function mergeWatermark(state, pending, sessionIds) {
+  const sessions = { ...(state && state.sessions ? state.sessions : {}) };
+  for (const sid of sessionIds) {
+    const ts = pending ? pending[sid] : undefined;
+    if (typeof ts === 'string') {
+      sessions[sid] = { ...(sessions[sid] || {}), lastScannedTs: ts };
+    }
+  }
+  return { version: 1, ...(state || {}), sessions };
+}
+
 // ---------------------------------------------------------------------------
 // CLI wrapper — only runs when invoked directly (not when imported).
 // Resolves active transcript dirs, streams .jsonl files, prints filtered records
