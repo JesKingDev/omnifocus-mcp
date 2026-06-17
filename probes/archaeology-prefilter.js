@@ -15,6 +15,8 @@
  *      permission-mode, queue-operation, ai-title, last-prompt, bridge-session.
  *   5. After (1-4), drop any kept line whose per-message ISO timestamp is older
  *      than nowMs − 7*24*60*60*1000 (D-02 content-date window, NOT file mtime).
+ *      Fail closed: a line with a missing, non-string, or unparseable timestamp
+ *      has no usable content-date and is dropped (it cannot be proven in-window).
  *
  * Emit: { session_id, timestamp, role, text } records.
  *
@@ -111,12 +113,16 @@ export function filterTranscriptLines(lines, nowMs) {
 
     if (!extracted) continue;
 
-    // Step 5: content-date window (D-02 — NOT file mtime)
+    // Step 5: content-date window (D-02 — NOT file mtime). Fail closed: a line
+    // with no timestamp, a non-string timestamp, or an unparseable string has
+    // no usable content-date, so it cannot be proven to fall within the 7-day
+    // window — drop it. The previous code kept such lines unconditionally,
+    // letting a malformed-timestamp line from weeks ago re-surface its session
+    // on every scan and defeat the hard window boundary D-02 relies on (WR-02).
     const ts = line.timestamp;
-    if (typeof ts === 'string') {
-      const tsMs = Date.parse(ts);
-      if (!isNaN(tsMs) && tsMs < cutoffMs) continue;
-    }
+    if (typeof ts !== 'string') continue; // no usable date -> drop (fail closed)
+    const tsMs = Date.parse(ts);
+    if (isNaN(tsMs) || tsMs < cutoffMs) continue; // unparseable or stale -> drop
 
     result.push({
       session_id: line.sessionId || '',
@@ -224,7 +230,10 @@ function printGrouped(records) {
   for (const [sessionId, sessionRecords] of bySession) {
     console.log(`\n=== Session: ${sessionId} ===`);
     for (const rec of sessionRecords) {
-      console.log(`[${rec.timestamp}] ${rec.role}: ${rec.text.slice(0, 200)}`);
+      // Print the full text. A 200-char truncation could cut off the exact
+      // TODO / blocker / next: / unanswered question the guaranteed-catch
+      // floor must surface when the loop lives past character 200 (WR-05).
+      console.log(`[${rec.timestamp}] ${rec.role}: ${rec.text}`);
     }
   }
 }

@@ -196,3 +196,58 @@ describe('extractText — leading empty text block does not hide later content (
     expect(result).toHaveLength(0);
   });
 });
+
+describe('filterTranscriptLines — timestamp window fails closed (WR-02)', () => {
+  it('drops a line with no timestamp field', () => {
+    const lines = [
+      {
+        type: 'user',
+        sessionId: 'session-no-timestamp',
+        // no timestamp field
+        message: { role: 'user', content: 'A prose message with no timestamp' },
+      },
+    ];
+    const result = filterTranscriptLines(lines, REFERENCE_NOW_MS);
+    expect(result).toHaveLength(0);
+  });
+
+  it('drops a line whose timestamp is an unparseable string', () => {
+    const lines = [
+      {
+        type: 'user',
+        sessionId: 'session-bad-timestamp',
+        timestamp: 'not-a-date',
+        message: { role: 'user', content: 'A prose message with a garbage timestamp' },
+      },
+    ];
+    const result = filterTranscriptLines(lines, REFERENCE_NOW_MS);
+    expect(result).toHaveLength(0);
+  });
+
+  it('drops a line whose timestamp is a non-string value', () => {
+    const lines = [
+      {
+        type: 'user',
+        sessionId: 'session-numeric-timestamp',
+        timestamp: 1781611200000,
+        message: { role: 'user', content: 'A prose message with a numeric timestamp' },
+      },
+    ];
+    const result = filterTranscriptLines(lines, REFERENCE_NOW_MS);
+    expect(result).toHaveLength(0);
+  });
+
+  it('still keeps a line with a valid in-window timestamp', () => {
+    const lines = [
+      {
+        type: 'user',
+        sessionId: 'session-valid-timestamp',
+        timestamp: IN_WINDOW_TS,
+        message: { role: 'user', content: 'A prose message with a valid timestamp' },
+      },
+    ];
+    const result = filterTranscriptLines(lines, REFERENCE_NOW_MS);
+    expect(result).toHaveLength(1);
+    expect(result[0].session_id).toBe('session-valid-timestamp');
+  });
+});
