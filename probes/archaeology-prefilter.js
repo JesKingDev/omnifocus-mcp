@@ -323,6 +323,37 @@ export function groupSessionsByRepo(records, cwdMap, sessionDirs, nowMs, existsS
   return groups;
 }
 
+/**
+ * Format grouped repo sessions into the human-readable probe output string.
+ *
+ * @param {Array<{label: 'Repo'|'Unattributed', name: string, sessions: object[]}>} repoGroups
+ * @param {number} totalRecords - Total filtered record count this scan.
+ * @param {number} totalSessions - Total session count (sum of sessions across all repos).
+ * @param {number} totalDirs - Number of project dirs scanned.
+ * @returns {string}
+ */
+export function formatProbeOutput(repoGroups, totalRecords, totalSessions, totalDirs) {
+  const parts = [];
+
+  for (const group of repoGroups) {
+    const prefix = group.label === 'Repo' ? 'Repo' : 'Unattributed';
+    parts.push(`\n=== ${prefix}: ${group.name} ===\n`);
+    for (const session of group.sessions) {
+      parts.push(`  --- Session: ${session.sessionId} | ${session.dateStr} (${session.age}) ---`);
+      for (const rec of session.records) {
+        parts.push(`  [${rec.timestamp}] ${rec.role}: ${rec.text}`);
+      }
+      parts.push('');
+    }
+  }
+
+  const repoCount = repoGroups.filter((g) => g.label === 'Repo').length;
+  const summaryLine = `\n--- ${totalRecords} new records across ${totalSessions} session(s) in ${repoCount} repo(s) from ${totalDirs} project dir(s) ---\n`;
+  parts.push(summaryLine);
+
+  return parts.join('\n');
+}
+
 // ---------------------------------------------------------------------------
 // CLI wrapper — only runs when invoked directly (not when imported).
 // Resolves all project transcript dirs, streams .jsonl files, prints filtered

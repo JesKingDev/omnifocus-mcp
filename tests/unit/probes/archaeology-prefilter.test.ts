@@ -35,6 +35,7 @@ import {
   deriveRepoLabel,
   formatAge,
   groupSessionsByRepo,
+  formatProbeOutput,
 } from '../../../probes/archaeology-prefilter.js';
 
 // Fixed reference time: 2026-06-16T12:00:00.000Z
@@ -436,5 +437,74 @@ describe('groupSessionsByRepo', () => {
     expect(result).toHaveLength(1);
     expect(result[0].label).toBe('Unattributed');
     expect(result[0].name).toBe('-Users-j-home');
+  });
+});
+
+// --- formatProbeOutput ---
+describe('formatProbeOutput', () => {
+  const groups = [
+    {
+      label: 'Repo' as const,
+      name: 'omnifocus-mcp',
+      newestTimestampMs: 1750258800000,
+      sessions: [
+        {
+          sessionId: 'abc123def456-full-uuid',
+          newestTimestampMs: 1750258800000,
+          dateStr: '2026-06-18',
+          age: 'today',
+          records: [
+            {
+              session_id: 'abc123def456-full-uuid',
+              timestamp: '2026-06-18T10:00:00.000Z',
+              role: 'user',
+              text: 'hi there',
+            },
+          ],
+        },
+      ],
+    },
+  ];
+
+  it('contains the repo header line', () => {
+    const out = formatProbeOutput(groups, 1, 1, 3);
+    expect(out).toContain('=== Repo: omnifocus-mcp ===');
+  });
+
+  it('contains the session header with uuid, date, and age', () => {
+    const out = formatProbeOutput(groups, 1, 1, 3);
+    expect(out).toContain('--- Session: abc123def456-full-uuid | 2026-06-18 (today) ---');
+  });
+
+  it('contains message lines with timestamp, role, text', () => {
+    const out = formatProbeOutput(groups, 1, 1, 3);
+    expect(out).toContain('[2026-06-18T10:00:00.000Z] user: hi there');
+  });
+
+  it('contains the summary line with correct repo count', () => {
+    const out = formatProbeOutput(groups, 1, 1, 3);
+    expect(out).toContain('--- 1 new records across 1 session(s) in 1 repo(s) from 3 project dir(s) ---');
+  });
+
+  it('uses Unattributed prefix for unattributed groups', () => {
+    const unattributed = [
+      {
+        label: 'Unattributed' as const,
+        name: '-Users-j-home',
+        newestTimestampMs: 1750000000000,
+        sessions: [],
+      },
+    ];
+    const out = formatProbeOutput(unattributed, 0, 0, 1);
+    expect(out).toContain('=== Unattributed: -Users-j-home ===');
+  });
+
+  it('excludes unattributed groups from the Repo count in summary', () => {
+    const mixedGroups = [
+      { label: 'Repo' as const, name: 'myrepo', newestTimestampMs: 0, sessions: [] },
+      { label: 'Unattributed' as const, name: '-Users-j-x', newestTimestampMs: 0, sessions: [] },
+    ];
+    const out = formatProbeOutput(mixedGroups, 0, 0, 2);
+    expect(out).toContain('in 1 repo(s)');
   });
 });
