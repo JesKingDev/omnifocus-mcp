@@ -322,3 +322,7 @@ Notes that matter:
 | Applying a second approval gate                                | There is exactly one gate per batch (Step 5). Do not add a second "Are you sure?" after `yes`.                                                                             |
 | Committing the watermark on abort, or before tasks are created | Only `--commit` a batch AFTER `yes` (tasks created) or reviewed-empty. Never on abort/stop — uncommitted batches must re-surface.                                          |
 | Assigning tags via JXA `task.addTags()`                        | JXA tag assignment silently no-ops. Use `omnifocus_write` with the `tags` field in `data` — the funnel routes through OmniJS `addTag` find-or-create.                      |
+
+## Reporting tooling problems
+
+If you hit a bug or limitation in this tooling, log it with the `omnifocus-feedback` skill (`/of-feedback`).

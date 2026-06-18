@@ -100,3 +100,7 @@ update.
 | Adding `agent-active` or a custom status tag        | Not used. `agent-okay` + lineage already signal agent involvement.                                 |
 | Swapping or removing the tag to mark it reviewed    | Don't. The user completes the task to clear it; the tag stays as a classification record.          |
 | Giving a review task a `dueDate`                    | Use `plannedDate=today` to surface it. Do not invent a deadline.                                   |
+
+## Reporting tooling problems
+
+If you hit a bug or limitation in this tooling, log it with the `omnifocus-feedback` skill (`/of-feedback`).

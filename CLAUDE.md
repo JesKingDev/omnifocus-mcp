@@ -240,6 +240,16 @@ multiple machines or sessions).
 - Merge via `gh pr merge --squash --auto` — never `--admin`.
 - `git pull --rebase` before `git push` (work spans multiple machines/sessions).
 
+## 🐞 Tooling Feedback
+
+Feedback about this tooling (the MCP + the JessOS task skills) lives in `.feedback/` (see `.feedback/README.md`).
+
+- **Log it:** if you hit a bug or limitation in this tooling, capture it with the `omnifocus-feedback` skill
+  (`/of-feedback`). Capture is write-only — don't commit.
+- **Surface it:** at session start, check `.feedback/inbox/` for entries with `status: new`; if any exist, mention the
+  count and suggest `/of-feedback-review`.
+- **Triage it:** `/of-feedback-review` promotes accepted entries into the GSD backlog.
+
 ## Debugging & Investigation
 
 When diagnosing issues, analyze carefully before suggesting a cause. Do not guess (e.g., "cache warming") or suggest

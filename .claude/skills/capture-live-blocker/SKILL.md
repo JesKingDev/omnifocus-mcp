@@ -142,3 +142,7 @@ before reporting success or failure.
 | Adding `review-output` or `review-capture`           | Those tags are for review surfacing (REVIEW-01/02), not live capture. Do not add them.                    |
 | Passing `agent-okay` explicitly                      | The funnel auto-stamps `agent-okay` when `role=agent` and `lineage` is present. Pass only `capture-live`. |
 | Capturing a vague concern or meta-observation        | This skill is for concrete, actionable, single items only. Bias to NOT capture.                           |
+
+## Reporting tooling problems
+
+If you hit a bug or limitation in this tooling, log it with the `omnifocus-feedback` skill (`/of-feedback`).

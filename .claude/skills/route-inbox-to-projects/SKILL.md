@@ -146,3 +146,7 @@ Notes that matter:
 | Running in background mode                           | This skill requires live/interactive mode (D-09). The Pass 1 summarize-then-approve gate is the consent layer — do not skip it.           |
 | Creating a project without checking existence        | The INFER branch must check the Pass 1 active-projects list before calling create, or it will make duplicate projects.                    |
 | Treating `omnifocus-folder` as a full path/URL       | It is a leaf folder name or a colon-separated path (e.g. `Work` or `Work : Projects`), not a task/project URL.                            |
+
+## Reporting tooling problems
+
+If you hit a bug or limitation in this tooling, log it with the `omnifocus-feedback` skill (`/of-feedback`).
