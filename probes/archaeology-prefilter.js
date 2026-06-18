@@ -337,7 +337,7 @@ export function formatProbeOutput(repoGroups, totalRecords, totalSessions, total
 
   for (const group of repoGroups) {
     const prefix = group.label === 'Repo' ? 'Repo' : 'Unattributed';
-    parts.push(`\n=== ${prefix}: ${group.name} ===\n`);
+    parts.push(`=== ${prefix}: ${group.name} ===`);
     for (const session of group.sessions) {
       parts.push(`  --- Session: ${session.sessionId} | ${session.dateStr} (${session.age}) ---`);
       for (const rec of session.records) {
@@ -345,13 +345,14 @@ export function formatProbeOutput(repoGroups, totalRecords, totalSessions, total
       }
       parts.push('');
     }
+    parts.push('');
   }
 
   const repoCount = repoGroups.filter((g) => g.label === 'Repo').length;
-  const summaryLine = `\n--- ${totalRecords} new records across ${totalSessions} session(s) in ${repoCount} repo(s) from ${totalDirs} project dir(s) ---\n`;
+  const summaryLine = `--- ${totalRecords} new records across ${totalSessions} session(s) in ${repoCount} repo(s) from ${totalDirs} project dir(s) ---`;
   parts.push(summaryLine);
 
-  return parts.join('\n');
+  return parts.join('\n') + '\n';
 }
 
 // ---------------------------------------------------------------------------
