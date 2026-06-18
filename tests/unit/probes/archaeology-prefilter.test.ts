@@ -29,7 +29,12 @@ import { describe, it, expect } from 'vitest';
 import * as fs from 'fs';
 import * as path from 'path';
 import { fileURLToPath } from 'url';
-import { filterTranscriptLines } from '../../../probes/archaeology-prefilter.js';
+import {
+  filterTranscriptLines,
+  extractCwdPerSession,
+  deriveRepoLabel,
+  formatAge,
+} from '../../../probes/archaeology-prefilter.js';
 
 // Fixed reference time: 2026-06-16T12:00:00.000Z
 const REFERENCE_NOW_MS = 1781611200000;
@@ -283,5 +288,80 @@ describe('filterTranscriptLines — timestamp window fails closed (WR-02)', () =
     const result = filterTranscriptLines(lines, REFERENCE_NOW_MS);
     expect(result).toHaveLength(1);
     expect(result[0].session_id).toBe('session-valid-timestamp');
+  });
+});
+
+// --- extractCwdPerSession ---
+describe('extractCwdPerSession', () => {
+  it('returns first cwd seen per session, ignores lines without cwd', () => {
+    const lines = [
+      { sessionId: 'aaa', type: 'queue-operation' }, // no cwd
+      { sessionId: 'aaa', type: 'user', cwd: '/Users/j/projects/omnifocus-mcp' },
+      { sessionId: 'aaa', type: 'assistant', cwd: '/Users/j/projects/omnifocus-mcp' },
+      { sessionId: 'bbb', type: 'user', cwd: '/Users/j/projects/k8s-infra' },
+      { sessionId: 'ccc', type: 'queue-operation' }, // ccc never gets cwd
+    ];
+    const result = extractCwdPerSession(lines);
+    expect(result['aaa']).toBe('/Users/j/projects/omnifocus-mcp');
+    expect(result['bbb']).toBe('/Users/j/projects/k8s-infra');
+    expect(result['ccc']).toBeUndefined();
+  });
+
+  it('returns empty object when no lines have cwd', () => {
+    const lines = [{ sessionId: 'x', type: 'queue-operation' }];
+    expect(extractCwdPerSession(lines)).toEqual({});
+  });
+
+  it('ignores lines without sessionId', () => {
+    const lines = [{ type: 'user', cwd: '/some/path' }];
+    const result = extractCwdPerSession(lines);
+    expect(Object.keys(result)).toHaveLength(0);
+  });
+});
+
+// --- deriveRepoLabel ---
+describe('deriveRepoLabel', () => {
+  it('returns Repo label when cwd/.git exists', () => {
+    const existsFn = (p: string) => p.endsWith('.git');
+    const result = deriveRepoLabel('/Users/j/projects/omnifocus-mcp', existsFn);
+    expect(result).toEqual({ name: 'omnifocus-mcp', label: 'Repo' });
+  });
+
+  it('returns Unattributed when cwd/.git does not exist', () => {
+    const existsFn = (_p: string) => false;
+    const result = deriveRepoLabel('/Users/j/projects/my-scratch', existsFn);
+    expect(result).toEqual({ name: 'my-scratch', label: 'Unattributed' });
+  });
+
+  it('handles trailing slashes in cwd', () => {
+    const existsFn = (p: string) => p.endsWith('.git');
+    const result = deriveRepoLabel('/Users/j/projects/omnifocus-mcp/', existsFn);
+    expect(result.name).toBe('omnifocus-mcp');
+  });
+});
+
+// --- formatAge ---
+describe('formatAge', () => {
+  // Reference: 2026-06-18T15:00:00.000Z = 1781794800000
+  const NOW = 1781794800000;
+
+  it('returns "today" for timestamp within same calendar day', () => {
+    const sameDay = new Date('2026-06-18T08:00:00.000Z').getTime();
+    expect(formatAge(sameDay, NOW)).toBe('today');
+  });
+
+  it('returns "yesterday" for timestamp one calendar day ago', () => {
+    const yesterday = new Date('2026-06-17T12:00:00.000Z').getTime();
+    expect(formatAge(yesterday, NOW)).toBe('yesterday');
+  });
+
+  it('returns "2 days ago" for timestamp two days back', () => {
+    const twoDaysAgo = new Date('2026-06-16T09:00:00.000Z').getTime();
+    expect(formatAge(twoDaysAgo, NOW)).toBe('2 days ago');
+  });
+
+  it('returns "7 days ago" for the 7-day boundary', () => {
+    const sevenDaysAgo = new Date('2026-06-11T15:00:00.000Z').getTime();
+    expect(formatAge(sevenDaysAgo, NOW)).toBe('7 days ago');
   });
 });

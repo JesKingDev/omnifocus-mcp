@@ -206,6 +206,62 @@ export function mergeWatermark(state, pending, sessionIds) {
   return { version: 1, ...(state || {}), sessions };
 }
 
+/**
+ * Scan raw JSONL line objects and return { [sessionId]: firstCwdSeen }.
+ * Runs over raw lines (before filtering) because cwd appears on all
+ * message types, including some that filterTranscriptLines drops.
+ *
+ * @param {object[]} lines - Raw parsed JSONL objects.
+ * @returns {Record<string, string>}
+ */
+export function extractCwdPerSession(lines) {
+  const result = {};
+  for (const line of lines) {
+    const sid = line.sessionId;
+    if (!sid) continue;
+    if (result[sid] !== undefined) continue; // first cwd wins
+    const cwd = line.cwd;
+    if (typeof cwd === 'string' && cwd.length > 0) {
+      result[sid] = cwd;
+    }
+  }
+  return result;
+}
+
+/**
+ * Given a cwd path and an existsSync-equivalent function, derive the
+ * human-readable repo name and label.
+ *
+ * @param {string} cwd - Absolute directory path from the JSONL cwd field.
+ * @param {(p: string) => boolean} existsSyncFn - Injectable filesystem check.
+ * @returns {{ name: string, label: 'Repo' | 'Unattributed' }}
+ */
+export function deriveRepoLabel(cwd, existsSyncFn) {
+  const name = path.basename(cwd.replace(/\/$/, ''));
+  const isRepo = existsSyncFn(path.join(cwd.replace(/\/$/, ''), '.git'));
+  return { name, label: isRepo ? 'Repo' : 'Unattributed' };
+}
+
+/**
+ * Return a human-readable age string for a timestamp relative to nowMs.
+ * Uses calendar-day distance (UTC date comparison), not 24-hour windows.
+ *
+ * @param {number} timestampMs - The event time in milliseconds.
+ * @param {number} nowMs - Reference "now" in milliseconds.
+ * @returns {string} "today" | "yesterday" | "N days ago"
+ */
+export function formatAge(timestampMs, nowMs) {
+  // Use UTC dates to avoid local-timezone boundary surprises.
+  const nowDate = new Date(nowMs);
+  const tsDate = new Date(timestampMs);
+  const nowDay = Date.UTC(nowDate.getUTCFullYear(), nowDate.getUTCMonth(), nowDate.getUTCDate());
+  const tsDay = Date.UTC(tsDate.getUTCFullYear(), tsDate.getUTCMonth(), tsDate.getUTCDate());
+  const diffDays = Math.round((nowDay - tsDay) / (24 * 60 * 60 * 1000));
+  if (diffDays === 0) return 'today';
+  if (diffDays === 1) return 'yesterday';
+  return `${diffDays} days ago`;
+}
+
 // ---------------------------------------------------------------------------
 // CLI wrapper — only runs when invoked directly (not when imported).
 // Resolves all project transcript dirs, streams .jsonl files, prints filtered
