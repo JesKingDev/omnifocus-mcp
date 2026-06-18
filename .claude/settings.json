@@ -1,6 +1,11 @@
 {
   "permissions": {
-    "allow": ["Bash(npm:*)", "WebSearch"],
+    "allow": [
+      "Bash(npm:*)",
+      "WebSearch",
+      "Bash(node */probes/archaeology-prefilter.js)",
+      "Bash(node */probes/archaeology-prefilter.js --commit *)"
+    ],
     "deny": []
   }
 }

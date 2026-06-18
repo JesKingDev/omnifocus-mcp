@@ -45,6 +45,7 @@ const SEVEN_DAYS_MS = 7 * 24 * 60 * 60 * 1000;
 const STATE_DIR = path.join(os.homedir(), '.claude', 'session-archaeology');
 const STATE_FILE = path.join(STATE_DIR, 'state.json');
 const PENDING_FILE = path.join(STATE_DIR, 'state.json.pending');
+const SCAN_OUTPUT_FILE = path.join(STATE_DIR, 'scan-output.txt');
 
 function readJsonFile(file, fallback) {
   try {
@@ -274,7 +275,9 @@ function readJsonlDir(dirPath) {
 }
 
 /**
- * Group filtered records by session_id and print them, newest session first.
+ * Group filtered records by session_id and return them as a string, newest session first.
+ * Writes to stdout and to SCAN_OUTPUT_FILE so the skill can Read the file when probe
+ * output is too large to fit in the Bash tool result.
  */
 function printGrouped(records, sessionDirs = {}) {
   const bySession = new Map();
@@ -291,13 +294,15 @@ function printGrouped(records, sessionDirs = {}) {
     return maxB - maxA;
   });
 
+  const parts = [];
   for (const [sessionId, sessionRecords] of ordered) {
     const src = sessionDirs[sessionId] ? ` [${sessionDirs[sessionId]}]` : '';
-    console.log(`\n=== Session: ${sessionId}${src} ===`);
+    parts.push(`\n=== Session: ${sessionId}${src} ===`);
     for (const rec of sessionRecords) {
-      console.log(`[${rec.timestamp}] ${rec.role}: ${rec.text}`);
+      parts.push(`[${rec.timestamp}] ${rec.role}: ${rec.text}`);
     }
   }
+  return parts.join('\n');
 }
 
 // Guard: only execute CLI logic when run directly as main
@@ -372,10 +377,16 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
     process.exit(1);
   }
 
-  printGrouped(filtered, sessionDirs);
-
   const sessionCount = Object.keys(pending).length;
-  console.log(
-    `\n--- ${filtered.length} new records across ${sessionCount} session(s) from ${dirs.length} project dir(s) ---`,
-  );
+  const groupedOutput = printGrouped(filtered, sessionDirs);
+  const summaryLine = `\n--- ${filtered.length} new records across ${sessionCount} session(s) from ${dirs.length} project dir(s) ---`;
+  const fullOutput = groupedOutput + '\n' + summaryLine + '\n';
+
+  process.stdout.write(fullOutput);
+
+  try {
+    fs.writeFileSync(SCAN_OUTPUT_FILE, fullOutput);
+  } catch (err) {
+    process.stderr.write(`Warning: could not write scan output to ${SCAN_OUTPUT_FILE}: ${err.message}\n`);
+  }
 }
