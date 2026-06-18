@@ -1,7 +1,7 @@
 ---
 title: OmniFocus-Integration Feedback Channel (/of-feedback)
 date: 2026-06-17
-status: approved-pending-review
+status: approved
 related: docs/superpowers/specs/2026-06-16-session-archaeology-token-efficiency-design.md
 ---
 
@@ -161,6 +161,20 @@ unit tests:
 - Skill (`omnifocus-feedback`) + the `/of-feedback` command symlinked into `~/.claude/` (single source of truth = repo),
   like `/archaeology`. `/of-feedback-review` is in-repo only (triage runs where the store is).
 - `.feedback/README.md` documents the schema and flow.
+
+## Bundled scope: Piece A — globalize the remaining task skills
+
+The same implementation pass also globalizes the remaining JessOS task skills (the cheap "Capability" foundation of the
+adoption initiative), since it's the identical symlink + absolute-path move:
+
+- For each of `capture-live-blocker`, `route-inbox-to-projects`, `surface-work-for-review`: audit the skill for
+  cwd-relative assumptions (helper scripts/probes, relative paths), convert those to absolute paths so it runs from any
+  session, then symlink it into `~/.claude/skills/`.
+- `sync-work-tasks-to-omnifocus` and `session-archaeology` are already global — confirm only.
+- Verify each globalized skill is discoverable and runs read-only from a non-repo cwd.
+
+This is Capability only (Piece A). Discovery/operating-contract (B), vault integration (C), and triggering hooks (D)
+remain separate, later initiatives.
 
 ## GSD alignment
 
