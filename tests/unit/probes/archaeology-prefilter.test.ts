@@ -25,7 +25,7 @@
  * The out-of-window line has timestamp 2026-06-01T08:00:00.000Z = 1748764800000 (outside window).
  */
 
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, beforeEach } from 'vitest';
 import * as fs from 'fs';
 import * as path from 'path';
 import { fileURLToPath } from 'url';
@@ -34,6 +34,7 @@ import {
   extractCwdPerSession,
   deriveRepoLabel,
   formatAge,
+  groupSessionsByRepo,
 } from '../../../probes/archaeology-prefilter.js';
 
 // Fixed reference time: 2026-06-16T12:00:00.000Z
@@ -363,5 +364,77 @@ describe('formatAge', () => {
   it('returns "7 days ago" for the 7-day boundary', () => {
     const sevenDaysAgo = new Date('2026-06-11T15:00:00.000Z').getTime();
     expect(formatAge(sevenDaysAgo, NOW)).toBe('7 days ago');
+  });
+});
+
+// --- groupSessionsByRepo ---
+describe('groupSessionsByRepo', () => {
+  // Two sessions from omnifocus-mcp (different ages), one from k8s-infra
+  const records = [
+    { session_id: 'sid-a', timestamp: '2026-06-18T10:00:00.000Z', role: 'user', text: 'hello' },
+    { session_id: 'sid-a', timestamp: '2026-06-18T10:05:00.000Z', role: 'assistant', text: 'world' },
+    { session_id: 'sid-b', timestamp: '2026-06-16T09:00:00.000Z', role: 'user', text: 'foo' },
+    { session_id: 'sid-c', timestamp: '2026-06-17T14:00:00.000Z', role: 'user', text: 'bar' },
+  ];
+  const cwdMap = {
+    'sid-a': '/Users/j/projects/omnifocus-mcp',
+    'sid-b': '/Users/j/projects/omnifocus-mcp',
+    'sid-c': '/Users/j/projects/k8s-infra',
+  };
+  const sessionDirs = {
+    'sid-a': '-Users-j-projects-omnifocus-mcp',
+    'sid-b': '-Users-j-projects-omnifocus-mcp',
+    'sid-c': '-Users-j-projects-k8s-infra',
+  };
+  // NOW: 2026-06-18T15:00:00.000Z = 1781794800000
+  const NOW = 1781794800000;
+  // existsFn: treat /Users/j/projects/... as repos (has .git)
+  const existsFn = (p: string) => p.includes('/projects/') && p.endsWith('.git');
+
+  let groups: ReturnType<typeof groupSessionsByRepo>;
+  beforeEach(() => {
+    groups = groupSessionsByRepo(records, cwdMap, sessionDirs, NOW, existsFn);
+  });
+
+  it('returns two repo groups', () => {
+    expect(groups).toHaveLength(2);
+  });
+
+  it('orders repos newest-first (omnifocus-mcp has sid-a from today, k8s-infra from yesterday)', () => {
+    expect(groups[0].name).toBe('omnifocus-mcp');
+    expect(groups[1].name).toBe('k8s-infra');
+  });
+
+  it('labels both groups as Repo (have .git)', () => {
+    expect(groups[0].label).toBe('Repo');
+    expect(groups[1].label).toBe('Repo');
+  });
+
+  it('omnifocus-mcp group has two sessions, newest first', () => {
+    const g = groups[0];
+    expect(g.sessions).toHaveLength(2);
+    expect(g.sessions[0].sessionId).toBe('sid-a'); // newest
+    expect(g.sessions[1].sessionId).toBe('sid-b'); // older
+  });
+
+  it('session age values are correct', () => {
+    expect(groups[0].sessions[0].age).toBe('today'); // sid-a
+    expect(groups[0].sessions[1].age).toBe('2 days ago'); // sid-b (2026-06-16)
+    expect(groups[1].sessions[0].age).toBe('yesterday'); // sid-c (2026-06-17)
+  });
+
+  it('session dateStr is YYYY-MM-DD format', () => {
+    expect(groups[0].sessions[0].dateStr).toBe('2026-06-18');
+    expect(groups[0].sessions[1].dateStr).toBe('2026-06-16');
+  });
+
+  it('sessions without cwd fall under Unattributed with encoded dirname', () => {
+    const noCwdRecords = [
+      { session_id: 'sid-orphan', timestamp: '2026-06-17T08:00:00.000Z', role: 'user', text: 'orphan' },
+    ];
+    const result = groupSessionsByRepo(noCwdRecords, {}, { 'sid-orphan': '-Users-j-home' }, NOW, existsFn);
+    expect(result).toHaveLength(1);
+    expect(result[0].label).toBe('Unattributed');
+    expect(result[0].name).toBe('-Users-j-home');
   });
 });

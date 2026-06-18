@@ -262,6 +262,67 @@ export function formatAge(timestampMs, nowMs) {
   return `${diffDays} days ago`;
 }
 
+/**
+ * Group filtered records by repo, ordered newest-repo-first,
+ * sessions newest-first within each repo.
+ *
+ * @param {Array<{session_id: string, timestamp: string, role: string, text: string}>} records
+ * @param {Record<string, string>} cwdMap - { sessionId: cwdPath } from extractCwdPerSession
+ * @param {Record<string, string>} sessionDirs - { sessionId: encodedDirname } fallback
+ * @param {number} nowMs
+ * @param {(p: string) => boolean} existsSyncFn
+ * @returns {Array<{label: 'Repo'|'Unattributed', name: string, sessions: object[], newestTimestampMs: number}>}
+ */
+export function groupSessionsByRepo(records, cwdMap, sessionDirs, nowMs, existsSyncFn) {
+  // Build per-session record groups and determine newest timestamp per session.
+  const bySession = new Map();
+  for (const rec of records) {
+    const sid = rec.session_id;
+    if (!sid) continue;
+    if (!bySession.has(sid)) bySession.set(sid, { records: [], newestTimestampMs: 0 });
+    const entry = bySession.get(sid);
+    entry.records.push(rec);
+    const tsMs = Date.parse(rec.timestamp);
+    if (!isNaN(tsMs) && tsMs > entry.newestTimestampMs) entry.newestTimestampMs = tsMs;
+  }
+
+  // Map each session to a repo key (prefer cwd, fall back to encoded dirname).
+  const repoMap = new Map(); // repoKey → { label, name, sessions[], newestTimestampMs }
+  for (const [sid, session] of bySession.entries()) {
+    const cwd = cwdMap[sid];
+    let label, name;
+    if (cwd) {
+      const derived = deriveRepoLabel(cwd, existsSyncFn);
+      label = derived.label;
+      name = derived.name;
+    } else {
+      label = 'Unattributed';
+      name = sessionDirs[sid] || sid;
+    }
+    const repoKey = `${label}:${name}`;
+
+    if (!repoMap.has(repoKey)) {
+      repoMap.set(repoKey, { label, name, sessions: [], newestTimestampMs: 0 });
+    }
+    const repo = repoMap.get(repoKey);
+
+    // Compute date string and age for this session.
+    const tsMs = session.newestTimestampMs;
+    const dateStr = new Date(tsMs).toISOString().slice(0, 10);
+    const age = formatAge(tsMs, nowMs);
+
+    repo.sessions.push({ sessionId: sid, records: session.records, newestTimestampMs: tsMs, dateStr, age });
+    if (tsMs > repo.newestTimestampMs) repo.newestTimestampMs = tsMs;
+  }
+
+  // Sort repos newest-first; sessions within each repo newest-first.
+  const groups = [...repoMap.values()].sort((a, b) => b.newestTimestampMs - a.newestTimestampMs);
+  for (const group of groups) {
+    group.sessions.sort((a, b) => b.newestTimestampMs - a.newestTimestampMs);
+  }
+  return groups;
+}
+
 // ---------------------------------------------------------------------------
 // CLI wrapper — only runs when invoked directly (not when imported).
 // Resolves all project transcript dirs, streams .jsonl files, prints filtered
