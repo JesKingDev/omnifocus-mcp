@@ -423,37 +423,6 @@ function readJsonlDir(dirPath) {
   return lines;
 }
 
-/**
- * Group filtered records by session_id and return them as a string, newest session first.
- * Writes to stdout and to SCAN_OUTPUT_FILE so the skill can Read the file when probe
- * output is too large to fit in the Bash tool result.
- */
-function printGrouped(records, sessionDirs = {}) {
-  const bySession = new Map();
-  for (const rec of records) {
-    if (!bySession.has(rec.session_id)) bySession.set(rec.session_id, []);
-    bySession.get(rec.session_id).push(rec);
-  }
-
-  // Newest-first: recent sessions can supersede earlier ones, so resolve current
-  // truth first (matches batch order in the skill).
-  const ordered = [...bySession.entries()].sort((a, b) => {
-    const maxA = Math.max(...a[1].map((r) => Date.parse(r.timestamp)));
-    const maxB = Math.max(...b[1].map((r) => Date.parse(r.timestamp)));
-    return maxB - maxA;
-  });
-
-  const parts = [];
-  for (const [sessionId, sessionRecords] of ordered) {
-    const src = sessionDirs[sessionId] ? ` [${sessionDirs[sessionId]}]` : '';
-    parts.push(`\n=== Session: ${sessionId}${src} ===`);
-    for (const rec of sessionRecords) {
-      parts.push(`[${rec.timestamp}] ${rec.role}: ${rec.text}`);
-    }
-  }
-  return parts.join('\n');
-}
-
 // Guard: only execute CLI logic when run directly as main
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
   const arg = process.argv[2];
@@ -495,7 +464,7 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
     process.exit(0);
   }
 
-  // Default: scan mode (all projects, watermark-filtered, newest-first)
+  // Default: scan mode (all projects, watermark-filtered, repo-grouped, newest-first)
   const nowMs = Date.now();
   const dirs = resolveAllProjectDirs();
   if (dirs.length === 0) {
@@ -517,6 +486,10 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
     allLines.push(...lines);
   }
 
+  // Extract cwd mapping from raw lines BEFORE filtering (cwd appears on all
+  // message types, including types that filterTranscriptLines drops).
+  const cwdMap = extractCwdPerSession(allLines);
+
   const filtered = filterTranscriptLines(allLines, nowMs, watermarkMap);
   const pending = maxTsPerSession(filtered);
   try {
@@ -526,10 +499,9 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
     process.exit(1);
   }
 
-  const sessionCount = Object.keys(pending).length;
-  const groupedOutput = printGrouped(filtered, sessionDirs);
-  const summaryLine = `\n--- ${filtered.length} new records across ${sessionCount} session(s) from ${dirs.length} project dir(s) ---`;
-  const fullOutput = groupedOutput + '\n' + summaryLine + '\n';
+  const repoGroups = groupSessionsByRepo(filtered, cwdMap, sessionDirs, nowMs, fs.existsSync);
+  const totalSessions = repoGroups.reduce((n, g) => n + g.sessions.length, 0);
+  const fullOutput = formatProbeOutput(repoGroups, filtered.length, totalSessions, dirs.length);
 
   process.stdout.write(fullOutput);
 
