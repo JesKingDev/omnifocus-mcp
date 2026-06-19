@@ -39,6 +39,7 @@ import {
   hasOpenLoopSignal,
   filterToOpenLoopRecords,
   truncateMessageText,
+  extractKeywordContext,
 } from '../../../probes/archaeology-prefilter.js';
 
 // Fixed reference time: 2026-06-16T12:00:00.000Z
@@ -474,19 +475,19 @@ describe('formatProbeOutput', () => {
     expect(out).toContain('=== Repo: omnifocus-mcp ===');
   });
 
-  it('contains the session header with uuid, date, and age', () => {
+  it('contains the signal line with uuid, date, age, and snippet', () => {
     const out = formatProbeOutput(groups, 1, 1, 3);
-    expect(out).toContain('--- Session: abc123def456-full-uuid | 2026-06-18 (today) ---');
+    expect(out).toContain('abc123def456-full-uuid | 2026-06-18 (today) | hi there');
   });
 
-  it('contains message lines with timestamp, role, text', () => {
+  it('does not contain the old transcript-style session header', () => {
     const out = formatProbeOutput(groups, 1, 1, 3);
-    expect(out).toContain('[2026-06-18T10:00:00.000Z] user: hi there');
+    expect(out).not.toContain('--- Session:');
   });
 
-  it('contains the summary line with correct repo count', () => {
+  it('contains the summary line with signal(s) wording and correct repo count', () => {
     const out = formatProbeOutput(groups, 1, 1, 3);
-    expect(out).toContain('--- 1 new records across 1 session(s) in 1 repo(s) from 3 project dir(s) ---');
+    expect(out).toContain('--- 1 signal(s) across 1 session(s) in 1 repo(s) from 3 project dir(s) ---');
   });
 
   it('uses Unattributed prefix for unattributed groups', () => {
@@ -647,15 +648,62 @@ describe('filterToOpenLoopRecords', () => {
     expect(result.every((r) => r.session_id === 's2')).toBe(true);
   });
 
-  it('tail-truncates long signal messages to MAX_MSG_CHARS (200)', () => {
-    const longPrefix = 'x'.repeat(1000);
-    const tail = ' TODO: fix this before merging';
-    const records = [mkRec('s1', longPrefix + tail)];
+  it('extracts keyword context (50 before + 100 after) instead of tail-truncating', () => {
+    const longPrefix = 'x'.repeat(1000) + ' ';
+    const keyword = 'TODO: fix this before merging';
+    const longSuffix = ' ' + 'y'.repeat(500);
+    const records = [mkRec('s1', longPrefix + keyword + longSuffix)];
     const result = filterToOpenLoopRecords(records);
     expect(result).toHaveLength(1);
     expect(result[0].text).toContain('TODO: fix this before merging');
-    expect(result[0].text.length).toBeLessThanOrEqual(220); // 200 chars + prefix label
-    expect(result[0].text).toMatch(/^\[… \+\d+ chars\]/);
+    // Context window: 50 before + keyword + 100 after = ~179 chars + ellipses
+    expect(result[0].text.length).toBeLessThanOrEqual(185);
+    expect(result[0].text).toMatch(/^…/); // leading ellipsis (clipped prefix)
+  });
+
+  it('returns one record per qualifying session (best-signal selection)', () => {
+    const records = [
+      mkRec('sA', 'need to finish the migration'), // Tier-2 signal 1
+      mkRec('sA', 'Parked. Next session picks up'), // Tier-1 signal — should win
+      mkRec('sA', 'TODO: add tests'), // Tier-2 signal 2
+      mkRec('sB', 'need to review the PR'), // sB has only Tier-2
+    ];
+    const result = filterToOpenLoopRecords(records);
+    expect(result).toHaveLength(2); // one per session
+    const sAResult = result.find((r) => r.session_id === 'sA');
+    expect(sAResult?.text).toMatch(/Parked\./i); // Tier-1 wins
+  });
+});
+
+// --- extractKeywordContext ---
+describe('extractKeywordContext', () => {
+  const re = /TODO/i;
+
+  it('returns full text when under 150 chars and match is within window', () => {
+    const text = 'prefix TODO suffix';
+    const result = extractKeywordContext(text, re);
+    expect(result).toContain('TODO');
+    expect(result.length).toBeLessThanOrEqual(155);
+  });
+
+  it('clips prefix and adds leading ellipsis when match is deep in text', () => {
+    const text = 'x'.repeat(200) + ' TODO: fix it';
+    const result = extractKeywordContext(text, re);
+    expect(result).toMatch(/^…/);
+    expect(result).toContain('TODO');
+  });
+
+  it('clips suffix and adds trailing ellipsis when match is early in long text', () => {
+    const text = 'TODO: do it ' + 'y'.repeat(500);
+    const result = extractKeywordContext(text, re);
+    expect(result).toMatch(/…$/);
+    expect(result).toContain('TODO');
+  });
+
+  it('falls back to first 150 chars when no match', () => {
+    const text = 'a'.repeat(300);
+    const result = extractKeywordContext(text, /NOMATCH/);
+    expect(result).toBe(text.slice(0, 150));
   });
 });
 

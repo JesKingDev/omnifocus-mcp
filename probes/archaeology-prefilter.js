@@ -174,30 +174,6 @@ export function filterTranscriptLines(lines, nowMs, watermarkMap = {}) {
 }
 
 /**
- * Maximum characters to emit per message text. Messages longer than this are
- * tail-truncated — the END of a message is kept because open-loop markers
- * ("TODO:", "Parked.", "next:") almost always appear at the tail. A prefix of
- * `[… +N chars] ` is prepended so the model knows content was removed.
- *
- * At 600 chars, 599 signal records ≈ 360KB max (vs 4.4MB untruncated), a ~92%
- * reduction while preserving all park-skill and GTD markers.
- */
-const MAX_MSG_CHARS = 200;
-
-/**
- * Tail-truncate a message text to MAX_MSG_CHARS. Keeps the END so open-loop
- * markers at the close of an assistant turn are never dropped.
- *
- * @param {string} text
- * @returns {string}
- */
-export function truncateMessageText(text) {
-  if (text.length <= MAX_MSG_CHARS) return text;
-  const dropped = text.length - MAX_MSG_CHARS;
-  return `[… +${dropped} chars] ` + text.slice(-MAX_MSG_CHARS);
-}
-
-/**
  * Open-loop signal patterns — two tiers:
  *
  * Tier 1 — park-skill markers: exact phrases emitted by the branch-memory "park"
@@ -215,6 +191,50 @@ export function truncateMessageText(text) {
  */
 const OPEN_LOOP_RE =
   /Parked\.|picks up at|Next session picks up|queued below|what's-next list|\bTODO\b|\bFIXME\b|next:\s|\bnext up\b|need to|needs to|will need|still need|open question|open loop|follow.?up|come back to|\brevisit\b|don't forget|remember to|\bnot yet\b|\bpending\b|blocked on|in progress|haven't yet/i;
+
+/**
+ * Tier-1 subset of OPEN_LOOP_RE — high-precision park-skill markers with no
+ * false positives in normal prose. Used to prefer park output over generic GTD
+ * phrases when picking the best signal per session.
+ */
+const TIER1_RE = /Parked\.|picks up at|Next session picks up|queued below|what's-next list/i;
+
+/**
+ * Extract a context window around the first keyword match in `text`.
+ * Returns 50 chars before the match start + the match + 100 chars after,
+ * with leading/trailing ellipsis when the window is clipped. Falls back to
+ * the first 150 chars if no match is found.
+ *
+ * @param {string} text
+ * @param {RegExp} re - The keyword regex (no `g` flag needed).
+ * @returns {string}
+ */
+export function extractKeywordContext(text, re) {
+  const match = re.exec(text);
+  if (!match) return text.slice(0, 150);
+  const mStart = match.index;
+  const mEnd = match.index + match[0].length;
+  const start = Math.max(0, mStart - 50);
+  const end = Math.min(text.length, mEnd + 100);
+  const prefix = start > 0 ? '…' : '';
+  const suffix = end < text.length ? '…' : '';
+  return prefix + text.slice(start, end) + suffix;
+}
+
+/**
+ * Tail-truncate a message text to MAX_MSG_CHARS. Kept as a utility export for
+ * callers that need the old tail-preserving behaviour (e.g. --no-keyword-filter
+ * debug mode in future). The main scan path now uses extractKeywordContext.
+ *
+ * @param {string} text
+ * @returns {string}
+ */
+const MAX_MSG_CHARS = 200;
+export function truncateMessageText(text) {
+  if (text.length <= MAX_MSG_CHARS) return text;
+  const dropped = text.length - MAX_MSG_CHARS;
+  return `[… +${dropped} chars] ` + text.slice(-MAX_MSG_CHARS);
+}
 
 /**
  * Structural artifact patterns — records whose text matches these are noise,
@@ -241,19 +261,23 @@ export function hasOpenLoopSignal(text) {
 }
 
 /**
- * Two-level open-loop filter over a flat record array:
+ * Two-level open-loop filter — returns ONE representative signal record per
+ * qualifying session (signal manifest mode):
  *
  * Level 1 (session gate) — discard every session where NO message matches
  *   OPEN_LOOP_RE. Typical scans have >80% sessions with no open-loop content;
  *   this eliminates them entirely, preserving repo-grouped structure.
  *
- * Level 2 (message filter) — within qualifying sessions, keep only messages
- *   that themselves match OPEN_LOOP_RE. Long sessions may have a single
- *   signal-bearing line; this discards the surrounding prose.
+ * Level 2 (best-signal selection) — within qualifying sessions, pick the single
+ *   best signal record: Tier-1 park markers win over generic GTD phrases. Within
+ *   the same tier, the first encountered record wins. The selected record's text
+ *   is replaced with a keyword context snippet (50 chars before + 100 after the
+ *   first match) rather than a tail-truncated full message, so the output stays
+ *   compact: ~150 chars per session vs 200+ chars per record under the old format.
  *
- * The result feeds groupSessionsByRepo unchanged — session headers still show
- * repo, date, and session ID, giving enough context for the model to route
- * each open loop. Pass --no-keyword-filter to skip this step for debugging.
+ * Net effect: ~N sessions (not ~N×k records) feed into groupSessionsByRepo, making
+ * probe output fit inline in a single Bash response (~6KB for 40 sessions).
+ * Pass --no-keyword-filter to skip this step for debugging.
  *
  * @param {Array<{session_id: string, timestamp: string, role: string, text: string}>} records
  * @returns {Array<{session_id: string, timestamp: string, role: string, text: string}>}
@@ -263,15 +287,29 @@ export function filterToOpenLoopRecords(records) {
   // and command invocations don't pollute the signal set.
   const meaningful = records.filter((rec) => !STRUCTURAL_NOISE_RE.test(rec.text));
 
+  // Level 1: find qualifying sessions.
   const qualifyingSessions = new Set();
   for (const rec of meaningful) {
     if (hasOpenLoopSignal(rec.text)) qualifyingSessions.add(rec.session_id);
   }
-  // Tail-truncate so long messages don't blow out context — open-loop markers
-  // (park output, TODO, next:) almost always appear at the end of a message.
-  return meaningful
-    .filter((rec) => qualifyingSessions.has(rec.session_id) && hasOpenLoopSignal(rec.text))
-    .map((rec) => ({ ...rec, text: truncateMessageText(rec.text) }));
+
+  // Level 2: pick best signal per qualifying session (Tier-1 > Tier-2 > first).
+  // sessionBest maps session_id → { rec, isTier1 }.
+  const sessionBest = new Map();
+  for (const rec of meaningful) {
+    if (!qualifyingSessions.has(rec.session_id) || !hasOpenLoopSignal(rec.text)) continue;
+    const isTier1 = TIER1_RE.test(rec.text);
+    const existing = sessionBest.get(rec.session_id);
+    if (!existing || (isTier1 && !existing.isTier1)) {
+      sessionBest.set(rec.session_id, { rec, isTier1 });
+    }
+  }
+
+  // Emit one record per session with context-extracted text.
+  return [...sessionBest.values()].map(({ rec }) => ({
+    ...rec,
+    text: extractKeywordContext(rec.text, OPEN_LOOP_RE),
+  }));
 }
 
 /**
@@ -440,17 +478,14 @@ export function formatProbeOutput(repoGroups, totalRecords, totalSessions, total
     const prefix = group.label === 'Repo' ? 'Repo' : 'Unattributed';
     parts.push(`=== ${prefix}: ${group.name} ===`);
     for (const session of group.sessions) {
-      parts.push(`  --- Session: ${session.sessionId} | ${session.dateStr} (${session.age}) ---`);
-      for (const rec of session.records) {
-        parts.push(`  [${rec.timestamp}] ${rec.role}: ${rec.text}`);
-      }
-      parts.push('');
+      const snippet = session.records[0]?.text ?? '';
+      parts.push(`  ${session.sessionId} | ${session.dateStr} (${session.age}) | ${snippet}`);
     }
     parts.push('');
   }
 
   const repoCount = repoGroups.filter((g) => g.label === 'Repo').length;
-  const summaryLine = `--- ${totalRecords} new records across ${totalSessions} session(s) in ${repoCount} repo(s) from ${totalDirs} project dir(s) ---`;
+  const summaryLine = `--- ${totalRecords} signal(s) across ${totalSessions} session(s) in ${repoCount} repo(s) from ${totalDirs} project dir(s) ---`;
   parts.push(summaryLine);
 
   return parts.join('\n') + '\n';
