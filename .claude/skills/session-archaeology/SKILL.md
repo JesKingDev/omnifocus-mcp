@@ -6,9 +6,9 @@ description:
   never collides with conversational phrases. Do NOT trigger on generic phrasing like "scan my sessions", "find open
   loops", or "what did I forget" — those collide with other skills (e.g. remember) and must NOT route here unless the
   word "archaeology" is present. Scans the last 7 days of active Claude Code transcripts for unresolved open loops via the
-  pre-filter probe, presents resumable per-batch (5-session) summarize-then-approve gates, and on approval creates
-  archaeology-tagged OmniFocus tasks in the right project (or inbox fallback). Deterministic alias: Jess can also type
-  the slash invocation `/session-archaeology`.
+  pre-filter probe, presents resumable repo-grouped summarize-then-approve gates (one per repo, newest-repo-first), and
+  on approval creates archaeology-tagged OmniFocus tasks in the right project (or inbox fallback). Deterministic alias:
+  Jess can also type the slash invocation `/session-archaeology`.
 ---
 
 # Session Archaeology
@@ -46,9 +46,9 @@ Key design decisions embedded:
 - **D-04/D-04a gate** — `AskUserQuestion` with Approve as the first (default) option; user presses Enter to approve.
   "Other" covers row-level edits.
 - **D-05 placement** — `archaeology` + `agent-okay` (auto-stamped by funnel) + `of-mcp:lineage` lineage stamp.
-- **D-06 per-batch gate** — one merged table (session + loops + proposed placement) per batch of 5 sessions; one
-  `yes / edit / abort` per batch (revises the original single-gate D-06 for the all-projects scope so a large scan stays
-  digestible and resumable); routing proposal computed inline without chaining `route-inbox-to-projects`.
+- **D-06 per-repo gate** — one merged table (session + loops + proposed placement) per repo, newest-repo-first; one
+  `AskUserQuestion` per repo so a large scan stays digestible and resumable by natural project context; routing proposal
+  computed inline without chaining `route-inbox-to-projects`.
 - **D-07 dedup** — `omnifocus_read` archaeology-tagged tasks (active + completed), parse session IDs via `LINEAGE_RE`,
   skip already-extracted sessions.
 
@@ -81,9 +81,27 @@ only after you approve. Pass 3 reports results.
 
 Run the pre-filter probe (scan mode) by absolute path. It enumerates ALL `~/.claude/projects/*` transcript dirs, reads
 each session's `.jsonl`, applies the D-03 strip rule and the D-02 7-day content-date window, AND drops any message at or
-before that session's stored watermark (`~/.claude/session-archaeology/state.json`). It emits only NEW records, grouped
-by session, newest-first, and writes a `pending` watermark for this run. The trailing summary line reports how many new
-records and sessions were found. If it reports zero sessions, there is nothing new since the last run — say so and stop.
+before that session's stored watermark (`~/.claude/session-archaeology/state.json`). It emits only NEW records,
+**grouped by repo** (newest-repo-first, sessions newest-first within each repo), and writes a `pending` watermark for
+this run.
+
+Output format:
+
+```
+=== Repo: <repo-name> ===
+
+  --- Session: <uuid> | YYYY-MM-DD (age) ---
+  [timestamp] role: text
+  ...
+
+=== Unattributed: <encoded-dirname> ===
+  ...
+
+--- N new records across S session(s) in R repo(s) from D project dir(s) ---
+```
+
+The trailing summary line reports total records, sessions, repos, and project dirs. If it reports zero sessions, there
+is nothing new since the last run — say so and stop.
 
 ```
 node "$HOME/projects/omnifocus-mcp/probes/archaeology-prefilter.js"
@@ -163,40 +181,40 @@ Apply the ladder in order for each loop:
 **Bias to leave.** When in doubt between MATCH and LEAVE, choose LEAVE. A misplaced task is harder to find than an inbox
 item.
 
-**Step 5: Process in batches of 5 sessions, newest-first (resumable gate)**
+**Step 5: Process one repo at a time, newest-repo-first (resumable gate)**
 
-Group the new sessions (probe output is already newest-first) into batches of **5**. For EACH batch, in order:
+The probe output is already grouped by repo. Process each repo section in order (newest repo first). For EACH repo:
 
-1. Read the active project list ONCE for the whole run (Step 4) and reuse it for every batch and session — do NOT
-   re-read it per session (OmniFocus queries take 10+ seconds). Then, for each session in the batch, detect loops
-   (Step 3) and compute placement against that already-loaded project list (Step 4 ladder) + the OF lineage dedup
+1. Read the active project list ONCE for the whole run (Step 4) and reuse it for all repos and sessions — do NOT re-read
+   it per repo or per session (OmniFocus queries take 10+ seconds). Then, for each session in this repo's section,
+   detect loops (Step 3) and compute placement against that project list (Step 4 ladder) + the OF lineage dedup
    backstop.
-2. Show ONE merged table for this batch (session rows + per-loop placement rows, as below). Include a per-placement
-   count and a batch task total.
-3. Present an `AskUserQuestion` approval gate with the question "Approve this batch?" and two options:
-   - **Approve** (first/default — recommended): create the approved loops (Pass 2), THEN commit this batch's watermark:
+2. Show ONE merged table for this repo (session rows + per-loop placement rows, as below). Include the repo name,
+   session ages, a per-placement count, and the total task count for this repo.
+3. Present an `AskUserQuestion` approval gate with the question `"Approve all loops from **<repo>**?"` and two options:
+   - **Approve** (first/default — recommended): create the approved loops (Pass 2), THEN commit this repo's sessions'
+     watermarks:
      ```
      node "$HOME/projects/omnifocus-mcp/probes/archaeology-prefilter.js" --commit <sid1>,<sid2>,...
      ```
-     Use the FULL session UUIDs from the `=== Session: <uuid> [<project>] ===` probe output headers — never the
-     shortened prefix shown in the table (a prefix is absent from the pending watermark and `--commit` will reject it).
-     Pass the session IDs of EVERY session in this batch (including sessions that yielded no loops — "reviewed-empty"
-     still advances their watermark so they don't re-surface).
-   - **Abort**: stop the entire run. Do NOT commit this batch. Report what was done so far. Uncommitted batches
-     re-surface next run.
+     Use the FULL session UUIDs from the `--- Session: <uuid> | ...` probe output headers — never the shortened prefix
+     shown in the table. Pass the session IDs of EVERY session in this repo section (including sessions that yielded no
+     loops — "reviewed-empty" still advances their watermark so they don't re-surface).
+   - **Abort**: stop the entire run. Do NOT commit this repo. Report what was done so far. Uncommitted repos re-surface
+     next run.
 
-   The built-in **Other** option covers row-level edits: apply the user's corrections (drop/trim loops, override
-   placement, remove a session row), re-show the batch table, and present the gate again.
+   The built-in **Other** option covers row-level edits: apply corrections (drop/trim loops, override placement, remove
+   a session row), re-show the repo table, and present the gate again.
 
-4. Continue to the next batch until all batches are processed.
+4. Continue to the next repo until all repos are processed.
 
-Session-level rows (per batch):
+Session-level rows (per repo):
 
-| Session               | What it was about             | Open loops? | Count |
-| --------------------- | ----------------------------- | ----------- | ----- |
-| `<session_id_prefix>` | `<ai-title or agent summary>` | yes / no    | N     |
+| Session               | Repo          | Age     | What it was about             | Open loops? | Count |
+| --------------------- | ------------- | ------- | ----------------------------- | ----------- | ----- |
+| `<session_id_prefix>` | `<repo-name>` | `<age>` | `<ai-title or agent summary>` | yes / no    | N     |
 
-Per-loop rows (per batch, for sessions with loops):
+Per-loop rows (per repo, for sessions with loops):
 
 | Loop                             | Proposed placement                                                |
 | -------------------------------- | ----------------------------------------------------------------- |
@@ -215,7 +233,7 @@ For each approved loop, create the task via `omnifocus_write`:
     "target": "task",
     "data": {
       "name": "<abstractive loop description — one line>",
-      "note": "<context: originating session, what was left unresolved, relevant detail>",
+      "note": "<context: what was left unresolved, relevant detail>\n\nRepo: <repo-name>\nSession: <YYYY-MM-DD> (<age>)",
       "tags": ["archaeology"],
       // Do NOT add: agent-okay, capture-live, review-output, review-capture, or any other tag.
       // The funnel auto-stamps agent-okay when role=agent and lineage is present.
@@ -226,6 +244,20 @@ For each approved loop, create the task via `omnifocus_write`:
   },
 }
 ```
+
+The task note format is:
+
+```
+<context: what was left unresolved, relevant detail>
+
+Repo: <repo-name>
+Session: <YYYY-MM-DD> (<age>)
+
+<!-- of-mcp:lineage ... -->
+```
+
+The `Repo:` and `Session:` lines come from the probe output's repo group and session header. The lineage block is
+appended automatically by the server's `lineage` param.
 
 Key server behaviors triggered (verified against `OmniFocusWriteTool.ts`):
 
@@ -283,15 +315,15 @@ plainly in the Step 5 table.
 
 ## Tool call reference
 
-| Goal                                                    | Call shape                                                                                                                                                                               |
-| ------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Pre-filter + group by session                           | `node "$HOME/projects/omnifocus-mcp/probes/archaeology-prefilter.js"` (scan; absolute path) — emits NEW `{ session_id, timestamp, role, text }` records grouped by session, newest-first |
-| Commit a batch's watermark (after `yes`/reviewed-empty) | `node "$HOME/projects/omnifocus-mcp/probes/archaeology-prefilter.js" --commit <sid,sid,…>`                                                                                               |
-| Dedup read — active archaeology tasks                   | `omnifocus_read` `type:"tasks"`, `filters.tags.all:["archaeology"]`, `details:true`                                                                                                      |
-| Dedup read — completed archaeology tasks                | `omnifocus_read` `type:"tasks"`, `filters.tags.all:["archaeology"]`, `filters.status:"completed"`, `details:true`                                                                        |
-| Active projects with notes                              | `omnifocus_read` `type:"projects"`, `filters.status:"active"`, `fields:["id","name","folderPath","note"]`                                                                                |
-| Create task (MATCH / INFER / LEAVE)                     | `omnifocus_write` `operation:"create"`, `target:"task"`, `data:{ name, note, tags:["archaeology"], lineage:{ sessionId }, project?:<name> }`                                             |
-| Create project (INFER branch only)                      | `omnifocus_write` `operation:"create"`, `target:"project"`, `data:{ name:<omnifocus-project>, folder?:<omnifocus-folder> }`                                                              |
+| Goal                                                    | Call shape                                                                                                                                                                                                               |
+| ------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Pre-filter + group by repo                              | `node "$HOME/projects/omnifocus-mcp/probes/archaeology-prefilter.js"` (scan; absolute path) — emits NEW records grouped by repo (newest-repo-first, sessions newest-first within each repo), with session age in headers |
+| Commit a batch's watermark (after `yes`/reviewed-empty) | `node "$HOME/projects/omnifocus-mcp/probes/archaeology-prefilter.js" --commit <sid,sid,…>`                                                                                                                               |
+| Dedup read — active archaeology tasks                   | `omnifocus_read` `type:"tasks"`, `filters.tags.all:["archaeology"]`, `details:true`                                                                                                                                      |
+| Dedup read — completed archaeology tasks                | `omnifocus_read` `type:"tasks"`, `filters.tags.all:["archaeology"]`, `filters.status:"completed"`, `details:true`                                                                                                        |
+| Active projects with notes                              | `omnifocus_read` `type:"projects"`, `filters.status:"active"`, `fields:["id","name","folderPath","note"]`                                                                                                                |
+| Create task (MATCH / INFER / LEAVE)                     | `omnifocus_write` `operation:"create"`, `target:"task"`, `data:{ name, note, tags:["archaeology"], lineage:{ sessionId }, project?:<name> }`                                                                             |
+| Create project (INFER branch only)                      | `omnifocus_write` `operation:"create"`, `target:"project"`, `data:{ name:<omnifocus-project>, folder?:<omnifocus-folder> }`                                                                                              |
 
 Notes that matter:
 
@@ -328,7 +360,7 @@ Notes that matter:
 | Pasting raw transcript text verbatim into task name or note    | Transcripts may carry secrets or PII (T-05-06). Loop extraction is abstractive — describe in your own words.                                                                       |
 | Filtering transcripts by file mtime                            | D-02 forbids it — mtime drifts hours-to-days from content date. The probe uses per-message ISO `timestamp` only.                                                                   |
 | Creating a project without checking existence                  | The INFER branch must check the active-projects list from Step 4 before calling create, or it will make duplicate projects.                                                        |
-| Applying a second approval gate                                | There is exactly one gate per batch (Step 5). Do not add a second "Are you sure?" after `yes`.                                                                                     |
+| Applying a second approval gate                                | There is exactly one gate per repo (Step 5). Do not add a second "Are you sure?" after approving a repo.                                                                           |
 | Committing the watermark on abort, or before tasks are created | Only `--commit` a batch AFTER `yes` (tasks created) or reviewed-empty. Never on abort/stop — uncommitted batches must re-surface.                                                  |
 | Assigning tags via JXA `task.addTags()`                        | JXA tag assignment silently no-ops. Use `omnifocus_write` with the `tags` field in `data` — the funnel routes through OmniJS `addTag` find-or-create.                              |
 
