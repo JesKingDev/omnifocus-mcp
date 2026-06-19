@@ -315,15 +315,15 @@ plainly in the Step 5 table.
 
 ## Tool call reference
 
-| Goal                                                    | Call shape                                                                                                                                                                                                               |
-| ------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| Pre-filter + group by repo                              | `node "$HOME/projects/omnifocus-mcp/probes/archaeology-prefilter.js"` (scan; absolute path) — emits NEW records grouped by repo (newest-repo-first, sessions newest-first within each repo), with session age in headers |
-| Commit a batch's watermark (after `yes`/reviewed-empty) | `node "$HOME/projects/omnifocus-mcp/probes/archaeology-prefilter.js" --commit <sid,sid,…>`                                                                                                                               |
-| Dedup read — active archaeology tasks                   | `omnifocus_read` `type:"tasks"`, `filters.tags.all:["archaeology"]`, `details:true`                                                                                                                                      |
-| Dedup read — completed archaeology tasks                | `omnifocus_read` `type:"tasks"`, `filters.tags.all:["archaeology"]`, `filters.status:"completed"`, `details:true`                                                                                                        |
-| Active projects with notes                              | `omnifocus_read` `type:"projects"`, `filters.status:"active"`, `fields:["id","name","folderPath","note"]`                                                                                                                |
-| Create task (MATCH / INFER / LEAVE)                     | `omnifocus_write` `operation:"create"`, `target:"task"`, `data:{ name, note, tags:["archaeology"], lineage:{ sessionId }, project?:<name> }`                                                                             |
-| Create project (INFER branch only)                      | `omnifocus_write` `operation:"create"`, `target:"project"`, `data:{ name:<omnifocus-project>, folder?:<omnifocus-folder> }`                                                                                              |
+| Goal                                                     | Call shape                                                                                                                                                                                                               |
+| -------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Pre-filter + group by repo                               | `node "$HOME/projects/omnifocus-mcp/probes/archaeology-prefilter.js"` (scan; absolute path) — emits NEW records grouped by repo (newest-repo-first, sessions newest-first within each repo), with session age in headers |
+| Commit a repo's watermark (after approve/reviewed-empty) | `node "$HOME/projects/omnifocus-mcp/probes/archaeology-prefilter.js" --commit <sid,sid,…>`                                                                                                                               |
+| Dedup read — active archaeology tasks                    | `omnifocus_read` `type:"tasks"`, `filters.tags.all:["archaeology"]`, `details:true`                                                                                                                                      |
+| Dedup read — completed archaeology tasks                 | `omnifocus_read` `type:"tasks"`, `filters.tags.all:["archaeology"]`, `filters.status:"completed"`, `details:true`                                                                                                        |
+| Active projects with notes                               | `omnifocus_read` `type:"projects"`, `filters.status:"active"`, `fields:["id","name","folderPath","note"]`                                                                                                                |
+| Create task (MATCH / INFER / LEAVE)                      | `omnifocus_write` `operation:"create"`, `target:"task"`, `data:{ name, note, tags:["archaeology"], lineage:{ sessionId }, project?:<name> }`                                                                             |
+| Create project (INFER branch only)                       | `omnifocus_write` `operation:"create"`, `target:"project"`, `data:{ name:<omnifocus-project>, folder?:<omnifocus-folder> }`                                                                                              |
 
 Notes that matter:
 
@@ -361,7 +361,7 @@ Notes that matter:
 | Filtering transcripts by file mtime                            | D-02 forbids it — mtime drifts hours-to-days from content date. The probe uses per-message ISO `timestamp` only.                                                                   |
 | Creating a project without checking existence                  | The INFER branch must check the active-projects list from Step 4 before calling create, or it will make duplicate projects.                                                        |
 | Applying a second approval gate                                | There is exactly one gate per repo (Step 5). Do not add a second "Are you sure?" after approving a repo.                                                                           |
-| Committing the watermark on abort, or before tasks are created | Only `--commit` a batch AFTER `yes` (tasks created) or reviewed-empty. Never on abort/stop — uncommitted batches must re-surface.                                                  |
+| Committing the watermark on abort, or before tasks are created | Only `--commit` a repo AFTER approve (tasks created) or reviewed-empty. Never on abort/stop — uncommitted repos must re-surface.                                                   |
 | Assigning tags via JXA `task.addTags()`                        | JXA tag assignment silently no-ops. Use `omnifocus_write` with the `tags` field in `data` — the funnel routes through OmniJS `addTag` find-or-create.                              |
 
 ## Reporting tooling problems
