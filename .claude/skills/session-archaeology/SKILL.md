@@ -8,7 +8,9 @@ description:
   word "archaeology" is present. Scans the last 7 days of active Claude Code transcripts for unresolved open loops via the
   pre-filter probe, presents resumable repo-grouped summarize-then-approve gates (one per repo, newest-repo-first), and
   on approval creates archaeology-tagged OmniFocus tasks in the right project (or inbox fallback). Deterministic alias:
-  Jess can also type the slash invocation `/session-archaeology`.
+  Jess can also type the slash invocation `/session-archaeology`. CRITICAL: the ONLY permitted execution paths are (1)
+  the probe via `node "$HOME/projects/omnifocus-mcp/probes/archaeology-prefilter.js"`, (2) the Read tool, and (3) MCP
+  tools. NEVER write ad-hoc Python, bash heredocs, or any inline script — not even to parse probe output.
 ---
 
 # Session Archaeology
@@ -60,6 +62,13 @@ only after you approve. Pass 3 reports results.
 > **EXECUTION GUARD — read before doing anything.** This skill's knowledge of past sessions comes EXCLUSIVELY from the
 > probe in Pass 1 Step 1. You have NO knowledge of past sessions from your own context.
 >
+> - **NEVER write ad-hoc scripts.** Do NOT write Python, bash heredocs, or any inline script — not even to parse probe
+>   output or peek at transcript files. If you notice yourself about to write a heredoc, a `python3 -c`, a `grep`
+>   pipeline, or any shell script that is not exactly the probe invocation below: STOP. The only permitted execution
+>   paths are: (1) `node "$HOME/projects/omnifocus-mcp/probes/archaeology-prefilter.js"` (with or without
+>   `--commit <ids>`), (2) the `Read` tool for any file read, and (3) MCP tools (`omnifocus_read`, `omnifocus_write`).
+>   If the probe output was truncated or too large to fit in context, Read it from
+>   `~/.claude/session-archaeology/scan-output.txt` — the probe writes the same content there on every scan.
 > - The FIRST action of Pass 1 is to run `node "$HOME/projects/omnifocus-mcp/probes/archaeology-prefilter.js"` via the
 >   Bash tool. No exceptions.
 > - NEVER answer from the current conversation. The session you are in right now is not the subject — the probe output
@@ -68,12 +77,6 @@ only after you approve. Pass 3 reports results.
 >   results before the probe output is in hand.
 > - If the probe errors or returns zero records, say so explicitly and stop — do not silently fall back to summarizing
 >   the current conversation.
-> - **NEVER write ad-hoc scripts.** Do NOT write Python, bash heredocs, or any inline script to parse probe output or
->   read transcript files. The ONLY permitted execution paths are: (1) the probe via
->   `node "$HOME/projects/omnifocus-mcp/probes/archaeology-prefilter.js"`, (2) the `Read` tool for any file read, and
->   (3) MCP tools (`omnifocus_read`, `omnifocus_write`). If the probe output was truncated or too large to fit in
->   context, Read it from `~/.claude/session-archaeology/scan-output.txt` — the probe writes the same content there on
->   every scan. Do not write a script to re-read the transcripts.
 
 ### Pass 1 — Scan, Dedup, Detect, Propose (read-only)
 
