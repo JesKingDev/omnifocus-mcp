@@ -45,7 +45,7 @@ Key design decisions embedded:
 - **D-03 rubric** — semantic four-category detection with a guaranteed-catch floor.
 - **D-04/D-04a gate** — `AskUserQuestion` with Approve as the first (default) option; user presses Enter to approve.
   "Other" covers row-level edits.
-- **D-05 placement** — `archaeology` + `agent-okay` (auto-stamped by funnel) + `of-mcp:lineage` lineage stamp.
+- **D-05 placement** — `archaeology` + `agent-ok` (auto-stamped by funnel) + `of-mcp:lineage` lineage stamp.
 - **D-06 per-repo gate** — one merged table (session + loops + proposed placement) per repo, newest-repo-first; one
   `AskUserQuestion` per repo so a large scan stays digestible and resumable by natural project context; routing proposal
   computed inline without chaining `route-inbox-to-projects`.
@@ -235,8 +235,8 @@ For each approved loop, create the task via `omnifocus_write`:
       "name": "<abstractive loop description — one line>",
       "note": "<context: what was left unresolved, relevant detail>\n\nRepo: <repo-name>\nSession: <YYYY-MM-DD> (<age>)",
       "tags": ["archaeology"],
-      // Do NOT add: agent-okay, capture-live, review-output, review-capture, or any other tag.
-      // The funnel auto-stamps agent-okay when role=agent and lineage is present.
+      // Do NOT add: agent-ok, capture-live, review-output, review-capture, or any other tag.
+      // The funnel auto-stamps agent-ok when role=agent and lineage is present.
       "lineage": { "sessionId": "<originating session_id from the probe output>" },
       // Include "project" only for MATCH and INFER placements.
       // Omit "project" entirely for LEAVE/inbox-fallback (no project key → inbox, ARCH-03).
@@ -262,8 +262,8 @@ appended automatically by the server's `lineage` param.
 Key server behaviors triggered (verified against `OmniFocusWriteTool.ts`):
 
 - The `lineage` param auto-appends `of-mcp:lineage` to the task note (the dedup backbone for future scans, LINE-01).
-- When `role=agent`, the funnel auto-appends `agent-okay` to `data.tags`. Pass only `archaeology`; do NOT pass
-  `agent-okay` explicitly (D-05).
+- When `role=agent`, the funnel auto-appends `agent-ok` to `data.tags`. Pass only `archaeology`; do NOT pass `agent-ok`
+  explicitly (D-05).
 - No `project` key → inbox fallback (ARCH-03, DISC-CAPTURE-01).
 - The write-verifier fires automatically; do not call it.
 - The `archaeology` tag is auto-created if absent (OmniJS `addTag` find-or-create via the tag builder).
@@ -356,7 +356,7 @@ Notes that matter:
 | Writing ad-hoc Python/bash scripts to parse probe output       | NEVER write inline scripts. The probe already produces structured output — consume it directly from the Bash tool result. If it's large, process it section by section in context. |
 | Keeping all `user` lines from the transcript                   | 87% of `user` lines are `tool_result`-only echoes. Use `node "$HOME/projects/omnifocus-mcp/probes/archaeology-prefilter.js"` — do not re-implement the filter rule inline.         |
 | Dedup read without `details:true`                              | The `of-mcp:lineage` block lives at note-end; a 200-char truncated note silently drops it. The dedup set becomes empty and every session re-surfaces (Pitfall 3).                  |
-| Passing `agent-okay` explicitly in `data.tags`                 | The funnel auto-stamps `agent-okay` when `role=agent` and `lineage` is present. Pass only `["archaeology"]`.                                                                       |
+| Passing `agent-ok` explicitly in `data.tags`                   | The funnel auto-stamps `agent-ok` when `role=agent` and `lineage` is present. Pass only `["archaeology"]`.                                                                         |
 | Pasting raw transcript text verbatim into task name or note    | Transcripts may carry secrets or PII (T-05-06). Loop extraction is abstractive — describe in your own words.                                                                       |
 | Filtering transcripts by file mtime                            | D-02 forbids it — mtime drifts hours-to-days from content date. The probe uses per-message ISO `timestamp` only.                                                                   |
 | Creating a project without checking existence                  | The INFER branch must check the active-projects list from Step 4 before calling create, or it will make duplicate projects.                                                        |

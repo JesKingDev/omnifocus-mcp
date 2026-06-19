@@ -10,6 +10,7 @@
     __LOG_DIR__           → ~/Library/Logs/omnifocus-mcp  (absolute)
     __MCP_AGENT_TOKEN__   → bearer token for agent callers
     __MCP_OWNER_TOKEN__   → bearer token for owner callers
+    __MCP_PORT__          → HTTP port (default: 54321)
 
   Security posture (DEPLOY-02, ADR-005):
     - Requests Automation only — no Full Disk Access, no entitlements, no Sockets.
@@ -34,6 +35,9 @@
   <array>
     <string>__NODE_BINARY__</string>
     <string>__SERVER_ENTRYPOINT__</string>
+    <string>--http</string>
+    <string>--port</string>
+    <string>__MCP_PORT__</string>
   </array>
 
   <!-- Run once on load / reboot. -->

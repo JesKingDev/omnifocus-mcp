@@ -9,7 +9,7 @@
 | New / Modified File                                                                             | Role       | Data Flow        | Closest Analog                                                                 | Match Quality |
 | ----------------------------------------------------------------------------------------------- | ---------- | ---------------- | ------------------------------------------------------------------------------ | ------------- |
 | `tests/unit/contracts/ast/lineage-stamp.test.ts`                                                | test       | transform        | `tests/unit/contracts/ast/mutation-script-builder.test.ts`                     | exact         |
-| `tests/unit/auth/agent-okay-predicate.test.ts`                                                  | test       | request-response | `tests/unit/contracts/ast/filter-coverage.test.ts`                             | exact         |
+| `tests/unit/auth/agent-ok-predicate.test.ts`                                                    | test       | request-response | `tests/unit/contracts/ast/filter-coverage.test.ts`                             | exact         |
 | `src/contracts/ast/` — `composeLineageStamp()` helper                                           | utility    | transform        | existing `note` setter in `mutation-script-builder.ts`                         | role-match    |
 | `src/contracts/filters.ts` — `agentOkayPredicate()`                                             | utility    | request-response | `normalizeFilter()` + `TaskFilter` composition in `filters.ts`                 | exact         |
 | `src/auth/role-resolver.ts` — `parseMode()` addition                                            | utility    | request-response | `parseRole()` in `src/auth/role-resolver.ts` (lines 43–45)                     | exact         |
@@ -449,7 +449,7 @@ export interface TaskFilter {
 import { normalizeFilter, type NormalizedTaskFilter } from './filters.js';
 
 /**
- * Returns a normalized filter that matches only agent-okay-tagged tasks.
+ * Returns a normalized filter that matches only agent-ok-tagged tasks.
  * Phase 2 scope: read-side predicate for PERM-01. Phase 3 routing consumes this.
  *
  * inInbox is omitted here so Phase 3 routing can apply the predicate to
@@ -458,7 +458,7 @@ import { normalizeFilter, type NormalizedTaskFilter } from './filters.js';
  */
 export function agentOkayPredicate(): NormalizedTaskFilter {
   return normalizeFilter({
-    tags: ['agent-okay'],
+    tags: ['agent-ok'],
     tagsOperator: 'AND',
   });
 }
@@ -506,7 +506,7 @@ New tests must cover per RESEARCH.md D-08 / validation table:
 
 ---
 
-### `tests/unit/auth/agent-okay-predicate.test.ts` (new, test, request-response)
+### `tests/unit/auth/agent-ok-predicate.test.ts` (new, test, request-response)
 
 **Analog:** `tests/unit/contracts/ast/filter-coverage.test.ts` (lines 1–50)
 
@@ -535,10 +535,10 @@ describe('QueryCompiler.transformFilters', () => {
 
 New tests must cover per RESEARCH.md D-08a:
 
-- `agentOkayPredicate()` returns a filter with `tags: ['agent-okay']` and `tagsOperator: 'AND'`
+- `agentOkayPredicate()` returns a filter with `tags: ['agent-ok']` and `tagsOperator: 'AND'`
 - The predicate compiles via `buildAST()` to a valid AST (no throws)
 - `emitOmniJS()` on that AST produces a script containing the tag name (no live OF)
-- A task WITHOUT `agent-okay` tag does NOT match the compiled filter (test the negative)
+- A task WITHOUT `agent-ok` tag does NOT match the compiled filter (test the negative)
 
 ---
 

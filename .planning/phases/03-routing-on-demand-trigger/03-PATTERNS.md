@@ -32,22 +32,22 @@ This is the primary new artifact for Phase 3. The analog skill is the complete s
 ---
 name: route-inbox-to-projects
 description:
-  Use when Jess says "route my inbox", "process agent-okay items", "file inbox tasks", or "run routing" — triggers the
-  on-demand routing loop that matches agent-okay inbox tasks to existing projects or creates new ones.
+  Use when Jess says "route my inbox", "process agent-ok items", "file inbox tasks", or "run routing" — triggers the
+  on-demand routing loop that matches agent-ok inbox tasks to existing projects or creates new ones.
 ---
 ```
 
 **Overview block structure** (analog lines 5–17): one-paragraph summary of direction + canonical account + constraint.
 For Phase 3:
 
-- Direction: `agent-okay` inbox items → matched/inferred project (or left with marker tag)
+- Direction: `agent-ok` inbox items → matched/inferred project (or left with marker tag)
 - No external account routing (pure OmniFocus + vault read)
 - OmniFocus is canonical; JessOS vault provides the deterministic frontmatter signal
 
 **Run shape — summarize-then-approve** (D-08). The analog has three linear passes (preflight → import → reconcile).
 Phase 3 uses two:
 
-- **Pass 1 — Plan:** read all `agent-okay` inbox items + active projects-with-notes + vault frontmatter map; produce a
+- **Pass 1 — Plan:** read all `agent-ok` inbox items + active projects-with-notes + vault frontmatter map; produce a
   routing proposal table
 - **Pass 2 — Execute (after user approval):** move matched/inferred items, create projects for infer branch, apply
   marker tag to left items
@@ -59,7 +59,7 @@ conditions. Copy this shape for Pass 1 and Pass 2.
 
 | Goal                               | Call shape                                                                                                  |
 | ---------------------------------- | ----------------------------------------------------------------------------------------------------------- |
-| Read `agent-okay` inbox items      | `omnifocus_read` `type:"tasks"`, `filters.tags.any:["agent-okay"]`, `filters.inInbox:true`, `details:true`  |
+| Read `agent-ok` inbox items        | `omnifocus_read` `type:"tasks"`, `filters.tags.any:["agent-ok"]`, `filters.inInbox:true`, `details:true`    |
 | Active projects with notes         | `omnifocus_read` `type:"projects"`, `filters.status:"active"`, `fields:["id","name","folderPath","note"]`   |
 | File task to project (match/infer) | `omnifocus_write` `operation:"update"`, `target:"task"`, `data:{id:"<id>", project:"<project-name-or-id>"}` |
 | Create project (infer branch)      | `omnifocus_write` `operation:"create"`, `target:"project"`, `data:{name:"<name>", folder:"<folder>"}`       |
@@ -95,7 +95,7 @@ user seeds the map.
 ```markdown
 ## Routing Decision Rules
 
-For each `agent-okay` inbox item, apply this ladder in order:
+For each `agent-ok` inbox item, apply this ladder in order:
 
 1. **MATCH** — Project name clearly identifies this item's home (high confidence). File it there. Do not guess on
    ambiguous names.
@@ -239,7 +239,7 @@ omnifocus_write({
 - Phase 4 REVIEW-_ tags will surface routed/unplaced items in a today view — the `routing-_` namespace lets Phase 4
   query it distinctly
 
-**Sandbox guard:** `FUNCTIONAL_TAG_ALLOWLIST` (mutation-script-builder.ts line 71) currently contains `['agent-okay']`.
+**Sandbox guard:** `FUNCTIONAL_TAG_ALLOWLIST` (mutation-script-builder.ts line 71) currently contains `['agent-ok']`.
 Add `'routing-unplaced'` to this list so integration tests can apply the marker tag without triggering the `__test-`
 prefix guard.
 
@@ -336,8 +336,8 @@ function assertPolicyAllow(role: Role, operation: string, target: string): void 
 `FUNCTIONAL_TAG_ALLOWLIST`
 
 ```typescript
-export const FUNCTIONAL_TAG_ALLOWLIST: readonly string[] = ['agent-okay'];
-// Phase 3: extend to ['agent-okay', 'routing-unplaced']
+export const FUNCTIONAL_TAG_ALLOWLIST: readonly string[] = ['agent-ok'];
+// Phase 3: extend to ['agent-ok', 'routing-unplaced']
 
 export function isTestTagAllowed(tag: string): boolean {
   return tag.startsWith(TEST_TAG_PREFIX) || FUNCTIONAL_TAG_ALLOWLIST.includes(tag);

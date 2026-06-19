@@ -993,7 +993,7 @@ describe('PERM-02 gate verdict dispatch', () => {
     // Background mode (async agent) — no interactive prompt is available, so the
     // ONLY non-gated path for an agent capture is the lineage self-attestation.
     // A create carrying a lineage param is an attested capture: it lands in the
-    // inbox (visible, recoverable) and is stamped agent-okay downstream, so it
+    // inbox (visible, recoverable) and is stamped agent-ok downstream, so it
     // bypasses the gate exactly like the session-grant bypass above (D-02 vs D-08b).
     delete process.env['OMNIFOCUS_MCP_INTERACTIVE']; // background mode
 

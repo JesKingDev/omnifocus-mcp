@@ -6,7 +6,7 @@ subsystem: skill
 # Dependency graph
 requires:
   - phase: 02-capture-permission-gating
-    provides: agent-okay predicate/capture, operation policy (update + create_project allow), live/interactive mode
+    provides: agent-ok predicate/capture, operation policy (update + create_project allow), live/interactive mode
   - phase: 03-routing-on-demand-trigger
     provides: routing-unplaced in FUNCTIONAL_TAG_ALLOWLIST + proven file/marker/create write paths (Plan 03-01)
 provides:
@@ -49,7 +49,7 @@ completed: 2026-06-14
 # Phase 03 / Plan 02: route-inbox-to-projects skill Summary
 
 **`route-inbox-to-projects` skill — the on-demand routing trigger (TRIG-01) that runs a two-pass propose-then-execute
-loop, matching agent-okay inbox items to projects, inferring + creating from vault frontmatter, or leaving them marked
+loop, matching agent-ok inbox items to projects, inferring + creating from vault frontmatter, or leaving them marked
 `routing-unplaced`.**
 
 ## Performance
@@ -85,9 +85,9 @@ loop, matching agent-okay inbox items to projects, inferring + creating from vau
 
 ## Deviations from Plan
 
-None — plan executed as written. (Used `filters.tags.all` for the agent-okay read, matching the Phase 2
-agentOkayPredicate AND-semantics and Plan 03-01's proven integration call, rather than the `.any` shorthand that appears
-once in 03-PATTERNS.md.)
+None — plan executed as written. (Used `filters.tags.all` for the agent-ok read, matching the Phase 2 agentOkayPredicate
+AND-semantics and Plan 03-01's proven integration call, rather than the `.any` shorthand that appears once in
+03-PATTERNS.md.)
 
 ## Acceptance Verification
 

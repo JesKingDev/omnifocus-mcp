@@ -7,7 +7,7 @@ subsystem: testing
 requires:
   - phase: 02-capture-permission-gating
     provides:
-      agent-okay capture stamp, FUNCTIONAL_TAG_ALLOWLIST guard, operation policy (update/create_project = allow, agent
+      agent-ok capture stamp, FUNCTIONAL_TAG_ALLOWLIST guard, operation policy (update/create_project = allow, agent
       task-create gated via lineage)
 provides:
   - routing-unplaced added to FUNCTIONAL_TAG_ALLOWLIST (D-12 marker tag passes the test-mode sandbox guard)
@@ -32,13 +32,13 @@ key-files:
     - tests/integration/tools/unified/end-to-end.test.ts
 
 key-decisions:
-  - "Allowlist extended to exactly ['agent-okay', 'routing-unplaced'] — no over-widening (T-03-01)"
+  - "Allowlist extended to exactly ['agent-ok', 'routing-unplaced'] — no over-widening (T-03-01)"
   - "Integration tests run under AGENT role (the real routing path), not owner — proves the skill's actual write surface"
   - 'Fixture teardown via fullCleanup() osascript sweep because agent role cannot delete (policy: deny)'
 
 patterns-established:
-  - 'routing-unplaced is a shared functional tag (like agent-okay): swept-by-containing-task, the tag definition
-    persists harmlessly'
+  - 'routing-unplaced is a shared functional tag (like agent-ok): swept-by-containing-task, the tag definition persists
+    harmlessly'
   - 'Independent read-back proves persistence, not the write echo (OMN-60 discipline) — tag-filtered read-back proves
     the OmniJS addTag bridge fired'
 
@@ -67,7 +67,7 @@ funnel.**
 
 - `FUNCTIONAL_TAG_ALLOWLIST` now contains `routing-unplaced` (D-12) so integration tests can apply and read the marker
   in test mode — production writes are unaffected (they bypass `isTestTagAllowed` behind the `isTestMode()` gate).
-- Four unit assertions: `routing-unplaced` allowed, `agent-okay` still allowed, arbitrary tag rejected, `__test-` prefix
+- Four unit assertions: `routing-unplaced` allowed, `agent-ok` still allowed, arbitrary tag rejected, `__test-` prefix
   path intact.
 - Three live integration tests prove ROUTE-01 (moveTasks filing via update+project), ROUTE-04 (routing-unplaced marker
   via update+addTags / OmniJS bridge), and ROUTE-03 (infer-branch project create), all under the agent role with

@@ -40,14 +40,14 @@ created: 2026-06-12
 > Populated by the planner from `02-RESEARCH.md` "Phase Requirements → Test Map". D-08 compliance: PERM-01 is proven by
 > (a) predicate-compiles unit test + (b) capture-stamp test — NOT a routing demo.
 
-| Task ID | Plan | Wave | Requirement | Threat Ref    | Secure Behavior                                                                     | Test Type   | Automated Command          | File Exists | Status     |
-| ------- | ---- | ---- | ----------- | ------------- | ----------------------------------------------------------------------------------- | ----------- | -------------------------- | ----------- | ---------- |
-| TBD     | TBD  | TBD  | CAP-01      | —             | Inbox create with no project lands in inbox                                         | integration | `npm run test:integration` | ✅ existing | ⬜ pending |
-| TBD     | TBD  | TBD  | LINE-01     | T-2 Tampering | `of-mcp:lineage` block composed + idempotent strip-and-reappend                     | unit        | `npm run test:unit`        | ❌ W0       | ⬜ pending |
-| TBD     | TBD  | TBD  | PERM-01     | —             | `agentOkayPredicate()` compiles to filter returning only `agent-okay` tasks (D-08a) | unit        | `npm run test:unit`        | ❌ W0       | ⬜ pending |
-| TBD     | TBD  | TBD  | PERM-01     | —             | New capture task stamped with `agent-okay` tag (D-08b)                              | integration | `npm run test:integration` | ❌ W0       | ⬜ pending |
-| TBD     | TBD  | TBD  | PERM-02     | T-2 EoP       | `parseMode()` literal-only default-deny → `background`                              | unit        | `npm run test:unit`        | ✅ extend   | ⬜ pending |
-| TBD     | TBD  | TBD  | PERM-02     | T-2 Access    | `decide('agent','create','task')` returns `gate`; grant bypass allows               | unit        | `npm run test:unit`        | ❌ W0       | ⬜ pending |
+| Task ID | Plan | Wave | Requirement | Threat Ref    | Secure Behavior                                                                   | Test Type   | Automated Command          | File Exists | Status     |
+| ------- | ---- | ---- | ----------- | ------------- | --------------------------------------------------------------------------------- | ----------- | -------------------------- | ----------- | ---------- |
+| TBD     | TBD  | TBD  | CAP-01      | —             | Inbox create with no project lands in inbox                                       | integration | `npm run test:integration` | ✅ existing | ⬜ pending |
+| TBD     | TBD  | TBD  | LINE-01     | T-2 Tampering | `of-mcp:lineage` block composed + idempotent strip-and-reappend                   | unit        | `npm run test:unit`        | ❌ W0       | ⬜ pending |
+| TBD     | TBD  | TBD  | PERM-01     | —             | `agentOkayPredicate()` compiles to filter returning only `agent-ok` tasks (D-08a) | unit        | `npm run test:unit`        | ❌ W0       | ⬜ pending |
+| TBD     | TBD  | TBD  | PERM-01     | —             | New capture task stamped with `agent-ok` tag (D-08b)                              | integration | `npm run test:integration` | ❌ W0       | ⬜ pending |
+| TBD     | TBD  | TBD  | PERM-02     | T-2 EoP       | `parseMode()` literal-only default-deny → `background`                            | unit        | `npm run test:unit`        | ✅ extend   | ⬜ pending |
+| TBD     | TBD  | TBD  | PERM-02     | T-2 Access    | `decide('agent','create','task')` returns `gate`; grant bypass allows             | unit        | `npm run test:unit`        | ❌ W0       | ⬜ pending |
 
 _Status: ⬜ pending · ✅ green · ❌ red · ⚠️ flaky_
 
@@ -56,7 +56,7 @@ _Status: ⬜ pending · ✅ green · ❌ red · ⚠️ flaky_
 ## Wave 0 Requirements
 
 - [ ] `tests/unit/contracts/ast/lineage-stamp.test.ts` — LINE-01 stamp composition + idempotency
-- [ ] `tests/unit/auth/agent-okay-predicate.test.ts` — PERM-01 predicate compilation (D-08a)
+- [ ] `tests/unit/auth/agent-ok-predicate.test.ts` — PERM-01 predicate compilation (D-08a)
 - [ ] Extend `tests/unit/auth/role-resolver.test.ts` — `parseMode()` cases (PERM-02)
 - [ ] Extend `tests/unit/auth/operation-policy.test.ts` — `create → gate` row in policy matrix (PERM-02)
 - [ ] New write-tool unit test — gate verdict dispatch + session-grant bypass (PERM-02)

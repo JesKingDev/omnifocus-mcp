@@ -30,13 +30,13 @@
 - D-05: Literal-only, default-deny parse (mirrors `parseRole`): only the exact literal resolves to `interactive`;
   undefined/empty/typo/garbage → `background`. Agent cannot self-elevate.
 
-**`agent-okay` scope in Phase 2 (PERM-01)**
+**`agent-ok` scope in Phase 2 (PERM-01)**
 
-- D-06: Phase 2 builds the read-side `agent-okay` predicate + capture-time stamping; defers routing-time action gating
-  to Phase 3. Predicate is a thin composition over existing `tags` + `inInbox` filters.
+- D-06: Phase 2 builds the read-side `agent-ok` predicate + capture-time stamping; defers routing-time action gating to
+  Phase 3. Predicate is a thin composition over existing `tags` + `inInbox` filters.
 - D-07: Phase 2 owns the write-side stamp and read-side predicate; Phase 3 owns consuming that predicate.
 - D-08: Success criterion proven by (a) unit test asserting predicate compiles to filter returning only
-  `agent-okay`-tagged tasks, plus (b) capture-path test asserting newly-created items are stamped. NOT a routing demo.
+  `agent-ok`-tagged tasks, plus (b) capture-path test asserting newly-created items are stamped. NOT a routing demo.
 
 **Lineage stamp format & source (LINE-01)**
 
@@ -61,7 +61,7 @@
 - Exact field names/casing inside the JSON payload (keep `v`/`session`/`agent`/`created_at` intent stable).
 - The exact env-marker literal value (e.g. `interactive` vs `live`).
 - Where in `PolicyEngine`/funnel the create `gate` rule is expressed and the precise owner-auth call shape.
-- Whether the agent-origin tag and the `agent-okay` gate tag are the same tag or two tags — resolve during planning
+- Whether the agent-origin tag and the `agent-ok` gate tag are the same tag or two tags — resolve during planning
   against PERM-01 and Phase 3 routing needs.
 
 ### Deferred Ideas (OUT OF SCOPE)
@@ -77,7 +77,7 @@
 | ID      | Description                                                                                           | Research Support                                                                                                                                                                                 |
 | ------- | ----------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | CAP-01  | User can dump a messy item straight into the OmniFocus inbox without deciding project, tags, or dates | DISC-CAPTURE-01 verified: `new Task(name, inbox)` round-trips with note; existing `buildCreateTaskScript` + `omnifocus_write create` is the reuse path (no project = inbox)                      |
-| PERM-01 | In async/background runs, agent acts only on tasks tagged `agent-okay`; untagged tasks untouched      | `tags` + `inInbox` filters exist in `filters.ts`/`builder.ts`; predicate composes at unit layer; capture-time tag stamp via OmniJS `addTag` bridge                                               |
+| PERM-01 | In async/background runs, agent acts only on tasks tagged `agent-ok`; untagged tasks untouched        | `tags` + `inInbox` filters exist in `filters.ts`/`builder.ts`; predicate composes at unit layer; capture-time tag stamp via OmniJS `addTag` bridge                                               |
 | PERM-02 | In sync/live sessions, agent prompts before creating; offers "allow all this session" option          | `SessionConfig` is the forge-resistant home for the grant; `decide()` returns `gate` today for tag destructive ops — same plumbing for create-task gate in interactive mode                      |
 | LINE-01 | Every agent-created task stores its originating Claude Code session ID in the task notes              | `note` field round-trips verified (DISC-CAPTURE-01); `note` comparator in `field-comparator.ts` uses trim-compare (stamp survives verification); dual-schema extension to `lineage` param needed |
 
@@ -99,7 +99,7 @@ field — the D-02 grant home exists as a type but the field must be added. One 
 `create: 'allow'` to `create: 'gate'` in the policy table, which will be the most visible behavior change in the phase.
 
 **Primary recommendation:** Start with the policy table change (create → gate for AGENT), then add the mode marker to
-`ResolvedContext` + role resolver, then the session grant field + owner API, then the `agent-okay` predicate, then the
+`ResolvedContext` + role resolver, then the session grant field + owner API, then the `agent-ok` predicate, then the
 lineage stamp. Each step is independently testable at the unit layer.
 
 ---
@@ -112,7 +112,7 @@ lineage stamp. Each step is independently testable at the unit layer.
 | Permission gate verdict (PERM-01/02) | API/Backend (PolicyEngine + funnel)     | —                           | Server-side enforcement invariant; agent-side only renders prompt UX                 |
 | Interactive mode detection (D-04)    | API/Backend (role-resolver.ts)          | —                           | Connection-bound; resolved at identity seam, same as `parseRole`                     |
 | "Allow all session" grant (D-02)     | API/Backend (SessionManager)            | —                           | Per-principal forge-resistant state; only owner-auth call may set it                 |
-| `agent-okay` predicate (D-06)        | API/Backend (filter codegen)            | —                           | Composes over existing `tags`/`inInbox` filter AST nodes                             |
+| `agent-ok` predicate (D-06)          | API/Backend (filter codegen)            | —                           | Composes over existing `tags`/`inInbox` filter AST nodes                             |
 | Agent-origin tag stamp (D-06)        | API/Backend (mutation-script-builder)   | OmniFocus (tag auto-create) | OmniJS `addTag` bridge; tag find-or-create on write                                  |
 | Lineage stamp composition (D-10)     | API/Backend (mutation-script-builder)   | —                           | Server-side note composition before script emit; not agent-supplied text             |
 | Lineage stamp verification (D-10)    | API/Backend (WriteVerifier)             | —                           | `note` field already handled by `field-comparator.ts` trim-compare                   |
@@ -170,12 +170,12 @@ flowchart TD
     E -->|"agent + gate"| F{"Check SessionConfig\nallowAllThisSession?"}
     F -->|"true (owner granted)"| H
     F -->|"false + interactive mode"| G["Return gate verdict\n(agent renders prompt)"]
-    F -->|"false + background mode"| I["Check task has agent-okay tag\n(PERM-01 predicate)"]
+    F -->|"false + background mode"| I["Check task has agent-ok tag\n(PERM-01 predicate)"]
     I -->|"tagged"| H
     I -->|"untagged"| J["Return deny verdict"]
 
     H --> K["buildCreateTaskScript(data + composed note)"]
-    K --> L["OmniJS: new Task + addTag(agent-okay) + note with lineage block"]
+    K --> L["OmniJS: new Task + addTag(agent-ok) + note with lineage block"]
     L --> M["WriteVerifier.verify()\nnote field: trim-compare passes"]
 ```
 
@@ -278,11 +278,11 @@ is part of the composed `note`, so `intentObj.note` (the composed string) must m
 must ensure `extractIntent()` in `intent-extractor.ts` sees the already-composed `note` string (including the stamp),
 not the raw user note. [VERIFIED: codebase — `TASK_CREATE_FIELDS` at line 84 includes `'note'`]
 
-### Pattern 4: agent-okay Predicate Composition
+### Pattern 4: agent-ok Predicate Composition
 
 **What:** A thin composition over existing `TaskFilter` fields:
-`{ tags: ['agent-okay'], tagsOperator: 'AND', inInbox: true }` (or just `tags` if Phase 3 routing needs non-inbox
-`agent-okay` tasks too — see Open Questions). Uses the existing `normalizeFilter()` + `buildFilteredTasksScript()`
+`{ tags: ['agent-ok'], tagsOperator: 'AND', inInbox: true }` (or just `tags` if Phase 3 routing needs non-inbox
+`agent-ok` tasks too — see Open Questions). Uses the existing `normalizeFilter()` + `buildFilteredTasksScript()`
 pipeline with zero new filter AST nodes.
 
 **Unit testability:** Because the predicate is expressed as a `TaskFilter` object, it never requires a live OmniFocus
@@ -370,7 +370,7 @@ follows this identical literal-only pattern for `OMNIFOCUS_MCP_INTERACTIVE`. [VE
 `mode: 'interactive' | 'background'` is a clean extension of this interface — the planner should update `roles.ts`
 first, then `role-resolver.ts`, then all callsites of `ResolvedContext`. [VERIFIED: codebase]
 
-### Claim 4 (D-06/D-07/D-08): agent-okay predicate composition
+### Claim 4 (D-06/D-07/D-08): agent-ok predicate composition
 
 **Status: FULLY VERIFIED.**
 
@@ -380,14 +380,14 @@ first, then `role-resolver.ts`, then all callsites of `ResolvedContext`. [VERIFI
 `builder.ts` AST: `inInbox` at line 112 maps to `comparison('task.inInbox', '==', f.inInbox)`. Tags at line 132 map to
 `buildTagsNode(f.tags, f.tagsOperator)`. [VERIFIED: codebase]
 
-The predicate `{ tags: ['agent-okay'], tagsOperator: 'AND' }` (and optionally `inInbox: true`) compiles entirely at the
+The predicate `{ tags: ['agent-ok'], tagsOperator: 'AND' }` (and optionally `inInbox: true`) compiles entirely at the
 codegen layer — no live OmniFocus needed. Unit tests in `tests/unit/contracts/` can assert filter compilation without
 hitting the live app. [VERIFIED: codebase]
 
-**Discretion note on single vs. two tags:** The capture-time write stamps the `agent-okay` tag (origin marker). If
-PERM-01 reads tasks by the same `agent-okay` tag, origin and gate are the same tag. Phase 3's routing gate will consume
-this predicate. Recommend the same tag for both — one tag, two purposes. This reduces the OmniJS script complexity and
-is consistent with how DISC-TAG-03 describes agent tags as conventions. [ASSUMED — final call deferred to planner per
+**Discretion note on single vs. two tags:** The capture-time write stamps the `agent-ok` tag (origin marker). If PERM-01
+reads tasks by the same `agent-ok` tag, origin and gate are the same tag. Phase 3's routing gate will consume this
+predicate. Recommend the same tag for both — one tag, two purposes. This reduces the OmniJS script complexity and is
+consistent with how DISC-TAG-03 describes agent tags as conventions. [ASSUMED — final call deferred to planner per
 D-08's Claude's Discretion]
 
 ### Claim 5 (D-09/D-10/D-11): lineage stamp in mutation-script-builder + verifier round-trip
@@ -513,7 +513,7 @@ already captured the intent), the intent snapshot sees the un-stamped note but t
 
 ### Pitfall 5: Tag auto-create race in batch creates
 
-**What goes wrong:** If multiple tasks are created in a batch and each tries to `new Tag('agent-okay', null)` as the
+**What goes wrong:** If multiple tasks are created in a batch and each tries to `new Tag('agent-ok', null)` as the
 find-or-create step, the second call finds the tag already exists from the first task's creation — this is fine. But if
 the tag was just created milliseconds before the second task runs, there can be transient state in OmniJS.
 
@@ -521,8 +521,8 @@ the tag was just created milliseconds before the second task runs, there can be 
 no race. The issue only arises if tag creation and task creation are in separate script executions.
 
 **How to avoid:** Use the existing `OMNIJS_RESOLVE_OR_CREATE_TAG_PATH` utility in `buildBatchCreateTasksScript` (already
-used for tags in batch creates at line 918). The `agent-okay` tag assignment follows the same `addTags` path as any
-other tag. [VERIFIED: codebase]
+used for tags in batch creates at line 918). The `agent-ok` tag assignment follows the same `addTags` path as any other
+tag. [VERIFIED: codebase]
 
 ---
 
@@ -579,12 +579,12 @@ const AGENT_POLICY: Record<string, PolicyOutcome | Record<string, PolicyOutcome>
 };
 ```
 
-### TaskFilter composition for agent-okay predicate
+### TaskFilter composition for agent-ok predicate
 
 ```typescript
 // Source: src/contracts/filters.ts [VERIFIED: codebase] — both fields already exist
 const agentOkayFilter: TaskFilter = {
-  tags: ['agent-okay'],
+  tags: ['agent-ok'],
   tagsOperator: 'AND',
   // inInbox: true  ← add only if Phase 2 scope is inbox-only; omit for Phase 3 routing reuse
 };
@@ -639,7 +639,7 @@ const LineageSchema = z
 
 | #   | Claim                                                                                                | Section            | Risk if Wrong                                                                                         |
 | --- | ---------------------------------------------------------------------------------------------------- | ------------------ | ----------------------------------------------------------------------------------------------------- |
-| A1  | Single `agent-okay` tag serves as both origin marker and PERM-01 gate tag                            | Claim 4, Pattern 4 | If Phase 3 needs two distinct tags (origin vs. gate), the predicate and stamp both need updating      |
+| A1  | Single `agent-ok` tag serves as both origin marker and PERM-01 gate tag                              | Claim 4, Pattern 4 | If Phase 3 needs two distinct tags (origin vs. gate), the predicate and stamp both need updating      |
 | A2  | `composeLineageStamp()` should be called in the compiler/funnel layer before `buildCreateTaskScript` | Claim 5, Pitfall 4 | If called inside `buildCreateTaskScript`, the verifier intent snapshot will not match the read-back   |
 | A3  | Stdio mode needs a module-level session state singleton for `allowAllThisSession`                    | Claim 2, Pitfall 2 | If there's an existing mechanism for per-connection state in stdio mode, a new singleton is redundant |
 
@@ -647,15 +647,15 @@ const LineageSchema = z
 
 ## Open Questions (RESOLVED)
 
-1. **Single tag vs. two tags for `agent-okay`**
-   - What we know: PERM-01 says "tasks tagged `agent-okay`"; D-06 says "agent-origin marker via existing OmniJS `addTag`
+1. **Single tag vs. two tags for `agent-ok`**
+   - What we know: PERM-01 says "tasks tagged `agent-ok`"; D-06 says "agent-origin marker via existing OmniJS `addTag`
      path"; Phase 3 routing consumes the predicate.
    - What's unclear: Does Phase 3 routing need to distinguish "I created this" (origin) from "this is approved for agent
-     action" (gate)? If so, two tags. If the user tags a pre-existing task `agent-okay` to opt it into routing, the
-     origin stamp is separate from the routing gate.
-   - Recommendation: Use one tag for Phase 2 (agent-created items get `agent-okay` stamped at creation). Revisit if
-     Phase 3 planning reveals a need to gate pre-existing tasks separately.
-   - **RESOLVED:** One tag (`agent-okay`) serves as both origin marker and PERM-01 gate tag. Phase 3 archaeology
+     action" (gate)? If so, two tags. If the user tags a pre-existing task `agent-ok` to opt it into routing, the origin
+     stamp is separate from the routing gate.
+   - Recommendation: Use one tag for Phase 2 (agent-created items get `agent-ok` stamped at creation). Revisit if Phase
+     3 planning reveals a need to gate pre-existing tasks separately.
+   - **RESOLVED:** One tag (`agent-ok`) serves as both origin marker and PERM-01 gate tag. Phase 3 archaeology
      distinguishes agent-created tasks from user-tagged tasks via the presence of the `of-mcp:lineage` block in the note
      — the note block is the origin proof; the tag is the routing gate. Plan 02-04 documents this decision in the
      predicate JSDoc.
@@ -713,27 +713,27 @@ Integration tests for write round-trip and tag assignment require OmniFocus runn
 
 ### Phase Requirements → Test Map
 
-| Req ID           | Behavior                                                                                     | Test Type   | Automated Command                                                          | File Exists? |
-| ---------------- | -------------------------------------------------------------------------------------------- | ----------- | -------------------------------------------------------------------------- | ------------ |
-| CAP-01           | Inbox create with no project produces task in inbox                                          | integration | `npm run test:integration` (existing create round-trip)                    | ✅ existing  |
-| CAP-01 + LINE-01 | Created task note contains `of-mcp:lineage` block with correct JSON                          | unit        | `npm run test:unit` — new `tests/unit/contracts/ast/lineage-stamp.test.ts` | ❌ Wave 0    |
-| PERM-01          | `agentOkayPredicate()` filter compiles to filter that returns only `agent-okay`-tagged tasks | unit        | `npm run test:unit` — new `tests/unit/auth/agent-okay-predicate.test.ts`   | ❌ Wave 0    |
-| PERM-01          | New capture task is stamped with `agent-okay` tag (read-back assertion)                      | integration | `npm run test:integration` — new test in create suite                      | ❌ Wave 0    |
-| PERM-02          | `parseMode()` returns `'background'` for undefined/empty/wrong env                           | unit        | `npm run test:unit` — extend `tests/unit/auth/role-resolver.test.ts`       | ✅ (extend)  |
-| PERM-02          | `parseMode()` returns `'interactive'` only for exact literal `'true'`                        | unit        | `npm run test:unit` — extend `tests/unit/auth/role-resolver.test.ts`       | ✅ (extend)  |
-| PERM-02          | `decide('agent', 'create', 'task')` returns `'gate'` after policy table change               | unit        | `npm run test:unit` — extend `tests/unit/auth/operation-policy.test.ts`    | ✅ (extend)  |
-| PERM-02          | Funnel returns `POLICY_GATE_CAPTURE_CONFIRM` when mode=interactive and no grant              | unit        | `npm run test:unit` — new test in write-tool unit tests                    | ❌ Wave 0    |
-| PERM-02          | Funnel allows create when `allowAllThisSession === true` regardless of gate                  | unit        | `npm run test:unit` — new test in write-tool unit tests                    | ❌ Wave 0    |
-| LINE-01          | `composeLineageStamp()` appends block after existing note with blank-line separator          | unit        | `npm run test:unit` — `lineage-stamp.test.ts`                              | ❌ Wave 0    |
-| LINE-01          | `composeLineageStamp()` strips existing block before re-appending (idempotent)               | unit        | `npm run test:unit` — `lineage-stamp.test.ts`                              | ❌ Wave 0    |
-| LINE-01          | Stamped note round-trips through `WriteVerifier` without mismatch                            | unit        | `npm run test:unit` — extend verifier unit tests                           | ❌ Wave 0    |
+| Req ID           | Behavior                                                                                   | Test Type   | Automated Command                                                          | File Exists? |
+| ---------------- | ------------------------------------------------------------------------------------------ | ----------- | -------------------------------------------------------------------------- | ------------ |
+| CAP-01           | Inbox create with no project produces task in inbox                                        | integration | `npm run test:integration` (existing create round-trip)                    | ✅ existing  |
+| CAP-01 + LINE-01 | Created task note contains `of-mcp:lineage` block with correct JSON                        | unit        | `npm run test:unit` — new `tests/unit/contracts/ast/lineage-stamp.test.ts` | ❌ Wave 0    |
+| PERM-01          | `agentOkayPredicate()` filter compiles to filter that returns only `agent-ok`-tagged tasks | unit        | `npm run test:unit` — new `tests/unit/auth/agent-ok-predicate.test.ts`     | ❌ Wave 0    |
+| PERM-01          | New capture task is stamped with `agent-ok` tag (read-back assertion)                      | integration | `npm run test:integration` — new test in create suite                      | ❌ Wave 0    |
+| PERM-02          | `parseMode()` returns `'background'` for undefined/empty/wrong env                         | unit        | `npm run test:unit` — extend `tests/unit/auth/role-resolver.test.ts`       | ✅ (extend)  |
+| PERM-02          | `parseMode()` returns `'interactive'` only for exact literal `'true'`                      | unit        | `npm run test:unit` — extend `tests/unit/auth/role-resolver.test.ts`       | ✅ (extend)  |
+| PERM-02          | `decide('agent', 'create', 'task')` returns `'gate'` after policy table change             | unit        | `npm run test:unit` — extend `tests/unit/auth/operation-policy.test.ts`    | ✅ (extend)  |
+| PERM-02          | Funnel returns `POLICY_GATE_CAPTURE_CONFIRM` when mode=interactive and no grant            | unit        | `npm run test:unit` — new test in write-tool unit tests                    | ❌ Wave 0    |
+| PERM-02          | Funnel allows create when `allowAllThisSession === true` regardless of gate                | unit        | `npm run test:unit` — new test in write-tool unit tests                    | ❌ Wave 0    |
+| LINE-01          | `composeLineageStamp()` appends block after existing note with blank-line separator        | unit        | `npm run test:unit` — `lineage-stamp.test.ts`                              | ❌ Wave 0    |
+| LINE-01          | `composeLineageStamp()` strips existing block before re-appending (idempotent)             | unit        | `npm run test:unit` — `lineage-stamp.test.ts`                              | ❌ Wave 0    |
+| LINE-01          | Stamped note round-trips through `WriteVerifier` without mismatch                          | unit        | `npm run test:unit` — extend verifier unit tests                           | ❌ Wave 0    |
 
 **D-08 verification wording compliance:** The Phase 2 verification is proven by:
 
-- (a) Unit test: `agentOkayPredicate()` filter compiles to a `NormalizedTaskFilter` that returns only
-  `agent-okay`-tagged tasks and excludes untagged ones — runs at the filter-generator layer with NO live OmniFocus.
-- (b) Capture-path test: a task created via `omnifocus_write create` with `lineage` param has the `agent-okay` tag and
-  the `of-mcp:lineage` block in its note.
+- (a) Unit test: `agentOkayPredicate()` filter compiles to a `NormalizedTaskFilter` that returns only `agent-ok`-tagged
+  tasks and excludes untagged ones — runs at the filter-generator layer with NO live OmniFocus.
+- (b) Capture-path test: a task created via `omnifocus_write create` with `lineage` param has the `agent-ok` tag and the
+  `of-mcp:lineage` block in its note.
 
 This is a **predicate + stamp proof**, NOT a routing demo.
 
@@ -746,7 +746,7 @@ This is a **predicate + stamp proof**, NOT a routing demo.
 ### Wave 0 Gaps
 
 - [ ] `tests/unit/contracts/ast/lineage-stamp.test.ts` — covers LINE-01 stamp composition and idempotency
-- [ ] `tests/unit/auth/agent-okay-predicate.test.ts` — covers PERM-01 predicate compilation (D-08a)
+- [ ] `tests/unit/auth/agent-ok-predicate.test.ts` — covers PERM-01 predicate compilation (D-08a)
 - [ ] Extend `tests/unit/auth/role-resolver.test.ts` — add `parseMode()` test cases (PERM-02)
 - [ ] Extend `tests/unit/auth/operation-policy.test.ts` — add `create → gate` row to D-08 matrix (PERM-02)
 - [ ] New write-tool unit test file covering gate verdict dispatch (PERM-02) and session grant bypass
@@ -773,14 +773,13 @@ This is a **predicate + stamp proof**, NOT a routing demo.
 | Agent supplies forged `allowAllThisSession` via call args   | Elevation of Privilege | Grant lives in `SessionConfig` / singleton, only owner-auth call may set it (D-02)                                                                  |
 | Agent supplies malicious lineage JSON in `sessionId`        | Tampering              | `LineageSchema.strict()` validates structure; `JSON.stringify()` escapes content before embedding in note                                           |
 | Background run receives elicitation prompt it cannot handle | Denial of Service      | `elicitation/create` not used (D-03); server returns structured verdict instead                                                                     |
-| `agent-okay` tag bypassed by agent adding tag itself        | Spoofing               | Tag assignment is a write operation; if `tag_manage/create` is `allow` for agent, this is a gap — planner should verify whether agents can self-tag |
+| `agent-ok` tag bypassed by agent adding tag itself          | Spoofing               | Tag assignment is a write operation; if `tag_manage/create` is `allow` for agent, this is a gap — planner should verify whether agents can self-tag |
 
-**Tag self-tagging gap:** `AGENT_POLICY` has `tag_manage.create: 'allow'`. An agent can create the `agent-okay` tag.
+**Tag self-tagging gap:** `AGENT_POLICY` has `tag_manage.create: 'allow'`. An agent can create the `agent-ok` tag.
 However, the PERM-01 gate is about tasks that _already have_ the tag — the gate prevents the agent from acting on tasks
-that don't have `agent-okay`. An agent could create a new task via the capture path (which stamps `agent-okay` on
-creation) — this is the intended flow. The concern is whether an agent could retroactively tag an arbitrary task
-`agent-okay` to bring it into scope. This is a Phase 3 concern (routing gate), not Phase 2. Document the gap for
-Phase 3.
+that don't have `agent-ok`. An agent could create a new task via the capture path (which stamps `agent-ok` on creation)
+— this is the intended flow. The concern is whether an agent could retroactively tag an arbitrary task `agent-ok` to
+bring it into scope. This is a Phase 3 concern (routing gate), not Phase 2. Document the gap for Phase 3.
 
 ---
 
@@ -849,9 +848,9 @@ Phase 3.
 4. **`elicitation/create` spec-confirmed unusable for background mode.** MCP spec requires client capability declaration
    at init. Background clients never declare it. D-03's rejection is spec-correct.
 
-5. **All filter primitives for the `agent-okay` predicate exist today.** `tags`, `tagsOperator: 'AND'`, and `inInbox`
-   are all in `TaskFilter` and compile at the filter-generator layer with no live OmniFocus needed. D-08's
-   unit-test-only proof is feasible.
+5. **All filter primitives for the `agent-ok` predicate exist today.** `tags`, `tagsOperator: 'AND'`, and `inInbox` are
+   all in `TaskFilter` and compile at the filter-generator layer with no live OmniFocus needed. D-08's unit-test-only
+   proof is feasible.
 
 6. **Dual-schema rule applies to `lineage` param.** New `LineageSchema` needed in `write-schema.ts` AND corresponding
    object block in `OmniFocusWriteTool.ts` `inputSchema` override. The `buildTaskDataObject` exhaustiveness guard will
@@ -873,8 +872,8 @@ Phase 3.
 
 ### Open Questions (RESOLVED)
 
-- **Q1 single tag:** One tag (`agent-okay`) is both origin marker and gate. Phase 3 archaeology uses the
-  `of-mcp:lineage` note block to distinguish agent-created from user-tagged. **RESOLVED** per Plan 02-04.
+- **Q1 single tag:** One tag (`agent-ok`) is both origin marker and gate. Phase 3 archaeology uses the `of-mcp:lineage`
+  note block to distinguish agent-created from user-tagged. **RESOLVED** per Plan 02-04.
 - **Q2 stdio grant:** `src/auth/session-state.ts` module singleton (`isAllowedAllThisSession` / `setAllowAllThisSession`
   / `resetSessionGrant`). **RESOLVED** per Plan 02-02.
 - **Q3 batch create:** Confirmed — `normalizeArgsToPolicy` loop gates each sub-op; session grant covers the loop. No

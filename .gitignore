@@ -160,3 +160,4 @@ tmp
 .github/plans
 generated
 db-snapshots/
+.claude/memory/

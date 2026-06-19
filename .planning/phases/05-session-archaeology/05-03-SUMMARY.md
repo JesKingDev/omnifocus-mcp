@@ -35,8 +35,8 @@ key-decisions:
     uncommitted; verified against all acceptance criteria + the plan verify gate, then committed rather than regenerated
     (would have orphaned verified-good work and re-spent quota)'
   - 'LINEAGE_RE hard-coded in the skill verified byte-identical to src/contracts/ast/lineage.ts'
-  - 'agent-okay auto-stamp claim verified against OmniFocusWriteTool.ts (create+task+lineage+role=agent) — skill
-    instructs passing only archaeology'
+  - 'agent-ok auto-stamp claim verified against OmniFocusWriteTool.ts (create+task+lineage+role=agent) — skill instructs
+    passing only archaeology'
 
 patterns-established:
   - 'Three-pass skill shape (read-only scan/dedup/detect/propose → execute-after-approval → report) mirroring
@@ -72,7 +72,7 @@ well-placed OmniFocus tasks. No server code added.**
     four-category detection rubric + guaranteed-catch floor (D-03); inline routing ladder MATCH→INFER→LEAVE (D-06); ONE
     merged table; ONE `yes / edit / abort` gate (D-04/D-04a).
   - **Pass 2 (after approval):** `omnifocus_write` create with `tags:["archaeology"]` + `lineage:{ sessionId }`, relying
-    on the funnel's `agent-okay` auto-stamp (D-05); INFER project-existence check before create.
+    on the funnel's `agent-ok` auto-stamp (D-05); INFER project-existence check before create.
   - **Pass 3 (report):** one summary line (created / matched / inferred / inbox / skipped / errors).
 - Tool call reference, Vault Signal Read, Out of scope, and Common mistakes tables included.
 
@@ -93,9 +93,9 @@ well-placed OmniFocus tasks. No server code added.**
   spawning a fresh executor, which in worktree mode forks from HEAD, never sees the uncommitted draft, and would
   regenerate the file from scratch (orphaning verified-good work and re-spending the recovered quota).
 - **Correctness verified against source before commit.** The skill's hard-coded `LINEAGE_RE`
-  (`/\n\n<!-- of-mcp:lineage\n.*?\n-->/s`) is byte-identical to `src/contracts/ast/lineage.ts`. The `agent-okay`
+  (`/\n\n<!-- of-mcp:lineage\n.*?\n-->/s`) is byte-identical to `src/contracts/ast/lineage.ts`. The `agent-ok`
   auto-stamp behavior (skill says "pass only archaeology") matches `OmniFocusWriteTool.ts`: the funnel appends
-  `agent-okay` on `create + task + lineage present + role=agent`.
+  `agent-ok` on `create + task + lineage present + role=agent`.
 
 ## Deviations from Plan
 

@@ -155,13 +155,13 @@ existing `mutation-script-builder.ts` find-or-create pattern already does this).
 
 #### DISC-TAG-03 — Tags are hierarchical first-class objects
 
-| Field           | Value                                                                                                              |
-| --------------- | ------------------------------------------------------------------------------------------------------------------ |
-| Verdict         | native                                                                                                             |
-| Rubric          | `Tag` class (name/id/parent/children/tasks) is complete; nested tags supported natively                            |
-| Evidence        | evidence: doc                                                                                                      |
-| Source          | omni-automation.com/omnifocus/tag.html; codebase `tag-mutation-script-builder.ts`                                  |
-| Downstream cite | Phase 4 (REVIEW-01/02) and Phase 5 (ARCH-03) — agent tags (agent-okay, review-output, archaeology) are conventions |
+| Field           | Value                                                                                                            |
+| --------------- | ---------------------------------------------------------------------------------------------------------------- |
+| Verdict         | native                                                                                                           |
+| Rubric          | `Tag` class (name/id/parent/children/tasks) is complete; nested tags supported natively                          |
+| Evidence        | evidence: doc                                                                                                    |
+| Source          | omni-automation.com/omnifocus/tag.html; codebase `tag-mutation-script-builder.ts`                                |
+| Downstream cite | Phase 4 (REVIEW-01/02) and Phase 5 (ARCH-03) — agent tags (agent-ok, review-output, archaeology) are conventions |
 
 Agent-workflow tags are conventional names over the native tag model; no OF extension required.
 

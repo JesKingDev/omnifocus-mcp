@@ -505,7 +505,7 @@ export function normalizeFilter(filter: TaskFilter): NormalizedTaskFilter {
 // =============================================================================
 
 /**
- * Returns a normalized filter matching only tasks tagged 'agent-okay'.
+ * Returns a normalized filter matching only tasks tagged 'agent-ok'.
  *
  * Phase 2 scope: read-side predicate for PERM-01 (D-06). Phase 3 routing
  * consumes this without modification — the function signature is stable.
@@ -514,12 +514,12 @@ export function normalizeFilter(filter: TaskFilter): NormalizedTaskFilter {
  * inbox and non-inbox tasks. Phase 3 routing adds its own location filters
  * on top of this predicate.
  *
- * Single-tag decision: 'agent-okay' serves as both the origin marker
+ * Single-tag decision: 'agent-ok' serves as both the origin marker
  * (stamped at create time by OmniFocusWriteTool when role=agent + lineage
  * present, per Plan 02-03 Task 2) and the PERM-01 gate tag. Phase 5
  * archaeology distinguishes agent-created tasks from user-tagged tasks via
  * the presence of the of-mcp:lineage note block.
  */
 export function agentOkayPredicate(): NormalizedTaskFilter {
-  return normalizeFilter({ tags: ['agent-okay'], tagsOperator: 'AND' as TagOperator });
+  return normalizeFilter({ tags: ['agent-ok'], tagsOperator: 'AND' as TagOperator });
 }

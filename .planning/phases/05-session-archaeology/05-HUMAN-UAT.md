@@ -1,43 +1,65 @@
 ---
-status: partial
+status: testing
 phase: 05-session-archaeology
 source: [05-VERIFICATION.md]
 started: 2026-06-16T23:10:57Z
-updated: 2026-06-16T23:45:00Z
+updated: 2026-06-19T03:30:00Z
 ---
 
 ## Current Test
 
-[testing paused — 1 issue, 2 blocked on the Test 1 fix]
+number: 1 name: Detection recall over a real 7-day scan (ARCH-01) — RE-TEST after fix expected: | From a BRAND-NEW
+session, run /archaeology. The skill must: (1) immediately run the probe (no answering from current context), (2)
+surface open loops from the last 7 days across ALL ~/.claude/projects/\* dirs, (3) show a per-batch approval gate (not
+just this session's work). No routing to remember:remember. Loops are real cross-session items. awaiting: user response
 
 ## Tests
 
 ### 1. Detection recall over a real 7-day scan (ARCH-01)
 
-expected: Run a real session-archaeology scan and sample the surfaced loops against the source transcripts. No obvious
-open loop is missed and no noise is surfaced; detection recall holds over live content. Pay extra attention to long
-assistant turns — REVIEW WR-01 (first-text-block-only extraction) and WR-05 (200-char CLI truncation) can drop a
-trailing `TODO`/`next:` marker. result: issue reported: "I tried each of the skill invocation keywords and each time it
-ran only for that session. In a brand new session, it actually did nothing." severity: major
+expected: From a BRAND-NEW session, run /archaeology. The skill must (1) immediately run the probe (no answering from
+current context), (2) surface open loops from the last 7 days across ALL ~/.claude/projects/\* dirs, (3) show a
+per-batch approval gate (not just this session's work). No routing to remember:remember. Loops are real cross-session
+items. result: [pending] fix_applied_phase3: "Signal manifest format implemented (commit e9de4f6e).
+filterToOpenLoopRecords now picks ONE best signal per session (Tier-1 park markers beat Tier-2 GTD), extracts keyword
+context (50 before + 100 after) instead of tail-truncating. formatProbeOutput emits one compact line per session.
+Result: 263 sessions → 263 lines (~59KB) vs 880+ records → ~165KB before. 2496 tests pass. Re-test required from
+BRAND-NEW session via /archaeology."
 
 ### 2. Merged approval gate behavior (ARCH-02)
 
-expected: Invoke the skill and walk the merged gate — the per-session summary table fires; `yes` / `edit` / `abort` all
-work; a row-level `edit` applies and re-shows; and NOTHING is created before `yes`. Exactly one merged gate, plain-text
-(not AskUserQuestion), zero `omnifocus_write` calls before approval. result: blocked blocked_by: prior-phase reason:
-"Gate cannot be exercised until the Test 1 scope bug is fixed — the scan surfaces nothing cross-session, so no merged
-table to walk."
+expected: Invoke the skill and walk the merged gate — the per-session summary table fires; AskUserQuestion with Approve
+first fires at the gate; a row-level edit applies and re-shows; NOTHING is created before approval. Zero omnifocus_write
+calls before yes. result: [pending]
 
 ### 3. Placement correctness — MATCH / INFER / LEAVE (ARCH-03)
 
 expected: Approve loops with a mix of MATCH / INFER / LEAVE placements and confirm where they land in OmniFocus. Each
 approved loop lands in the matched or inferred project (inbox as fallback), tagged `archaeology` with a lineage stamp.
-result: blocked blocked_by: prior-phase reason: "Placement cannot be verified until the Test 1 scope bug is fixed — no
-loops surface to approve and place."
+result: [pending]
 
 ## Summary
 
-total: 3 passed: 0 issues: 1 pending: 0 skipped: 0 blocked: 2
+total: 3 passed: 0 issues: 0 pending: 3 skipped: 0 blocked: 0
+
+## Gaps
+
+- truth: "Probe output fits in a single Bash response; model reads it directly without scripting." status: failed
+  reason: "User reported: probe output (165KB after keyword filter + truncation) still too large for inline Bash tool
+  response. Model falls back to reading scan-output.txt with Read tool, then writes ad-hoc awk scripts to parse it —
+  violating SKILL.md NEVER-write-scripts guard." severity: major test: 1 root_cause: "Probe emits raw transcript lines
+  (one record per keyword-matching message). Volume is irreducible under this format regardless of truncation. Fix
+  requires output format change: probe should emit a signal manifest (one line per match, keyword context extraction
+  rather than tail-truncation). Target: ~10KB for ~100 signals, fits inline in Bash response." artifacts:
+  - path: "probes/archaeology-prefilter.js" issue: "formatProbeOutput emits transcript-style lines. Needs to emit
+    compact signal manifest: [session-id | date age] keyword-context-snippet, one line per signal."
+  - path: ".claude/skills/session-archaeology/SKILL.md" issue: "Step 1 output format description must be updated to
+    match manifest format. Step 3 detection logic can simplify since signals are pre-extracted." missing:
+  - "Change filterToOpenLoopRecords to extract keyword context (50 chars before + 100 after match) instead of
+    tail-truncating"
+  - "Rewrite formatProbeOutput to emit one line per signal with [session-id | date age] prefix"
+  - "Update SKILL.md Step 1 output format description"
+  - "Re-run UAT Test 1 from brand-new session to confirm output fits inline"
 
 ## Gaps
 

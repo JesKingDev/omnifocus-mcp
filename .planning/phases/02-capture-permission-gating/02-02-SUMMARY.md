@@ -21,7 +21,7 @@ dependency_graph:
     - isAllowedAllThisSession() bypass wired into WriteTool gate check
   affects:
     - '02-03: gate dispatch + POLICY_GATE_CAPTURE_CONFIRM (PERM-02 test goes GREEN)'
-    - '02-03: lineage stamp + agent-okay predicate (remain RED, expected)'
+    - '02-03: lineage stamp + agent-ok predicate (remain RED, expected)'
 tech_stack:
   added: []
   patterns:
@@ -106,7 +106,7 @@ and grant bypass ship together with no broken state between waves.
 | `batch-response-shape.test.ts`                | 1 passing | 1 passing | Fixed with owner role (Rule 1)                        |
 | `lineage-stamp.test.ts`                       | RED       | RED       | Expected — Wave 3/4                                   |
 | `WriteVerifier.test.ts`                       | RED       | RED       | Expected — Wave 3/4                                   |
-| `agent-okay-predicate.test.ts`                | RED       | RED       | Expected — Wave 3/4                                   |
+| `agent-ok-predicate.test.ts`                  | RED       | RED       | Expected — Wave 3/4                                   |
 | `OmniFocusWriteTool.test.ts` (PERM-02)        | RED       | RED       | Expected — Wave 3 (needs POLICY_GATE_CAPTURE_CONFIRM) |
 
 ## Commits

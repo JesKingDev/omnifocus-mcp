@@ -46,7 +46,7 @@ shipped routing skill).
 
 **User's choice:** Chain route-inbox skill. **Notes:** ARCH-03 "correct project" makes placement a deliverable, so
 route-later fails the plain reading. Phase 4's defer rationale (single item mid-focus) doesn't transfer to a supervised
-batch. Routing is chainable — keys on `agent-okay` + `inInbox:true`; only new server work is the allowlist entry.
+batch. Routing is chainable — keys on `agent-ok` + `inInbox:true`; only new server work is the allowlist entry.
 
 ---
 

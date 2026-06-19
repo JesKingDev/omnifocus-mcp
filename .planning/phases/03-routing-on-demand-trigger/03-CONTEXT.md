@@ -5,7 +5,7 @@
 <domain>
 ## Phase Boundary
 
-The agent takes `agent-okay`-tagged inbox items and **routes** each one through a fixed decision ladder:
+The agent takes `agent-ok`-tagged inbox items and **routes** each one through a fixed decision ladder:
 
 1. **Match** an existing project → file the task there (ROUTE-01).
 2. No match → **infer** from the vault: read a routing signal that says where the item belongs (ROUTE-02), and when the
@@ -21,7 +21,7 @@ run UX, and a marker tag on left items.
 **Out of scope (later phases):** the scheduled/n8n polling trigger (TRIG-02, deferred); review tags surfacing agent work
 in a today view (Phase 4, REVIEW-*) — Phase 3 *writes* the marker tag for left items but does **not** build the
 today-view surface; live real-time blocker capture (Phase 4, LIVE-01); session archaeology (Phase 5, ARCH-*);
-perspective provisioning + vault-checkbox migration (Phase 6). The `agent-okay` predicate and capture stamp are
+perspective provisioning + vault-checkbox migration (Phase 6). The `agent-ok` predicate and capture stamp are
 **consumed** here, not built (Phase 2 owns them, D-07).
 
 </domain>
@@ -69,7 +69,7 @@ perspective provisioning + vault-checkbox migration (Phase 6). The `agent-okay` 
   trigger cannot be a server-side MCP operation (the server is plumbing with no LLM). The skill calls the existing
   `omnifocus_read` / `omnifocus_write` tools. A CLI/Makefile target is the right shape for the **deferred** scheduled
   path (TRIG-02), not this MVP.
-- **D-08:** **Run shape = summarize-then-approve, one-pass batch.** A run reads all `agent-okay` inbox items, proposes a
+- **D-08:** **Run shape = summarize-then-approve, one-pass batch.** A run reads all `agent-ok` inbox items, proposes a
   full plan (each item → match / infer / leave + target), waits for the user to **approve or edit**, then executes the
   moves/creates. This mirrors the locked ARCH-02 pattern so the two agent workflows feel consistent, gives one approval
   instead of N, and makes the pre-execution plan the audit trail. Interactive-per-item (too tedious / high
@@ -84,7 +84,7 @@ perspective provisioning + vault-checkbox migration (Phase 6). The `agent-okay` 
 - **D-10:** **Allow + funnel + verify** for routing's writes (`moveTasks()` filing and project-create). Both dispatch
   through the **single mutation funnel** with an `allow` verdict and are confirmed by the **write-verifier** read-back.
   The summarize-then-approve plan (D-08) is the human consent layer; the funnel + verifier are the safety layer. No
-  additional server-side `gate` is stacked on these reversible, agent-okay-scoped, pre-approved ops.
+  additional server-side `gate` is stacked on these reversible, agent-ok-scoped, pre-approved ops.
   Advisory/agent-side-only writes were rejected (violates the milestone "funnel, not advisory" invariant); server-side
   gating was rejected as redundant with the batch approval.
 - **D-11:** Filing a matched/inferred item uses native **`moveTasks()`** (DISC-MODEL-06) — no custom mover. Project
@@ -124,7 +124,7 @@ perspective provisioning + vault-checkbox migration (Phase 6). The `agent-okay` 
 
 ### Phase requirements & roadmap
 
-- `.planning/REQUIREMENTS.md` — ROUTE-01…04, TRIG-01 (full acceptance criteria); also PERM-01 (the `agent-okay` scope
+- `.planning/REQUIREMENTS.md` — ROUTE-01…04, TRIG-01 (full acceptance criteria); also PERM-01 (the `agent-ok` scope
   routing consumes) and TRIG-02 (the deferred scheduled trigger this MVP precedes).
 - `.planning/ROADMAP.md` §"Phase 3: Routing & On-Demand Trigger" — goal + dependency on Phase 2; Phase 3 is also the
   dependency gate for Phase 6.
@@ -134,7 +134,7 @@ perspective provisioning + vault-checkbox migration (Phase 6). The `agent-okay` 
 
 ### Phase 2 context (the contracts Phase 3 consumes)
 
-- `.planning/phases/02-capture-permission-gating/02-CONTEXT.md` — **D-06/D-07** (the `agent-okay` read-side predicate
+- `.planning/phases/02-capture-permission-gating/02-CONTEXT.md` — **D-06/D-07** (the `agent-ok` read-side predicate
   Phase 3 consumes to decide which tasks routing may touch), **D-04/D-05** (interactive vs background mode signal;
   routing's live-mode reconciliation D-09 builds on this), **D-01/D-03** (the single-funnel "funnel, not advisory"
   enforcement invariant D-10 honors).
@@ -149,7 +149,7 @@ perspective provisioning + vault-checkbox migration (Phase 6). The `agent-okay` 
 ### Existing machinery to reuse (hardening + Phase 2)
 
 - `src/tools/unified/OmniFocusReadTool.ts` + `src/tools/tasks/task-query-pipeline.ts` + `src/contracts/filters.ts` — the
-  read path for enumerating active projects with notes (D-02) and the `agent-okay` predicate (Phase 2 D-06).
+  read path for enumerating active projects with notes (D-02) and the `agent-ok` predicate (Phase 2 D-06).
 - `src/tools/unified/OmniFocusWriteTool.ts` + the single mutation funnel — where `moveTasks()` and project-create
   dispatch with policy verdicts (D-10/D-11).
 - `src/auth/operation-policy.ts` — `PolicyEngine.decide()`; create/project already resolves to `allow`; confirm `move`
@@ -181,8 +181,8 @@ perspective provisioning + vault-checkbox migration (Phase 6). The `agent-okay` 
 ### Reusable Assets
 
 - **Native `moveTasks()`** (DISC-MODEL-06) files a matched/inferred item — no custom mover (D-11).
-- **`agent-okay` predicate** (Phase 2 D-06) already composes `tags` + `inInbox` filters at the unit/codegen layer —
-  routing's input set is `agent-okay` inbox items, reusing this predicate.
+- **`agent-ok` predicate** (Phase 2 D-06) already composes `tags` + `inInbox` filters at the unit/codegen layer —
+  routing's input set is `agent-ok` inbox items, reusing this predicate.
 - **Single mutation funnel + write-verifier** already enforce + verify mutations server-side — move/create plug in with
   `allow` verdicts (D-10), not a new mechanism.
 - **Trigger-skill pattern** — `sync-work-tasks-to-omnifocus` shows the user-invoked-skill-calls-MCP-tools shape D-07
@@ -201,7 +201,7 @@ perspective provisioning + vault-checkbox migration (Phase 6). The `agent-okay` 
 
 ### Integration Points
 
-- **Input contract:** the `agent-okay` predicate (Phase 2) defines routing's input set.
+- **Input contract:** the `agent-ok` predicate (Phase 2) defines routing's input set.
 - **Vault contract:** the `omnifocus-project` / `omnifocus-folder` frontmatter (D-03) is the new external contract
   between the JessOS vault and routing.
 - **Downstream:** the marker tag on left items (D-12) is the surface Phase 4 review tags build on; routing-created

@@ -71,7 +71,7 @@ describe('WriteVerifier integration: task create response includes verification_
     // owner (verification exists to catch agent mistakes). To get a successful
     // agent create past the Phase 2 gate, the create carries a lineage param
     // (capture-attestation bypass, D-08b); this also exercises the verifier on the
-    // new capture path. agent-okay is auto-stamped and exempt from the test guard.
+    // new capture path. agent-ok is auto-stamped and exempt from the test guard.
     serverProcess = spawn('node', [serverPath], {
       stdio: ['pipe', 'pipe', 'pipe'],
       env: { ...process.env, OMNIFOCUS_MCP_ROLE: 'agent' },

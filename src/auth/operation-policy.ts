@@ -54,7 +54,7 @@ const AGENT_POLICY: Record<string, PolicyOutcome | Record<string, PolicyOutcome>
   // -------------------------------------------------------------------------
   create: {
     /** agent create operations are gated — interactive mode prompts the user,
-     * background mode requires agent-okay tag (D-01, PERM-01/PERM-02). */
+     * background mode requires agent-ok tag (D-01, PERM-01/PERM-02). */
     task: 'gate',
     // All other create targets (project, folder, etc.) remain allowed
     project: 'allow',

@@ -67,13 +67,13 @@ deferred to human run-through per 05-VALIDATION.md Manual-Only.
 
 ### Key Link Verification
 
-| From                  | To                                             | Via                                    | Status  | Details                                                                                                          |
-| --------------------- | ---------------------------------------------- | -------------------------------------- | ------- | ---------------------------------------------------------------------------------------------------------------- |
-| SKILL.md              | probes/archaeology-prefilter.js                | inline CLI invocation                  | ✓ WIRED | `node probes/archaeology-prefilter.js` in Pass-1 Step 1 + Tool call reference.                                   |
-| SKILL.md              | omnifocus_read archaeology + details:true      | dedup read step                        | ✓ WIRED | Pass-1 Step 2 + Tool reference: active + completed reads, `details:true` mandatory, `LINEAGE_RE` parse.          |
-| SKILL.md              | omnifocus_write create + archaeology + lineage | Pass-2 create step                     | ✓ WIRED | Pass-2 create payload: `tags:["archaeology"]` + `lineage:{ sessionId }`; relies on funnel agent-okay auto-stamp. |
-| lineage-dedup.test.ts | src/contracts/ast/lineage.ts                   | import LINEAGE_RE, composeLineageStamp | ✓ WIRED | Import + 9 passing specs.                                                                                        |
-| probe test            | probes/archaeology-prefilter.js                | ESM import of pure fn                  | ✓ WIRED | Imports `filterTranscriptLines`; 9 specs green.                                                                  |
+| From                  | To                                             | Via                                    | Status  | Details                                                                                                        |
+| --------------------- | ---------------------------------------------- | -------------------------------------- | ------- | -------------------------------------------------------------------------------------------------------------- |
+| SKILL.md              | probes/archaeology-prefilter.js                | inline CLI invocation                  | ✓ WIRED | `node probes/archaeology-prefilter.js` in Pass-1 Step 1 + Tool call reference.                                 |
+| SKILL.md              | omnifocus_read archaeology + details:true      | dedup read step                        | ✓ WIRED | Pass-1 Step 2 + Tool reference: active + completed reads, `details:true` mandatory, `LINEAGE_RE` parse.        |
+| SKILL.md              | omnifocus_write create + archaeology + lineage | Pass-2 create step                     | ✓ WIRED | Pass-2 create payload: `tags:["archaeology"]` + `lineage:{ sessionId }`; relies on funnel agent-ok auto-stamp. |
+| lineage-dedup.test.ts | src/contracts/ast/lineage.ts                   | import LINEAGE_RE, composeLineageStamp | ✓ WIRED | Import + 9 passing specs.                                                                                      |
+| probe test            | probes/archaeology-prefilter.js                | ESM import of pure fn                  | ✓ WIRED | Imports `filterTranscriptLines`; 9 specs green.                                                                |
 
 ### Behavioral Spot-Checks
 

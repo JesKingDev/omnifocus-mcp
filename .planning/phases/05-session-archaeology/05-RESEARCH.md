@@ -23,7 +23,7 @@ creation/dedup **Confidence:** HIGH (all findings verified against live transcri
   loops. Mirrors `route-inbox-to-projects` Pass-1 `yes/edit/abort`.
 - **D-04a primitive:** Plain-text reply (`yes/edit/abort`), NOT `AskUserQuestion`.
 - **D-05 placement:** Approved loops placed via Phase-3 routing (`match→infer→create→leave`) carrying `archaeology`.
-  Each created task carries `agent-okay` + `archaeology` + LINE-01 lineage stamp. Add `archaeology` to
+  Each created task carries `agent-ok` + `archaeology` + LINE-01 lineage stamp. Add `archaeology` to
   `FUNCTIONAL_TAG_ALLOWLIST`.
 - **D-06 merged gate:** Extraction approval + placement approval = ONE merged gate. Archaeology pre-computes the routing
   proposal and shows loop + proposed placement in one table; single `yes/edit/abort`. Archaeology must run routing's
@@ -252,7 +252,7 @@ Two equally valid mechanisms:
 
 Either way, **archaeology computes the proposal for each loop using routing's ladder, merges loop + proposed placement
 into ONE table, and presents ONE `yes/edit/abort`.** On `yes`, archaeology executes the creates itself via
-`omnifocus_write` (carrying `agent-okay` + `archaeology` + lineage), reusing routing's Pass-2 _create/file_ mechanics
+`omnifocus_write` (carrying `agent-ok` + `archaeology` + lineage), reusing routing's Pass-2 _create/file_ mechanics
 (`update + project` for MATCH, `create project then file` for INFER) but never re-prompting.
 
 **Planning note:** archaeology's create differs from routing's in one way — routing files _existing inbox tasks_
@@ -299,9 +299,8 @@ re-surfaces on the next scan. Two design options:
 ## `archaeology` Tag Registration (answers research Q5 — D-05)
 
 **One-line addition** to `FUNCTIONAL_TAG_ALLOWLIST` in `src/contracts/ast/mutation-script-builder.ts` (currently
-`['agent-okay','routing-unplaced','review-output','review-capture','capture-live']`): add
-`'archaeology', // Phase 5 D-05` following the `routing-unplaced`/`capture-live` precedent.
-`[VERIFIED: source read lines 77-83]`
+`['agent-ok','routing-unplaced','review-output','review-capture','capture-live']`): add `'archaeology', // Phase 5 D-05`
+following the `routing-unplaced`/`capture-live` precedent. `[VERIFIED: source read lines 77-83]`
 
 **A unit test DOES enumerate the allowlist** — `tests/unit/contracts/ast/mutation-script-builder.test.ts`,
 `describe('FUNCTIONAL_TAG_ALLOWLIST / isTestTagAllowed …')` asserts membership per tag
@@ -363,7 +362,7 @@ flowchart TD
   G --> H{Merged gate:<br/>Session + loops + proposed placement<br/>one table, yes/edit/abort}
   H -->|abort| X[No writes]
   H -->|edit| H
-  H -->|yes| I[omnifocus_write create per loop:<br/>name + agent-okay + archaeology + lineage,<br/>file to matched/created project or inbox]
+  H -->|yes| I[omnifocus_write create per loop:<br/>name + agent-ok + archaeology + lineage,<br/>file to matched/created project or inbox]
   I --> J[Report: N created · placements · errors]
 ```
 
@@ -383,7 +382,7 @@ flowchart TD
 | Lineage parse          | A custom note-scraper                     | `LINEAGE_RE` + `JSON.parse`               | Already written, idempotent, tested                                       |
 | Tag creation           | Pre-create the `archaeology` tag manually | `addTag` find-or-create                   | Auto-creates `new Tag(name,null)` on first use                            |
 | Routing logic          | A new match/infer engine                  | route skill's documented ladder           | D-05 — routing is consumed, not rebuilt                                   |
-| Task create            | Direct JXA `new Task`                     | `omnifocus_write` funnel                  | Write-verifier + lineage auto-stamp + `agent-okay` auto-tag               |
+| Task create            | Direct JXA `new Task`                     | `omnifocus_write` funnel                  | Write-verifier + lineage auto-stamp + `agent-ok` auto-tag                 |
 | Approval UX            | `AskUserQuestion` widget                  | plain-text `yes/edit/abort`               | D-04a — caps poorly across many sessions; matches shipped gate            |
 
 ## Runtime State Inventory

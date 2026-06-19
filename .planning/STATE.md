@@ -170,5 +170,5 @@ Last session: 2026-06-16T17:04:28.334Z
 
 ## Operator Next Steps
 
-- Execute Phase 2 Wave 4 (02-04-PLAN.md): agent-okay predicate (PERM-01) + integration tests + human checkpoint. PERM-01
-  predicate tests (agent-okay-predicate.test.ts) go GREEN in Wave 4.
+- Execute Phase 2 Wave 4 (02-04-PLAN.md): agent-ok predicate (PERM-01) + integration tests + human checkpoint. PERM-01
+  predicate tests (agent-ok-predicate.test.ts) go GREEN in Wave 4.

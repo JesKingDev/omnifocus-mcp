@@ -63,7 +63,7 @@ const TEST_INBOX_PREFIX = '__TEST__';
 /**
  * Functional/system tags the product legitimately applies (not arbitrary user
  * content), exempt from the test-mode tag-prefix guard. The Phase 2 capture path
- * stamps `agent-okay` on agent-created tasks; the D-08b integration test must be
+ * stamps `agent-ok` on agent-created tasks; the D-08b integration test must be
  * able to create and read that tag back live. The Phase 3 routing path stamps
  * `routing-unplaced` (D-12) as a durable marker on inbox items it leaves in
  * place; its integration tests must apply and read that tag back live. The Phase
@@ -77,7 +77,7 @@ const TEST_INBOX_PREFIX = '__TEST__';
  * session-archaeology task it creates.
  */
 export const FUNCTIONAL_TAG_ALLOWLIST: readonly string[] = [
-  'agent-okay',
+  'agent-ok',
   'routing-unplaced',
   'review-output', // Phase 4 D-01/D-02
   'review-capture', // Phase 4 D-01/D-02

@@ -130,7 +130,7 @@ query to a local `const completedByTagQuery = { query: { … } }` and reference 
 
 **File:** `.claude/skills/capture-live-blocker/SKILL.md:103` **Issue:** "verified against `OmniFocusWriteTool.ts`
 lineage block" is a soft reference. Per the project's CLAUDE.md "Referencing code" rule, prefer stable grep targets over
-prose pointers so the reference does not rot. The claim itself is accurate (the lineage/agent-okay behavior is in that
+prose pointers so the reference does not rot. The claim itself is accurate (the lineage/agent-ok behavior is in that
 file), so this is a documentation-hygiene nit, not a correctness issue. **Fix:** Optional — change to a grep target,
 e.g. "grep for `composeLineageStamp` in `src/tools/unified/`".
 

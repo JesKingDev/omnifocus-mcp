@@ -24,7 +24,7 @@ Decisions the skill embodies:
   only.
 - **D-09** — permission reuses PERM-02 verbatim: prompt-before-create gate; the funnel owns the verdict; the agent
   renders the prompt.
-- **D-10** — placement is inbox + `agent-okay` + `capture-live` marker tag + `of-mcp:lineage` stamp; `archaeology` is
+- **D-10** — placement is inbox + `agent-ok` + `capture-live` marker tag + `of-mcp:lineage` stamp; `archaeology` is
   never added.
 - **D-11** — reuses Phase 2's native OmniJS inbox-create path, server-side lineage stamp, and the funnel/verifier — no
   new capture mechanism.
@@ -64,7 +64,7 @@ On a `POLICY_GATE_CAPTURE_CONFIRM` response from `omnifocus_write`:
 1. Show the user the proposed inbox task:
    - **Name:** `<the concise blocker statement>`
    - **Note:** `<context, if any>`
-   - **Tags:** `capture-live` (agent-okay stamped automatically by the server)
+   - **Tags:** `capture-live` (agent-ok stamped automatically by the server)
    - **Placement:** inbox (no project)
 2. Ask: "Capture this to OmniFocus? (yes / no)"
 3. If yes — re-invoke `omnifocus_write` with the same create payload, carrying `lineage.sessionId`. The lineage param is
@@ -105,8 +105,8 @@ The write-verifier fires automatically for every agent write. Do not call it exp
 Key server behaviors triggered by this call (verified against `OmniFocusWriteTool.ts` lineage block):
 
 - The `lineage` param auto-appends `of-mcp:lineage` to the task note (lineage stamp).
-- When `role=agent`, the funnel also auto-appends `agent-okay` to `data.tags`. The skill passes only `capture-live`; the
-  funnel stamps `agent-okay` — do not pass `agent-okay` explicitly.
+- When `role=agent`, the funnel also auto-appends `agent-ok` to `data.tags`. The skill passes only `capture-live`; the
+  funnel stamps `agent-ok` — do not pass `agent-ok` explicitly.
 - No `project` key means the task lands in the inbox (DISC-CAPTURE-01).
 - The write-verifier fires automatically; do not call it.
 
@@ -132,16 +132,16 @@ before reporting success or failure.
 
 ## Common mistakes
 
-| Mistake                                              | Fix                                                                                                       |
-| ---------------------------------------------------- | --------------------------------------------------------------------------------------------------------- |
-| Assigning tags via JXA `task.addTags()`              | JXA tag assignment silently no-ops. Always use `omnifocus_write` with the `tags` field in `data`.         |
-| Adding the `archaeology` tag to a live capture       | Never. `archaeology` is Phase 5 — a past-session provenance marker, not a live-capture marker.            |
-| Adding a `dueDate` or `deferDate`                    | Do not invent dates. A captured blocker is undated by design (D-05).                                      |
-| Skipping the PERM-02 permission prompt               | Always render the yes/no prompt on `POLICY_GATE_CAPTURE_CONFIRM`. The user's consent is required.         |
-| Treating a 10+ second OmniFocus response as an error | Wait for the response. Latency of 10–30 seconds is normal for JXA/OmniJS bridge calls.                    |
-| Adding `review-output` or `review-capture`           | Those tags are for review surfacing (REVIEW-01/02), not live capture. Do not add them.                    |
-| Passing `agent-okay` explicitly                      | The funnel auto-stamps `agent-okay` when `role=agent` and `lineage` is present. Pass only `capture-live`. |
-| Capturing a vague concern or meta-observation        | This skill is for concrete, actionable, single items only. Bias to NOT capture.                           |
+| Mistake                                              | Fix                                                                                                     |
+| ---------------------------------------------------- | ------------------------------------------------------------------------------------------------------- |
+| Assigning tags via JXA `task.addTags()`              | JXA tag assignment silently no-ops. Always use `omnifocus_write` with the `tags` field in `data`.       |
+| Adding the `archaeology` tag to a live capture       | Never. `archaeology` is Phase 5 — a past-session provenance marker, not a live-capture marker.          |
+| Adding a `dueDate` or `deferDate`                    | Do not invent dates. A captured blocker is undated by design (D-05).                                    |
+| Skipping the PERM-02 permission prompt               | Always render the yes/no prompt on `POLICY_GATE_CAPTURE_CONFIRM`. The user's consent is required.       |
+| Treating a 10+ second OmniFocus response as an error | Wait for the response. Latency of 10–30 seconds is normal for JXA/OmniJS bridge calls.                  |
+| Adding `review-output` or `review-capture`           | Those tags are for review surfacing (REVIEW-01/02), not live capture. Do not add them.                  |
+| Passing `agent-ok` explicitly                        | The funnel auto-stamps `agent-ok` when `role=agent` and `lineage` is present. Pass only `capture-live`. |
+| Capturing a vague concern or meta-observation        | This skill is for concrete, actionable, single items only. Bias to NOT capture.                         |
 
 ## Reporting tooling problems
 

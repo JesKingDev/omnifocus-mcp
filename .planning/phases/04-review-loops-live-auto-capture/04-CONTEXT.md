@@ -34,9 +34,9 @@ routing loop is **consumed** here (live captures route later), not rebuilt.
   `review` parent+children and over a full `agent/*` namespace rewrite. Rationale: surfacing rides on the native flag +
   planned date (D-04), so the review tag's only job is **classification** — it does not need a structural parent to be
   "the one filter that surfaces everything." Flat siblings cost a single `addTag` find-or-create per item (the same path
-  as `agent-okay` / `routing-unplaced`), add no parent-before-child ordering, and **rename nothing already shipped**.
+  as `agent-ok` / `routing-unplaced`), add no parent-before-child ordering, and **rename nothing already shipped**.
 - **D-02 (namespace coherence — answers Phase 3 D-13):** The `review-*` tags sit **alongside** the shipped flat family
-  (`agent-okay`, `routing-unplaced`, future `archaeology`), coherent by prefix. The full `agent/*` hierarchical rewrite
+  (`agent-ok`, `routing-unplaced`, future `archaeology`), coherent by prefix. The full `agent/*` hierarchical rewrite
   was explicitly rejected because it would rename the shipped Phase 3 `routing-unplaced` tag and its
   `FUNCTIONAL_TAG_ALLOWLIST` entry and migrate live tagged data — heavy for a single user. `routing-unplaced` keeps its
   shipped name; `review-output` / `review-capture` are new siblings.
@@ -81,8 +81,8 @@ routing loop is **consumed** here (live captures route later), not rebuilt.
   D-04, reaffirmed Phase 3 D-09), so the gate is natural; the funnel owns the verdict, the agent renders the prompt. No
   second permission mechanism is built. The allow-all grant keeps a focused session from being interrupted on every
   blocker.
-- **D-10 (placement):** **Inbox + `agent-okay` + a live-capture marker tag + LINE-01 lineage stamp; route later.** The
-  captured blocker lands in the inbox (CAP-01 shape — messy item, no project decision required), tagged `agent-okay` so
+- **D-10 (placement):** **Inbox + `agent-ok` + a live-capture marker tag + LINE-01 lineage stamp; route later.** The
+  captured blocker lands in the inbox (CAP-01 shape — messy item, no project decision required), tagged `agent-ok` so
   the **existing Phase 3 routing loop** can place it on a later run, with the session-lineage note (LINE-01) so context
   travels with it. **No `archaeology` tag.** Routing immediately (couples capture to the heavy routing brain mid-focus)
   and filing into the current project (misfiling risk — the agent rarely knows the live OF project confidently) were
@@ -186,7 +186,7 @@ routing loop is **consumed** here (live captures route later), not rebuilt.
 - **Native `new Task(name, inbox)` capture path** (Phase 2, DISC-CAPTURE-01) — live capture reuses it (D-11).
 - **PERM-02 prompt + allow-all-session grant** (Phase 2) — live capture's consent flow reuses it verbatim (D-09); no new
   permission mechanism.
-- **Phase 3 routing loop** (`route-inbox-to-projects` skill) — places live captures later; Phase 4 emits `agent-okay`
+- **Phase 3 routing loop** (`route-inbox-to-projects` skill) — places live captures later; Phase 4 emits `agent-ok`
   inbox items and does not route (D-10).
 - **`FUNCTIONAL_TAG_ALLOWLIST`** — `routing-unplaced` precedent for registering new functional tag names.
 
@@ -203,11 +203,11 @@ routing loop is **consumed** here (live captures route later), not rebuilt.
 
 - **Upstream:** REVIEW tags flag agent work done by the routing/capture loops (Phase 2/3) and by live capture (this
   phase).
-- **Phase 3 handoff:** live captures are `agent-okay` inbox items the Phase 3 routing loop consumes on a later run.
+- **Phase 3 handoff:** live captures are `agent-ok` inbox items the Phase 3 routing loop consumes on a later run.
 - **Phase 6 handoff (data, not machinery):** the `review-*` tags + flag + `plannedDate` are the native predicate Phase
   6's JessOS perspective will filter on — Phase 4 produces the input, builds none of the perspective code.
 - **Namespace contract:** new tag names (`review-output`, `review-capture`, live-capture marker) coexist with
-  `routing-unplaced` / `agent-okay` / future `archaeology` — keep them collision-free and allowlisted.
+  `routing-unplaced` / `agent-ok` / future `archaeology` — keep them collision-free and allowlisted.
 
 </code_context>
 

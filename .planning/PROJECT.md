@@ -24,8 +24,8 @@ loop on top of it — with session archaeology so buried open loops stop dying a
   build custom code for solved problems.
 - **Frictionless capture** — dump messy items into the inbox; the agent routes them later.
 - **Task routing / project inference** — match an existing project, else infer from the vault, else leave in inbox.
-- **Permission gating** — async runs act only on `agent-okay`-tagged tasks; sync sessions prompt before creating, with
-  an allow-all-this-session option (mirrors the Jira-creation flow).
+- **Permission gating** — async runs act only on `agent-ok`-tagged tasks; sync sessions prompt before creating, with an
+  allow-all-this-session option (mirrors the Jira-creation flow).
 - **Review loops** — agent flags work into a today view, distinguishing review-output (verify work done) from
   review-capture/archaeology (verify a task the agent decided should exist).
 - **Session archaeology** — summarize-then-approve scan of the last 7 days of active Claude Code sessions; approved open
@@ -75,7 +75,7 @@ trigger) to prove gating + routing; the hardened version polls every 15 min via 
 <!-- agent-workflow milestone — in progress. -->
 
 - ✓ **On-demand inbox routing** — the `route-inbox-to-projects` skill runs a two-pass summarize-then-approve loop that
-  matches an agent-okay inbox item to an existing project, else infers + creates from vault `omnifocus-project`
+  matches an agent-ok inbox item to an existing project, else infers + creates from vault `omnifocus-project`
   frontmatter, else leaves it stamped with the durable `routing-unplaced` marker; runnable on demand via a manual
   trigger (ROUTE-01…04, TRIG-01) — _Validated in Phase 3: Routing & On-Demand Trigger (spec + live write-path proofs;
   end-to-end UAT tracked in 03-HUMAN-UAT.md)_
@@ -97,7 +97,7 @@ trigger) to prove gating + routing; the hardened version polls every 15 min via 
 
 **Permission gating:**
 
-- [ ] Async runs act only on `agent-okay`-tagged tasks; sync sessions prompt before creating with allow-all-this-session
+- [ ] Async runs act only on `agent-ok`-tagged tasks; sync sessions prompt before creating with allow-all-this-session
       (PERM-01…02)
 
 **Review & archaeology:**

@@ -46,7 +46,7 @@ Three rules, in order of importance:
    the task in today's view. The review tag is **pure classification** (output vs. capture) — it is not the lever that
    surfaces or clears the item. The user never has to touch the tag; they complete (or unflag) the task.
 
-Agent involvement is already signaled by `agent-okay` and the `of-mcp:lineage` note stamp — no separate "an agent is
+Agent involvement is already signaled by `agent-ok` and the `of-mcp:lineage` note stamp — no separate "an agent is
 working on this" tag is needed.
 
 ## Which review tag
@@ -84,7 +84,7 @@ update.
 ## Out of scope
 
 - **Completing work awaiting review** — never. Completion is the user's "I reviewed this" gesture (rule 2).
-- **An `agent-active` / in-progress tag** — not used. `agent-okay` + `of-mcp:lineage` already mark agent involvement.
+- **An `agent-active` / in-progress tag** — not used. `agent-ok` + `of-mcp:lineage` already mark agent involvement.
 - **A custom "reviewed" tag or clearing mechanism** — none. The user completes or unflags; the today view self-cleans.
 - **`archaeology` / live capture** — different flows. `archaeology` is Phase 5 retrospective scan; `capture-live` is a
   forward-looking blocker the agent captures to remember (see `capture-live-blocker`). A review item is work to check.
@@ -97,7 +97,7 @@ update.
 | --------------------------------------------------- | -------------------------------------------------------------------------------------------------- |
 | Completing the task to signal "done, please review" | Leave it OPEN + flagged. Completion is the user's gesture; completing it removes it from the view. |
 | Relying on the tag alone to surface the item        | The flag + `plannedDate` surface it; the tag only classifies. Set both.                            |
-| Adding `agent-active` or a custom status tag        | Not used. `agent-okay` + lineage already signal agent involvement.                                 |
+| Adding `agent-active` or a custom status tag        | Not used. `agent-ok` + lineage already signal agent involvement.                                   |
 | Swapping or removing the tag to mark it reviewed    | Don't. The user completes the task to clear it; the tag stays as a classification record.          |
 | Giving a review task a `dueDate`                    | Use `plannedDate=today` to surface it. Do not invent a deadline.                                   |
 

@@ -45,7 +45,7 @@ created: 2026-06-15
 | 04-01-xx | 01   | 0    | REVIEW-02             | —                                     | `review-output` / `review-capture` accepted as functional tags; arbitrary tags still rejected          | unit        | `npm run test:unit -- mutation-script-builder`                         | ❌ W0 (extend allowlist test) | ⬜ pending |
 | 04-01-xx | 01   | 1    | REVIEW-01             | —                                     | update task with `flagged+plannedDate(today)+addTags:[review-capture]` round-trips on live active task | integration | `npm run test:integration -- field-roundtrip` (or new review-tag spec) | ❌ W0                         | ⬜ pending |
 | 04-01-xx | 01   | 1    | REVIEW-01 (completed) | —                                     | completed task accepts `addTags:[review-output]`; tag reads back; no future `plannedDate` written      | integration | new spec under `tests/integration/tools/unified/`                      | ❌ W0                         | ⬜ pending |
-| 04-02-xx | 02   | 1    | LIVE-01               | T-04 (over-capture / wrong-placement) | inbox create with lineage + live-marker tag stamps `agent-okay`, NO `archaeology`, lands in inbox      | integration | extend agent-capture harness (`create-with-lineage` test)              | ❌ W0 (extend)                | ⬜ pending |
+| 04-02-xx | 02   | 1    | LIVE-01               | T-04 (over-capture / wrong-placement) | inbox create with lineage + live-marker tag stamps `agent-ok`, NO `archaeology`, lands in inbox        | integration | extend agent-capture harness (`create-with-lineage` test)              | ❌ W0 (extend)                | ⬜ pending |
 | 04-02-xx | 02   | 1    | LIVE-01 (gate)        | T-04                                  | interactive-mode agent create returns `POLICY_GATE_CAPTURE_CONFIRM`; owner session grant bypasses      | unit        | existing policy/gate tests — add live-marker case                      | ✅ (pattern exists, extend)   | ⬜ pending |
 
 _Status: ⬜ pending · ✅ green · ❌ red · ⚠️ flaky_
@@ -58,7 +58,7 @@ _Status: ⬜ pending · ✅ green · ❌ red · ⚠️ flaky_
       marker tag are allowed (and that unrelated arbitrary tags remain rejected).
 - [ ] Integration spec: review-capture update (flag + plannedDate + tag) round-trips on an active task.
 - [ ] Integration spec: review-output tag on a completed task reads back (and no future `plannedDate` is written).
-- [ ] Integration spec: live capture (inbox + lineage + live-marker), assert `agent-okay` present, `archaeology` absent,
+- [ ] Integration spec: live capture (inbox + lineage + live-marker), assert `agent-ok` present, `archaeology` absent,
       item in inbox.
 - [ ] No new conftest/fixtures needed — reuse `sandbox-manager`, `run-id`, `assert-field-persisted` helpers.
 

@@ -30,7 +30,7 @@ export type Role = 'owner' | 'agent';
  * Connection-bound interaction mode, derived at startup from env (D-04, D-05).
  *
  * - 'interactive'  — live/sync session; agent prompts before creating tasks (PERM-02)
- * - 'background'   — scheduled/async run; agent acts only on agent-okay-tagged tasks (PERM-01)
+ * - 'background'   — scheduled/async run; agent acts only on agent-ok-tagged tasks (PERM-01)
  *
  * Resolved by parseMode() in src/auth/role-resolver.ts.
  * Literal-only, default-deny: only the exact env literal 'true' → interactive.

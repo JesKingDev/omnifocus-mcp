@@ -205,13 +205,13 @@ Each finding in `docs/reference/omnifocus-capabilities.md` must carry exactly on
 - `tag.availableTasks` / `tag.remainingTasks` for filtered task collections — no full scan needed for tag-based queries
   `[VERIFIED: codebase OMNIFOCUS_QUERY_ALTERNATIVES.md]`
 
-**Agent-workflow-specific tags:** `agent-okay`, `agent-review`, `review-output`, `review-capture`, `archaeology` — these
+**Agent-workflow-specific tags:** `agent-ok`, `agent-review`, `review-output`, `review-capture`, `archaeology` — these
 are conventional tags, no OF extension required
 
 **Build-decision gate claim (requires probe):** Does `task.addTag(tagName)` auto-create a tag that doesn't exist, or
 does it require a pre-existing `Tag` object? `[ASSUMED]` from docs; probe to confirm before Phase 2 planning.
 
-**Likely verdict:** `extend` — OF handles tags natively; MCP needs a thin wrapper for tag CRUD and the agent-okay
+**Likely verdict:** `extend` — OF handles tags natively; MCP needs a thin wrapper for tag CRUD and the agent-ok
 permission check.
 
 ---

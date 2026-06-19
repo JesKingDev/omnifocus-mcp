@@ -33,7 +33,7 @@ Requirements for the `agent-workflow` milestone. Each maps to exactly one roadma
 
 ### Permission Gating
 
-- [x] **PERM-01**: In async/background runs, agent acts only on tasks explicitly tagged `agent-okay`; untagged tasks are
+- [x] **PERM-01**: In async/background runs, agent acts only on tasks explicitly tagged `agent-ok`; untagged tasks are
       left untouched.
 - [x] **PERM-02**: In sync/live sessions, agent prompts before creating a task, offering an "allow all this session"
       option (mirrors the existing Jira-creation permission flow).

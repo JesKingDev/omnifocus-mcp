@@ -1,16 +1,16 @@
 ---
 name: route-inbox-to-projects
 description:
-  Use when Jess says "route my inbox", "process agent-okay items", "file inbox tasks", "run routing", or "route inbox
-  items" — runs the on-demand routing loop that files agent-okay inbox tasks into matching projects, creates projects
-  for vault-inferred items, or leaves the rest marked for later review.
+  Use when Jess says "route my inbox", "process agent-ok items", "file inbox tasks", "run routing", or "route inbox
+  items" — runs the on-demand routing loop that files agent-ok inbox tasks into matching projects, creates projects for
+  vault-inferred items, or leaves the rest marked for later review.
 ---
 
 # Route Inbox → Projects
 
 ## Overview
 
-On-demand routing of **agent-okay** OmniFocus inbox items into their proper home. Each item is matched to an existing
+On-demand routing of **agent-ok** OmniFocus inbox items into their proper home. Each item is matched to an existing
 active project (ROUTE-01), inferred from the JessOS vault and filed into a newly-created project (ROUTE-02 / ROUTE-03),
 or left in the inbox with a durable `routing-unplaced` marker tag (ROUTE-04). OmniFocus is canonical. The JessOS vault
 (`~/vaults/jess-os/`) supplies deterministic routing signals through `omnifocus-project` / `omnifocus-folder`
@@ -34,8 +34,8 @@ Two passes, in order. Pass 1 plans and shows you a proposal; Pass 2 executes onl
 
 ### Pass 1 — Plan (read-only)
 
-1. **Read agent-okay inbox items.** `omnifocus_read` `type:"tasks"`, `filters.tags.all:["agent-okay"]`,
-   `filters.inInbox:true`, `details:true`. If zero items come back, report "Inbox has no agent-okay items. Nothing to
+1. **Read agent-ok inbox items.** `omnifocus_read` `type:"tasks"`, `filters.tags.all:["agent-ok"]`,
+   `filters.inInbox:true`, `details:true`. If zero items come back, report "Inbox has no agent-ok items. Nothing to
    route." and stop.
 2. **Read active projects with notes.** `omnifocus_read` `type:"projects"`, `filters.status:"active"`,
    `fields:["id","name","folderPath","note"]`. Build a candidate set of `(id, name, folderPath, note)` tuples — this is
@@ -74,7 +74,7 @@ view in Phase 4."
 
 ## Routing Decision Rules
 
-For each agent-okay inbox item, apply this ladder in order:
+For each agent-ok inbox item, apply this ladder in order:
 
 1. **MATCH** — A project name clearly identifies the item's home (high confidence). File it there. Do not guess on
    ambiguous names.
@@ -107,7 +107,7 @@ The agent reads `~/vaults/jess-os/` directly with `Grep` / `Read` — no MCP lay
 
 | Goal                                 | Call shape                                                                                                                                                             |
 | ------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Read agent-okay inbox items          | `omnifocus_read` `type:"tasks"`, `filters.tags.all:["agent-okay"]`, `filters.inInbox:true`, `details:true`                                                             |
+| Read agent-ok inbox items            | `omnifocus_read` `type:"tasks"`, `filters.tags.all:["agent-ok"]`, `filters.inInbox:true`, `details:true`                                                               |
 | Active projects with notes           | `omnifocus_read` `type:"projects"`, `filters.status:"active"`, `fields:["id","name","folderPath","note"]`                                                              |
 | File task to project (MATCH / INFER) | `omnifocus_write` `operation:"update"`, `target:"task"`, `id:"<id>"`, `changes:{project:"<project-name-or-id>"}`                                                       |
 | Create project (INFER branch)        | `omnifocus_write` `operation:"create"`, `target:"project"`, `data:{name:"<name>", folder:"<folder-name>"}` — omit the `folder` key when there is no `omnifocus-folder` |

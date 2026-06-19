@@ -1220,9 +1220,9 @@ describe('FUNCTIONAL_TAG_ALLOWLIST / isTestTagAllowed (Phase 3 routing-unplaced 
     expect(isTestTagAllowed('routing-unplaced')).toBe(true);
   });
 
-  it('still allows agent-okay (Phase 2 capture tag — regression guard)', () => {
-    expect(FUNCTIONAL_TAG_ALLOWLIST).toContain('agent-okay');
-    expect(isTestTagAllowed('agent-okay')).toBe(true);
+  it('still allows agent-ok (Phase 2 capture tag — regression guard)', () => {
+    expect(FUNCTIONAL_TAG_ALLOWLIST).toContain('agent-ok');
+    expect(isTestTagAllowed('agent-ok')).toBe(true);
   });
 
   it('rejects an arbitrary non-allowlisted tag', () => {

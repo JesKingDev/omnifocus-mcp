@@ -827,18 +827,18 @@ describe('Unified Tools End-to-End Integration', () => {
 });
 
 // ---------------------------------------------------------------------------
-// Phase 2 D-08b: agent create with lineage stamps agent-okay tag
+// Phase 2 D-08b: agent create with lineage stamps agent-ok tag
 //
 // Automated proof for D-08b: an agent-created task with a lineage param is
-// stamped with the 'agent-okay' tag and has the of-mcp:lineage note block.
+// stamped with the 'agent-ok' tag and has the of-mcp:lineage note block.
 // Runs as the AGENT role (the fail-safe default) — this is the real production
 // capture path. The lineage param is the agent's self-attestation, which both
 // bypasses the create gate (capture-attestation bypass) AND triggers the
-// agent-okay stamp (stamp fires only for role=agent + lineage present). Running
+// agent-ok stamp (stamp fires only for role=agent + lineage present). Running
 // as owner would bypass the gate but the stamp would never fire (role !== agent).
 // ---------------------------------------------------------------------------
 
-describe('Phase 2 D-08b — agent create with lineage stamps agent-okay tag', () => {
+describe('Phase 2 D-08b — agent create with lineage stamps agent-ok tag', () => {
   let agentServerProcess: ChildProcess;
 
   const lineageTaskName = runScopedName('phase2-lineage-tag');
@@ -898,7 +898,7 @@ describe('Phase 2 D-08b — agent create with lineage stamps agent-okay tag', ()
       // AGENT role: explicitly 'agent' (any non-'owner' value resolves to agent
       // via parseRole's default-deny) so an inherited OMNIFOCUS_MCP_ROLE=owner
       // cannot leak in. This exercises the real capture path (gate bypass via
-      // lineage attestation + agent-okay stamp).
+      // lineage attestation + agent-ok stamp).
       env: { ...process.env, OMNIFOCUS_MCP_ROLE: 'agent' },
     });
 
@@ -921,7 +921,7 @@ describe('Phase 2 D-08b — agent create with lineage stamps agent-okay tag', ()
     }
   });
 
-  it('creates a task with lineage and reads back agent-okay tag (D-08b)', async () => {
+  it('creates a task with lineage and reads back agent-ok tag (D-08b)', async () => {
     let createdTaskId: string | undefined;
 
     try {
@@ -954,9 +954,9 @@ describe('Phase 2 D-08b — agent create with lineage stamps agent-okay tag', ()
       createdTaskId = createParsed.data?.task?.taskId ?? createParsed.data?.taskId;
       expect(createdTaskId).toBeDefined();
 
-      // (d) Read back via the agent-okay TAG FILTER — the agentOkayPredicate path
+      // (d) Read back via the agent-ok TAG FILTER — the agentOkayPredicate path
       // Phase 2 built (D-06). This is the feature-aligned read-back: a task that
-      // comes back through the agent-okay filter IS tagged agent-okay by definition,
+      // comes back through the agent-ok filter IS tagged agent-ok by definition,
       // which proves the capture-time stamp. We match by the run-unique task name.
       // (Read-back by `filters.ids` is intentionally avoided — the read path only
       // routes singular `filter.id`, and the by-id projections omit tags; a separate
@@ -970,7 +970,7 @@ describe('Phase 2 D-08b — agent create with lineage stamps agent-okay tag', ()
           arguments: {
             query: {
               type: 'tasks',
-              filters: { tags: { all: ['agent-okay'] } },
+              filters: { tags: { all: ['agent-ok'] } },
               fields: ['name', 'tags', 'note'],
               limit: 200,
             },
@@ -980,12 +980,12 @@ describe('Phase 2 D-08b — agent create with lineage stamps agent-okay tag', ()
 
       const readContent = (readResult as { content: Array<{ type: string; text: string }> }).content;
       const readParsed = JSON.parse(readContent[0].text);
-      expectOk(readParsed, 'read back agent-okay tasks (D-08b)');
+      expectOk(readParsed, 'read back agent-ok tasks (D-08b)');
 
-      // (e) The created task must appear among agent-okay-tagged tasks → tag stamped.
+      // (e) The created task must appear among agent-ok-tagged tasks → tag stamped.
       const task = (readParsed.data?.tasks ?? []).find((t: { name?: string }) => t.name === lineageTaskName);
-      expect(task, `created task "${lineageTaskName}" not found among agent-okay tasks`).toBeDefined();
-      expect(task.tags).toContain('agent-okay');
+      expect(task, `created task "${lineageTaskName}" not found among agent-ok tasks`).toBeDefined();
+      expect(task.tags).toContain('agent-ok');
 
       // (f) Assert the lineage sentinel is in the note → lineage stamp persisted.
       expect(task.note).toContain('of-mcp:lineage');
@@ -1015,17 +1015,17 @@ describe('Phase 2 D-08b — agent create with lineage stamps agent-okay tag', ()
 });
 
 // ---------------------------------------------------------------------------
-// Phase 4 LIVE-01 — live-capture inbox create with capture-live + agent-okay + lineage
+// Phase 4 LIVE-01 — live-capture inbox create with capture-live + agent-ok + lineage
 //
 // Automated proof for LIVE-01: an agent-role live capture using the
 // capture-live-blocker skill shape lands in the inbox with:
-//   a. tags ⊇ [agent-okay, capture-live] — funnel auto-stamp + skill marker
+//   a. tags ⊇ [agent-ok, capture-live] — funnel auto-stamp + skill marker
 //   b. note contains 'of-mcp:lineage' — lineage stamp persisted
 //   c. tags does NOT contain 'archaeology' — D-08/D-10 live capture is distinct from Phase 5
 //   d. project is null / absent — inbox-only (DISC-CAPTURE-01 / D-10)
 //
 // Extends the D-08b agent-create-with-lineage harness: same OMNIFOCUS_MCP_ROLE=agent
-// spawn and agent-okay-tag-filter read-back. The only addition is tags:['capture-live']
+// spawn and agent-ok-tag-filter read-back. The only addition is tags:['capture-live']
 // in the create call, and the Phase 4 assertions on the read-back.
 //
 // capture-live passes FUNCTIONAL_TAG_ALLOWLIST after Plan 04-01 Task 1 registered it.
@@ -1033,7 +1033,7 @@ describe('Phase 2 D-08b — agent create with lineage stamps agent-okay tag', ()
 // Self-clean: finally block deletes the created task via omnifocus_write delete.
 // ---------------------------------------------------------------------------
 
-describe('Phase 4 LIVE-01 — live capture stamps capture-live + agent-okay + lineage, no archaeology', () => {
+describe('Phase 4 LIVE-01 — live capture stamps capture-live + agent-ok + lineage, no archaeology', () => {
   let agentServerProcess: ChildProcess;
   let nextId = 400;
 
@@ -1119,20 +1119,20 @@ describe('Phase 4 LIVE-01 — live capture stamps capture-live + agent-okay + li
     agentServerProcess?.kill();
   });
 
-  it('live capture: tags ⊇ [capture-live, agent-okay], note has lineage, no archaeology, inbox placement (LIVE-01)', async () => {
+  it('live capture: tags ⊇ [capture-live, agent-ok], note has lineage, no archaeology, inbox placement (LIVE-01)', async () => {
     let createdTaskId: string | undefined;
 
     try {
       // (a) Create inbox task with capture-live marker + lineage — the skill shape from LIVE-01.
       //     No project key → inbox (DISC-CAPTURE-01). No dueDate/deferDate (D-05).
-      //     The funnel auto-stamps agent-okay when role=agent + lineage present (D-10).
+      //     The funnel auto-stamps agent-ok when role=agent + lineage present (D-10).
       const createRes = await callTool('omnifocus_write', {
         mutation: {
           operation: 'create',
           target: 'task',
           data: {
             name: liveTaskName,
-            tags: ['capture-live'], // live-capture marker only; agent-okay auto-stamped by funnel
+            tags: ['capture-live'], // live-capture marker only; agent-ok auto-stamped by funnel
             lineage: { sessionId: 'integration-test-session' },
             // No project key → inbox
             // No dueDate / deferDate (D-05)
@@ -1145,25 +1145,25 @@ describe('Phase 4 LIVE-01 — live capture stamps capture-live + agent-okay + li
       createdTaskId = createRes.data?.task?.taskId ?? createRes.data?.taskId;
       expect(createdTaskId).toBeDefined();
 
-      // (c) Read back via the agent-okay tag filter (same pattern as D-08b).
-      //     A task returned by this filter IS tagged agent-okay — proves the funnel stamp.
+      // (c) Read back via the agent-ok tag filter (same pattern as D-08b).
+      //     A task returned by this filter IS tagged agent-ok — proves the funnel stamp.
       //     Added 'project' to fields so inbox placement is directly assertable (DISC-CAPTURE-01).
       const readRes = await callTool('omnifocus_read', {
         query: {
           type: 'tasks',
-          filters: { tags: { all: ['agent-okay'] } },
+          filters: { tags: { all: ['agent-ok'] } },
           fields: ['name', 'tags', 'note', 'project'],
           limit: 200,
         },
       });
-      expectOk(readRes, 'read back agent-okay tasks (LIVE-01)');
+      expectOk(readRes, 'read back agent-ok tasks (LIVE-01)');
 
       // (d) Locate by run-unique name
       const task = (readRes.data?.tasks ?? []).find((t: { name?: string }) => t.name === liveTaskName);
-      expect(task, `live-capture task "${liveTaskName}" not found among agent-okay tasks`).toBeDefined();
+      expect(task, `live-capture task "${liveTaskName}" not found among agent-ok tasks`).toBeDefined();
 
       // (e) Tags: funnel auto-stamp + skill marker
-      expect(task.tags).toContain('agent-okay'); // funnel auto-stamped (role=agent + lineage)
+      expect(task.tags).toContain('agent-ok'); // funnel auto-stamped (role=agent + lineage)
       expect(task.tags).toContain('capture-live'); // live-capture marker applied
 
       // (f) Lineage stamp: of-mcp:lineage sentinel must appear in the note

@@ -15,7 +15,7 @@ updated: 2026-06-14T20:05:00Z
 ### 1. ROUTE-01 — file a matching item under its existing project
 
 expected: Invoke the route-inbox-to-projects skill. Pass 1 produces a proposal table before any write; after approval,
-an agent-okay inbox item whose name matches an active project is filed under that project. No write happens before
+an agent-ok inbox item whose name matches an active project is filed under that project. No write happens before
 approval (D-08). result: [pending]
 
 ### 2. ROUTE-02 / ROUTE-03 — vault-inferred create + file

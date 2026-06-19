@@ -8,13 +8,13 @@ skill, and add three test specs. Every analog below is a real shipped file in th
 
 ## File Classification
 
-| New/Modified File                                                                              | Role                        | Data Flow                             | Closest Analog                                                                                                                       | Match Quality                                                            |
-| ---------------------------------------------------------------------------------------------- | --------------------------- | ------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------ |
-| `src/contracts/ast/mutation-script-builder.ts` (MODIFY: extend `FUNCTIONAL_TAG_ALLOWLIST`)     | config / allowlist constant | transform (write-guard)               | itself — the `routing-unplaced` add in Phase 3 (same file, same const)                                                               | exact                                                                    |
-| `.claude/skills/capture-live-blocker/SKILL.md` (CREATE)                                        | skill prompt                | event-driven (in-session trigger)     | `.claude/skills/route-inbox-to-projects/SKILL.md`                                                                                    | exact (structure); role-match (trigger model differs — passive vs batch) |
-| `tests/unit/contracts/ast/mutation-script-builder.test.ts` (MODIFY: extend allowlist describe) | unit test                   | request-response (pure fn)            | itself — `describe('FUNCTIONAL_TAG_ALLOWLIST / isTestTagAllowed (Phase 3 routing-unplaced — D-12)')`                                 | exact                                                                    |
-| `tests/integration/tools/unified/<review-tag>.test.ts` (CREATE)                                | integration test            | CRUD round-trip                       | `tests/integration/tools/unified/field-roundtrip.test.ts`                                                                            | exact                                                                    |
-| `tests/integration/tools/unified/<live-capture>.test.ts` (CREATE, or extend end-to-end)        | integration test            | event-driven (agent create + lineage) | `tests/integration/tools/unified/end-to-end.test.ts` → `describe('Phase 2 D-08b — agent create with lineage stamps agent-okay tag')` | exact                                                                    |
+| New/Modified File                                                                              | Role                        | Data Flow                             | Closest Analog                                                                                                                     | Match Quality                                                            |
+| ---------------------------------------------------------------------------------------------- | --------------------------- | ------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------ |
+| `src/contracts/ast/mutation-script-builder.ts` (MODIFY: extend `FUNCTIONAL_TAG_ALLOWLIST`)     | config / allowlist constant | transform (write-guard)               | itself — the `routing-unplaced` add in Phase 3 (same file, same const)                                                             | exact                                                                    |
+| `.claude/skills/capture-live-blocker/SKILL.md` (CREATE)                                        | skill prompt                | event-driven (in-session trigger)     | `.claude/skills/route-inbox-to-projects/SKILL.md`                                                                                  | exact (structure); role-match (trigger model differs — passive vs batch) |
+| `tests/unit/contracts/ast/mutation-script-builder.test.ts` (MODIFY: extend allowlist describe) | unit test                   | request-response (pure fn)            | itself — `describe('FUNCTIONAL_TAG_ALLOWLIST / isTestTagAllowed (Phase 3 routing-unplaced — D-12)')`                               | exact                                                                    |
+| `tests/integration/tools/unified/<review-tag>.test.ts` (CREATE)                                | integration test            | CRUD round-trip                       | `tests/integration/tools/unified/field-roundtrip.test.ts`                                                                          | exact                                                                    |
+| `tests/integration/tools/unified/<live-capture>.test.ts` (CREATE, or extend end-to-end)        | integration test            | event-driven (agent create + lineage) | `tests/integration/tools/unified/end-to-end.test.ts` → `describe('Phase 2 D-08b — agent create with lineage stamps agent-ok tag')` | exact                                                                    |
 
 ## Pattern Assignments
 
@@ -27,7 +27,7 @@ the three new names to the array literal, do NOT touch `isTestTagAllowed` (it al
 `TEST_TAG_PREFIX`):**
 
 ```typescript
-export const FUNCTIONAL_TAG_ALLOWLIST: readonly string[] = ['agent-okay', 'routing-unplaced'];
+export const FUNCTIONAL_TAG_ALLOWLIST: readonly string[] = ['agent-ok', 'routing-unplaced'];
 
 /** A tag is allowed in test mode if it is sandbox-prefixed OR a known functional tag. */
 export function isTestTagAllowed(tag: string): boolean {
@@ -39,7 +39,7 @@ export function isTestTagAllowed(tag: string): boolean {
 
 ```typescript
 export const FUNCTIONAL_TAG_ALLOWLIST: readonly string[] = [
-  'agent-okay',
+  'agent-ok',
   'routing-unplaced',
   'review-output', // Phase 4 D-01/D-02
   'review-capture', // Phase 4 D-01/D-02
@@ -48,7 +48,7 @@ export const FUNCTIONAL_TAG_ALLOWLIST: readonly string[] = [
 ```
 
 **Doc-comment convention:** the JSDoc block above the const explains why each functional tag is exempt (cites the
-phase + decision it serves). Extend it with one sentence per new tag, mirroring the existing `agent-okay` /
+phase + decision it serves). Extend it with one sentence per new tag, mirroring the existing `agent-ok` /
 `routing-unplaced` sentences. Stable anchor: the block begins `Functional/system tags the product legitimately applies`.
 
 **`isTestTagAllowed` usage sites (no change needed — confirms the allowlist is the single control point):** the guard is
@@ -112,8 +112,8 @@ Key facts to state in the skill (verified against `OmniFocusWriteTool.ts` lineag
 - No `project` key → defaults to inbox (DISC-CAPTURE-01).
 - No `dueDate` / `deferDate` — a captured blocker is undated (D-05).
 - The `lineage` param triggers two server behaviors automatically: the note gets the `of-mcp:lineage` stamp, AND when
-  `role=agent` the funnel appends `agent-okay` to `data.tags`. The skill need not pass `agent-okay` itself; research
-  Open Question #1 recommends passing `capture-live` explicitly and letting the funnel auto-stamp `agent-okay`.
+  `role=agent` the funnel appends `agent-ok` to `data.tags`. The skill need not pass `agent-ok` itself; research Open
+  Question #1 recommends passing `capture-live` explicitly and letting the funnel auto-stamp `agent-ok`.
 - The write-verifier fires automatically — do not call it explicitly.
 
 **PERM-02 prompt-rendering convention (D-09)** — from the route skill's live/interactive consent pattern and the
@@ -147,9 +147,9 @@ describe('FUNCTIONAL_TAG_ALLOWLIST / isTestTagAllowed (Phase 3 routing-unplaced 
     expect(isTestTagAllowed('routing-unplaced')).toBe(true);
   });
 
-  it('still allows agent-okay (Phase 2 capture tag — regression guard)', () => {
-    expect(FUNCTIONAL_TAG_ALLOWLIST).toContain('agent-okay');
-    expect(isTestTagAllowed('agent-okay')).toBe(true);
+  it('still allows agent-ok (Phase 2 capture tag — regression guard)', () => {
+    expect(FUNCTIONAL_TAG_ALLOWLIST).toContain('agent-ok');
+    expect(isTestTagAllowed('agent-ok')).toBe(true);
   });
 
   it('rejects an arbitrary non-allowlisted tag', () => {
@@ -235,16 +235,16 @@ and assert the tag reads back (per Discretion #2 — completed work gets the tag
 ### `tests/integration/tools/unified/<live-capture>.test.ts` (integration, event-driven) — or extend end-to-end
 
 **Analog:** `tests/integration/tools/unified/end-to-end.test.ts` →
-`describe('Phase 2 D-08b — agent create with lineage stamps agent-okay tag')`. This is the live-capture harness: it
-spawns an **agent-role** server, creates with `lineage`, and reads back through the `agent-okay` tag filter. Extend it
-(add a `capture-live` case asserting `agent-okay` present + `archaeology` absent) rather than rebuild.
+`describe('Phase 2 D-08b — agent create with lineage stamps agent-ok tag')`. This is the live-capture harness: it spawns
+an **agent-role** server, creates with `lineage`, and reads back through the `agent-ok` tag filter. Extend it (add a
+`capture-live` case asserting `agent-ok` present + `archaeology` absent) rather than rebuild.
 
 **Agent-role server spawn (stable anchor — the key difference from the round-trip harness; forces real capture path):**
 
 ```typescript
 agentServerProcess = spawn('node', [serverPath], {
   stdio: ['pipe', 'pipe', 'pipe'],
-  env: { ...process.env, OMNIFOCUS_MCP_ROLE: 'agent' }, // exercises lineage-attestation bypass + agent-okay stamp
+  env: { ...process.env, OMNIFOCUS_MCP_ROLE: 'agent' }, // exercises lineage-attestation bypass + agent-ok stamp
 });
 ```
 
@@ -275,11 +275,11 @@ params: {
 **Read-back + assertions (the D-08b proof, extended for Phase 4):**
 
 ```typescript
-// read back through the agent-okay tag filter
-filters: { tags: { all: ['agent-okay'] } }, fields: ['name', 'tags', 'note'], limit: 200,
+// read back through the agent-ok tag filter
+filters: { tags: { all: ['agent-ok'] } }, fields: ['name', 'tags', 'note'], limit: 200,
 // ...
 const task = (readParsed.data?.tasks ?? []).find((t) => t.name === lineageTaskName);
-expect(task.tags).toContain('agent-okay');           // funnel auto-stamp fired
+expect(task.tags).toContain('agent-ok');           // funnel auto-stamp fired
 expect(task.note).toContain('of-mcp:lineage');       // lineage stamp persisted
 // Phase 4 additions:
 expect(task.tags).toContain('capture-live');         // live marker applied
@@ -325,7 +325,7 @@ if (changes.plannedDate !== undefined) {
 }
 ```
 
-### Lineage stamp + agent-okay auto-stamp (D-10/D-11)
+### Lineage stamp + agent-ok auto-stamp (D-10/D-11)
 
 **Source:** `src/tools/unified/OmniFocusWriteTool.ts` (lineage block). **Apply to:** the live-capture create (the skill
 passes `lineage`; the funnel does the rest):
@@ -336,7 +336,7 @@ if (compiled.operation === 'create' && compiled.target === 'task' && args.mutati
   if (lineage) {
     compiled.data.note = composeLineageStamp(compiled.data.note, lineage);
     if (parseRole() === 'agent') {
-      compiled.data.tags = [...(compiled.data.tags ?? []), 'agent-okay']; // auto-stamp
+      compiled.data.tags = [...(compiled.data.tags ?? []), 'agent-ok']; // auto-stamp
     }
   }
 }

@@ -2,7 +2,7 @@
 phase: 04-review-loops-live-auto-capture
 plan: '02'
 subsystem: live-capture-skill
-tags: [skill, live-capture, integration-test, agent-okay, lineage, inbox]
+tags: [skill, live-capture, integration-test, agent-ok, lineage, inbox]
 dependency_graph:
   requires: [04-01-FUNCTIONAL_TAG_ALLOWLIST-capture-live]
   provides: [capture-live-blocker-skill, LIVE-01-integration-proof]
@@ -33,8 +33,8 @@ metrics:
 # Phase 04 Plan 02: Live-Capture Skill + Integration Proof Summary
 
 **One-liner:** Authored the standalone `capture-live-blocker` SKILL.md (LIVE-01) and proved the inbox create round-trip
-via an agent-role integration case asserting `capture-live` + `agent-okay` + `of-mcp:lineage`, no `archaeology`, and
-inbox placement.
+via an agent-role integration case asserting `capture-live` + `agent-ok` + `of-mcp:lineage`, no `archaeology`, and inbox
+placement.
 
 ```mermaid
 flowchart LR
@@ -44,16 +44,16 @@ flowchart LR
     end
     AL["04-01\ncapture-live\nin ALLOWLIST"] --> IT
     SK -->|"documents omnifocus_write\ncreate shape"| OF["OmniFocus inbox"]
-    IT -->|"agent-role spawn\n+ read-back via\nagent-okay filter"| OF
-    OF -->|"funnel auto-stamps\nagent-okay + lineage"| IT
+    IT -->|"agent-role spawn\n+ read-back via\nagent-ok filter"| OF
+    OF -->|"funnel auto-stamps\nagent-ok + lineage"| IT
 ```
 
 ## Tasks Completed
 
-| Task | Name                                                                                       | Commit     | Files                                                |
-| ---- | ------------------------------------------------------------------------------------------ | ---------- | ---------------------------------------------------- |
-| 1    | Author capture-live-blocker SKILL.md (LIVE-01)                                             | `d329036b` | `.claude/skills/capture-live-blocker/SKILL.md`       |
-| 2    | Integration case — live capture stamps capture-live + agent-okay + lineage, no archaeology | `8c6a4630` | `tests/integration/tools/unified/end-to-end.test.ts` |
+| Task | Name                                                                                     | Commit     | Files                                                |
+| ---- | ---------------------------------------------------------------------------------------- | ---------- | ---------------------------------------------------- |
+| 1    | Author capture-live-blocker SKILL.md (LIVE-01)                                           | `d329036b` | `.claude/skills/capture-live-blocker/SKILL.md`       |
+| 2    | Integration case — live capture stamps capture-live + agent-ok + lineage, no archaeology | `8c6a4630` | `tests/integration/tools/unified/end-to-end.test.ts` |
 
 ## Verification Results
 

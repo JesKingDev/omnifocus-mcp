@@ -448,7 +448,7 @@ OPERATION POLICY (agent role):
 
           // Lineage-attestation bypass (D-08b, PERM-02): a task create that carries a
           // lineage param is a self-attested agent capture. It lands in the inbox
-          // (visible, recoverable) and is stamped agent-okay downstream (see the lineage
+          // (visible, recoverable) and is stamped agent-ok downstream (see the lineage
           // block below), so it is allowed without an owner prompt or session grant —
           // this is the CAP-01 async-capture path. Capture attestation is a distinct,
           // lower-risk surface from the forge-resistant session grant (D-02): only the
@@ -491,8 +491,8 @@ OPERATION POLICY (agent role):
               return createErrorResponseV2(
                 'omnifocus_write',
                 'POLICY_GATE_BACKGROUND_ONLY',
-                'Background-mode agent create requires agent-okay tag on the target task.',
-                'Tag the task with agent-okay to allow agent operations, or run in interactive mode for a confirmation prompt.',
+                'Background-mode agent create requires agent-ok tag on the target task.',
+                'Tag the task with agent-ok to allow agent operations, or run in interactive mode for a confirmation prompt.',
                 {
                   dryRun: true,
                   preview: {
@@ -570,7 +570,7 @@ OPERATION POLICY (agent role):
       return this.verifier.verify(projectResult, {}, compiled, parseRole());
     }
 
-    // ─── Lineage stamp composition + agent-okay tag (LINE-01, D-06) ────────────
+    // ─── Lineage stamp composition + agent-ok tag (LINE-01, D-06) ────────────
     // Runs for agent task creates with a lineage param — BEFORE the task routing
     // block so the verifier's extractIntent() snapshot (called in verifier.verify())
     // sees the full composed note (Pitfall 4 guard).
@@ -587,12 +587,12 @@ OPERATION POLICY (agent role):
         // compiled.data is the same object reference passed to handleTaskCreate.
         compiled.data.note = composeLineageStamp(compiled.data.note, lineage);
 
-        // D-06 write-side stamp: unconditionally append 'agent-okay' tag when
+        // D-06 write-side stamp: unconditionally append 'agent-ok' tag when
         // role=agent and lineage is present (D-08b). Applies in both interactive
         // and background paths — Plan 04 integration tests assert this without
         // conditional hedging.
         if (parseRole() === 'agent') {
-          compiled.data.tags = [...(compiled.data.tags ?? []), 'agent-okay'];
+          compiled.data.tags = [...(compiled.data.tags ?? []), 'agent-ok'];
         }
       }
     }

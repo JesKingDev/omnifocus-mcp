@@ -21,7 +21,7 @@ dependency_graph:
     - lineage in OmniFocusWriteTool inputSchema override (dual-schema rule)
     - POLICY_GATE_CAPTURE_CONFIRM gate verdict for interactive agent creates (PERM-02)
     - POLICY_GATE_BACKGROUND_ONLY gate verdict for background agent creates (T-02-08)
-    - agent-okay tag unconditionally stamped on agent creates with lineage (D-06)
+    - agent-ok tag unconditionally stamped on agent creates with lineage (D-06)
     - Stamp composition before extractIntent() — Pitfall 4 guard closed
   affects:
     - '02-04: Wave 4 integration + predicate + human checkpoint'
@@ -50,7 +50,7 @@ decisions:
     module load'
   - 'WriteVerifier LINE-01 test passes empty intent to force extractIntent(compiledOp) extraction — fixes
     intent/readBack name mismatch in Wave 0 test design'
-  - 'agent-okay tag appended unconditionally when role=agent + lineage present (both interactive and background paths,
+  - 'agent-ok tag appended unconditionally when role=agent + lineage present (both interactive and background paths,
     D-08b)'
 metrics:
   duration: '~35 minutes'
@@ -77,7 +77,7 @@ flowchart TD
     D -- background --> F[POLICY_GATE_BACKGROUND_ONLY]
     C --> G{lineage in args?}
     G -- yes --> H[composeLineageStamp → data.note]
-    H --> I[append agent-okay to data.tags]
+    H --> I[append agent-ok to data.tags]
     I --> J[handleTaskCreate]
     G -- no --> J
 
@@ -98,7 +98,7 @@ flowchart TD
 | `LineageSchema` + `LineageInput`       | `src/tools/unified/schemas/write-schema.ts` | Strict Zod schema; `lineage.optional()` on CreateDataSchema (D-11)                                                           |
 | `lineage` in `inputSchema`             | `src/tools/unified/OmniFocusWriteTool.ts`   | MCP advertisement — bare `{ type: 'object' }` to stay under 4KB limit                                                        |
 | Mode-aware gate fork                   | `src/tools/unified/OmniFocusWriteTool.ts`   | POLICY_GATE_CAPTURE_CONFIRM (interactive), POLICY_GATE_BACKGROUND_ONLY (background), POLICY_GATE_REQUIRES_OWNER (structural) |
-| Stamp composition + agent-okay tag     | `src/tools/unified/OmniFocusWriteTool.ts`   | composeLineageStamp before extractIntent; agent-okay tag appended (D-06)                                                     |
+| Stamp composition + agent-ok tag       | `src/tools/unified/OmniFocusWriteTool.ts`   | composeLineageStamp before extractIntent; agent-ok tag appended (D-06)                                                       |
 
 ## Test State After Wave 3
 
@@ -107,7 +107,7 @@ flowchart TD
 | `lineage-stamp.test.ts` (4 tests)          | RED    | GREEN | All 4 stamp/idempotency tests pass                |
 | `OmniFocusWriteTool.test.ts` PERM-02 block | RED    | GREEN | POLICY_GATE_CAPTURE_CONFIRM + grant bypass        |
 | `WriteVerifier.test.ts` LINE-01 round-trip | RED    | GREEN | Note comparison passes; Pitfall 4 guard confirmed |
-| `agent-okay-predicate.test.ts` (4 tests)   | RED    | RED   | Expected — Wave 4 (PERM-01 predicate)             |
+| `agent-ok-predicate.test.ts` (4 tests)     | RED    | RED   | Expected — Wave 4 (PERM-01 predicate)             |
 | All previously passing tests               | GREEN  | GREEN | No regression (2392 passed)                       |
 
 ## Commits
@@ -115,7 +115,7 @@ flowchart TD
 | Hash       | Message                                                                                       |
 | ---------- | --------------------------------------------------------------------------------------------- |
 | `feccc463` | feat(02-03): create lineage.ts with composeLineageStamp() and LINEAGE_RE (LINE-01, D-09/D-10) |
-| `1a5ae9e8` | feat(02-03): add LineageSchema, gate dispatch (PERM-02), agent-okay stamp (D-06/D-11)         |
+| `1a5ae9e8` | feat(02-03): add LineageSchema, gate dispatch (PERM-02), agent-ok stamp (D-06/D-11)           |
 
 ## Deviations from Plan
 
@@ -168,7 +168,7 @@ flowchart TD
 
 ## Known Stubs
 
-None — all lineage and gate logic is wired. The `agent-okay` predicate (PERM-01) remains unimplemented in
+None — all lineage and gate logic is wired. The `agent-ok` predicate (PERM-01) remains unimplemented in
 `src/contracts/filters.ts` — intentionally deferred to Wave 4 (02-04).
 
 ## Threat Flags
@@ -185,8 +185,8 @@ Files exist:
 
 - `src/contracts/ast/lineage.ts` — FOUND (exports LINEAGE_RE, composeLineageStamp)
 - `src/tools/unified/schemas/write-schema.ts` — FOUND (LineageSchema + lineage on CreateDataSchema)
-- `src/tools/unified/OmniFocusWriteTool.ts` — FOUND (POLICY_GATE_CAPTURE_CONFIRM, POLICY_GATE_BACKGROUND_ONLY,
-  agent-okay, composeLineageStamp wiring)
+- `src/tools/unified/OmniFocusWriteTool.ts` — FOUND (POLICY_GATE_CAPTURE_CONFIRM, POLICY_GATE_BACKGROUND_ONLY, agent-ok,
+  composeLineageStamp wiring)
 
 Commits exist:
 
@@ -198,6 +198,6 @@ Key grep checks passed:
 - `grep "LINEAGE_RE" src/contracts/ast/lineage.ts | grep "/s"` — FOUND
 - `grep "POLICY_GATE_CAPTURE_CONFIRM" src/tools/unified/OmniFocusWriteTool.ts` — FOUND
 - `grep "POLICY_GATE_BACKGROUND_ONLY" src/tools/unified/OmniFocusWriteTool.ts` — FOUND
-- `grep "agent-okay" src/tools/unified/OmniFocusWriteTool.ts` — FOUND
+- `grep "agent-ok" src/tools/unified/OmniFocusWriteTool.ts` — FOUND
 - `grep "lineage" src/contracts/ast/mutation-script-builder.ts` — 0 results (correct)
 - `grep "LineageSchema" src/tools/unified/schemas/write-schema.ts` — FOUND

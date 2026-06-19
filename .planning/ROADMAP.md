@@ -117,7 +117,7 @@ and every task it creates carries its originating Claude Code session ID. **Depe
 native capture vs. custom) **Requirements**: CAP-01, PERM-01, PERM-02, LINE-01 **Success Criteria** (what must be TRUE):
 
 1. User (or agent on the user's behalf) can dump an item into the inbox without choosing a project, tags, or dates.
-2. In an async/background run, the agent acts only on tasks tagged `agent-okay`; untagged tasks are left untouched.
+2. In an async/background run, the agent acts only on tasks tagged `agent-ok`; untagged tasks are left untouched.
 3. In a sync/live session, the agent prompts before creating a task and offers an "allow all this session" option
    (mirroring the existing Jira-creation flow).
 
@@ -125,7 +125,7 @@ native capture vs. custom) **Requirements**: CAP-01, PERM-01, PERM-02, LINE-01 *
 
 **Wave 1** _(test scaffolds — no production code)_
 
-- [x] 02-01-PLAN.md — Wave 0 test scaffolds (lineage-stamp, agent-okay-predicate, parseMode, policy-gate)
+- [x] 02-01-PLAN.md — Wave 0 test scaffolds (lineage-stamp, agent-ok-predicate, parseMode, policy-gate)
 
 **Wave 2** _(blocked on Wave 1 completion)_
 
@@ -185,7 +185,7 @@ Plans:
 - [x] 04-01-PLAN.md — Server slice: extend FUNCTIONAL_TAG_ALLOWLIST (review-output / review-capture / capture-live) +
       allowlist unit test + review-tag round-trip integration spec (active review-capture, completed review-output)
 - [x] 04-02-PLAN.md — Skills slice: standalone capture-live-blocker SKILL.md + live-capture integration case (inbox +
-      lineage + capture-live + auto-stamped agent-okay, no archaeology)
+      lineage + capture-live + auto-stamped agent-ok, no archaeology)
 
 ### Phase 5: Session Archaeology
 

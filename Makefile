@@ -10,7 +10,7 @@
 #   The one-time copy of the pinned binary is a runbook step, not automated here.
 #
 # Usage:
-#   make install   MCP_AGENT_TOKEN=<token> MCP_OWNER_TOKEN=<token>
+#   make install   MCP_AGENT_TOKEN=<token> MCP_OWNER_TOKEN=<token> [MCP_PORT=54321]
 #   make uninstall
 #   make verify    (advisory — tails server.err; useful after first install)
 
@@ -25,6 +25,7 @@ NODE_BINARY     := $(HOME)/.local/libexec/of-mcp-node
 SERVER_ENTRY    := $(shell pwd)/dist/index.js
 LAUNCHD_TARGET  := gui/$(shell id -u)
 SERVICE_ID      := com.kip-d.omnifocus-mcp
+MCP_PORT        ?= 54321
 
 # ── install ────────────────────────────────────────────────────────────────
 # Steps:
@@ -33,7 +34,7 @@ SERVICE_ID      := com.kip-d.omnifocus-mcp
 #   3. Bootstrap the LaunchAgent with the modern bootstrap API.
 #
 # Tokens are required — pass as make variables or export as env vars:
-#   make install MCP_AGENT_TOKEN=<hex> MCP_OWNER_TOKEN=<hex>
+#   make install MCP_AGENT_TOKEN=<hex> MCP_OWNER_TOKEN=<hex> [MCP_PORT=54321]
 #
 # The node binary copy (~/.local/libexec/of-mcp-node) is a one-time runbook
 # step — see docs/runbook/launchd-deployment.md. It is NOT performed here.
@@ -54,6 +55,7 @@ install:
 	  -e "s|__LOG_DIR__|$(LOG_DIR)|g" \
 	  -e "s|__MCP_AGENT_TOKEN__|$(MCP_AGENT_TOKEN)|g" \
 	  -e "s|__MCP_OWNER_TOKEN__|$(MCP_OWNER_TOKEN)|g" \
+	  -e "s|__MCP_PORT__|$(MCP_PORT)|g" \
 	  "$(PLIST_TEMPLATE)" > "$(INSTALLED_PLIST)"
 	@echo "→ Bootstrapping LaunchAgent…"
 	launchctl bootstrap $(LAUNCHD_TARGET) "$(INSTALLED_PLIST)"

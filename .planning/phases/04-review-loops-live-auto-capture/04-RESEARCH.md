@@ -11,7 +11,7 @@ verifier reuse, Claude Code skill authoring **Confidence:** HIGH
 
 - **D-01:** Two flat sibling tags — `review-output` and `review-capture`. Classification carried by which tag is
   assigned. Flat siblings, not a hierarchy, not an `agent/*` rewrite.
-- **D-02:** `review-*` tags sit alongside the shipped flat family (`agent-okay`, `routing-unplaced`, future
+- **D-02:** `review-*` tags sit alongside the shipped flat family (`agent-ok`, `routing-unplaced`, future
   `archaeology`), coherent by prefix. `routing-unplaced` keeps its shipped name.
 - **D-03:** Tags assigned via OmniJS `addTag` find-or-create (a `Tag` object is required; a string throws — DISC-TAG-02;
   JXA assignment no-ops — DISC-TAG-01). Reuse the existing tag-add path; no new tag engine. New `review-*` names go into
@@ -29,7 +29,7 @@ verifier reuse, Claude Code skill authoring **Confidence:** HIGH
   trusted, single-item.
 - **D-09:** Permission reuses PERM-02 verbatim — prompt-before-create + owner-set "allow all this session" grant. Funnel
   owns the verdict; agent renders the prompt. No second mechanism.
-- **D-10:** Placement = inbox + `agent-okay` + a live-capture marker tag + LINE-01 lineage stamp; route later. NO
+- **D-10:** Placement = inbox + `agent-ok` + a live-capture marker tag + LINE-01 lineage stamp; route later. NO
   `archaeology` tag.
 - **D-11:** Capture reuses Phase 2's native OmniJS `new Task(name, inbox)` path, the server-side lineage stamp, and the
   funnel/verifier — no new capture mechanism.
@@ -61,7 +61,7 @@ verifier reuse, Claude Code skill authoring **Confidence:** HIGH
 | --------- | -------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | REVIEW-01 | Agent flags created/completed work with a review tag so it surfaces in the user's today view.                                                      | Reuse existing create/update path: `flagged`, `plannedDate` setters (mutation-script-builder), `addTag` find-or-create. Native Flagged + Forecast surfaces (D-04). Completed-work surfacing resolved below (Discretion #2). |
 | REVIEW-02 | Review flags distinguish review-output (agent did) from review-capture (agent decided should exist).                                               | Distinction carried entirely by tag name: `review-output` vs `review-capture` (D-01). No structural difference in the write — only the tag string differs.                                                                  |
-| LIVE-01   | During a live session, agent captures a concrete blocker/open question as an OmniFocus task in real time (with permission), without `archaeology`. | Reuse Phase 2 capture path + lineage + PERM-02 gate (D-09/D-11). New live-capture marker tag + `agent-okay` for later routing (D-10). Conservative judgment rule in a skill prompt (D-08).                                  |
+| LIVE-01   | During a live session, agent captures a concrete blocker/open question as an OmniFocus task in real time (with permission), without `archaeology`. | Reuse Phase 2 capture path + lineage + PERM-02 gate (D-09/D-11). New live-capture marker tag + `agent-ok` for later routing (D-10). Conservative judgment rule in a skill prompt (D-08).                                    |
 
 </phase_requirements>
 
@@ -212,7 +212,7 @@ stock active views — so for completed work it is optional. Bias: apply tag onl
 
 ### Pattern 3: Live capture an inbox blocker (LIVE-01)
 
-**What:** Create an inbox task in real time, stamped with lineage + `agent-okay` + the live-capture marker tag, gated by
+**What:** Create an inbox task in real time, stamped with lineage + `agent-ok` + the live-capture marker tag, gated by
 PERM-02. **Tool call shape:**
 
 ```jsonc
@@ -223,7 +223,7 @@ PERM-02. **Tool call shape:**
     "data": {
       "name": "<concise blocker statement>",
       "note": "<context>",
-      "tags": ["<live-capture-marker>"], // agent-okay is auto-stamped when role=agent + lineage present
+      "tags": ["<live-capture-marker>"], // agent-ok is auto-stamped when role=agent + lineage present
       "lineage": { "sessionId": "<cc-session-uuid>" },
     },
   },
@@ -237,9 +237,9 @@ Notes:
 - **Do NOT add `archaeology`** (D-10). Do NOT add `review-*` — live capture is "decided should exist," it routes later,
   and the routing/review surfacing happens on a subsequent run.
 - The lineage param triggers two server behaviors automatically (see `OmniFocusWriteTool.ts` lineage block): note gets
-  the `of-mcp:lineage` stamp, AND when `role=agent` the funnel appends `agent-okay` to `data.tags`. So the skill does
-  **not** need to pass `agent-okay` itself — but passing it is idempotent and matches the route-skill convention.
-  Confirm during planning whether to pass it explicitly for clarity.
+  the `of-mcp:lineage` stamp, AND when `role=agent` the funnel appends `agent-ok` to `data.tags`. So the skill does
+  **not** need to pass `agent-ok` itself — but passing it is idempotent and matches the route-skill convention. Confirm
+  during planning whether to pass it explicitly for clarity.
 
 ### Anti-Patterns to Avoid
 
@@ -360,7 +360,7 @@ if (changes.plannedDate !== undefined) {
 }
 ```
 
-### Lineage + agent-okay auto-stamp on agent create (the D-10/D-11 path)
+### Lineage + agent-ok auto-stamp on agent create (the D-10/D-11 path)
 
 ```typescript
 // Source: src/tools/unified/OmniFocusWriteTool.ts (lineage block)
@@ -369,7 +369,7 @@ if (compiled.operation === 'create' && compiled.target === 'task' && args.mutati
   if (lineage) {
     compiled.data.note = composeLineageStamp(compiled.data.note, lineage);
     if (parseRole() === 'agent') {
-      compiled.data.tags = [...(compiled.data.tags ?? []), 'agent-okay']; // auto-stamp
+      compiled.data.tags = [...(compiled.data.tags ?? []), 'agent-ok']; // auto-stamp
     }
   }
 }
@@ -451,7 +451,7 @@ A **live** session sets `OMNIFOCUS_MCP_INTERACTIVE=true` → `parseMode()` retur
 ### Discretion #4 — Live-capture marker tag name
 
 **Recommendation: `capture-live`** (or `review-live` if the planner prefers the `review-*` prefix). Pick one, keep it
-collision-free with `agent-okay`/`routing-unplaced`/`review-output`/`review-capture`/future `archaeology`, and add it to
+collision-free with `agent-ok`/`routing-unplaced`/`review-output`/`review-capture`/future `archaeology`, and add it to
 `FUNCTIONAL_TAG_ALLOWLIST`. `capture-live` reads as a sibling to the functional family and signals provenance ("captured
 live") distinct from `archaeology` (retrospective) and `routing-unplaced` (routing outcome).
 
@@ -488,13 +488,13 @@ From `route-inbox-to-projects/SKILL.md` and `sync-work-tasks-to-omnifocus/SKILL.
 
 ### Phase Requirements → Test Map
 
-| Req ID                | Behavior                                                                                          | Test Type   | Automated Command                                                                  | File Exists?                      |
-| --------------------- | ------------------------------------------------------------------------------------------------- | ----------- | ---------------------------------------------------------------------------------- | --------------------------------- |
-| REVIEW-02             | `review-output` and `review-capture` are accepted functional tags (allowlist)                     | unit        | `npm run test:unit -- mutation-script-builder`                                     | ❌ Wave 0 (extend allowlist test) |
-| REVIEW-01             | update task with `flagged+plannedDate+addTags:[review-capture]` round-trips live                  | integration | `npm run test:integration -- field-roundtrip` (or a new review-tag spec)           | ❌ Wave 0                         |
-| REVIEW-01 (completed) | completed task accepts `addTags:[review-output]` and the tag reads back                           | integration | new spec under `tests/integration/tools/unified/`                                  | ❌ Wave 0                         |
-| LIVE-01               | inbox create with lineage + live-marker tag stamps `agent-okay`, NO `archaeology`, lands in inbox | integration | extend the existing agent-capture integration harness (`create-with-lineage` test) | ❌ Wave 0 (extend)                |
-| LIVE-01 (gate)        | interactive-mode agent create returns `POLICY_GATE_CAPTURE_CONFIRM`; session grant bypasses       | unit        | existing policy/gate tests — add live-marker case                                  | ✅ (pattern exists, extend)       |
+| Req ID                | Behavior                                                                                        | Test Type   | Automated Command                                                                  | File Exists?                      |
+| --------------------- | ----------------------------------------------------------------------------------------------- | ----------- | ---------------------------------------------------------------------------------- | --------------------------------- |
+| REVIEW-02             | `review-output` and `review-capture` are accepted functional tags (allowlist)                   | unit        | `npm run test:unit -- mutation-script-builder`                                     | ❌ Wave 0 (extend allowlist test) |
+| REVIEW-01             | update task with `flagged+plannedDate+addTags:[review-capture]` round-trips live                | integration | `npm run test:integration -- field-roundtrip` (or a new review-tag spec)           | ❌ Wave 0                         |
+| REVIEW-01 (completed) | completed task accepts `addTags:[review-output]` and the tag reads back                         | integration | new spec under `tests/integration/tools/unified/`                                  | ❌ Wave 0                         |
+| LIVE-01               | inbox create with lineage + live-marker tag stamps `agent-ok`, NO `archaeology`, lands in inbox | integration | extend the existing agent-capture integration harness (`create-with-lineage` test) | ❌ Wave 0 (extend)                |
+| LIVE-01 (gate)        | interactive-mode agent create returns `POLICY_GATE_CAPTURE_CONFIRM`; session grant bypasses     | unit        | existing policy/gate tests — add live-marker case                                  | ✅ (pattern exists, extend)       |
 
 ### Sampling Rate
 
@@ -509,7 +509,7 @@ From `route-inbox-to-projects/SKILL.md` and `sync-work-tasks-to-omnifocus/SKILL.
       allowed.
 - [ ] Integration spec: review-capture update (flag + plannedDate + tag) round-trips on an active task.
 - [ ] Integration spec: review-output tag on a completed task reads back.
-- [ ] Integration spec: live capture (inbox + lineage + live-marker), assert `agent-okay` present, `archaeology` absent,
+- [ ] Integration spec: live capture (inbox + lineage + live-marker), assert `agent-ok` present, `archaeology` absent,
       item in inbox.
 - [ ] (No new conftest/fixtures needed — reuse `sandbox-manager`, `run-id`, `assert-field-persisted` helpers.)
 
@@ -545,12 +545,12 @@ From `route-inbox-to-projects/SKILL.md` and `sync-work-tasks-to-omnifocus/SKILL.
 
 ## Open Questions
 
-1. **Should the live-capture skill pass `agent-okay` explicitly, or rely on the funnel's lineage-triggered auto-stamp?**
-   - What we know: the funnel auto-appends `agent-okay` when `role=agent` AND `lineage` is present (OmniFocusWriteTool
+1. **Should the live-capture skill pass `agent-ok` explicitly, or rely on the funnel's lineage-triggered auto-stamp?**
+   - What we know: the funnel auto-appends `agent-ok` when `role=agent` AND `lineage` is present (OmniFocusWriteTool
      lineage block). The route skill passes functional tags explicitly.
    - What's unclear: whether being explicit (clarity) or implicit (DRY) reads better in the skill.
-   - Recommendation: pass the live-marker tag explicitly in `data.tags`; let the funnel auto-stamp `agent-okay`.
-     Document both in the skill's Tool call reference.
+   - Recommendation: pass the live-marker tag explicitly in `data.tags`; let the funnel auto-stamp `agent-ok`. Document
+     both in the skill's Tool call reference.
 
 2. **Does the `omnifocus_read` task projection return `plannedDate` for the round-trip verification?**
    - What we know: `field-roundtrip.test.ts` already reads `plannedDate` back (it's a clearRow), so the projection
@@ -564,8 +564,8 @@ From `route-inbox-to-projects/SKILL.md` and `sync-work-tasks-to-omnifocus/SKILL.
 
 - `src/contracts/ast/mutation-script-builder.ts` — `FUNCTIONAL_TAG_ALLOWLIST`, `isTestTagAllowed`, create/update task
   setters (flagged, plannedDate, addTag find-or-create), complete path, clear\* handling.
-- `src/tools/unified/OmniFocusWriteTool.ts` — funnel, gate handling, lineage stamp + agent-okay auto-stamp,
-  session-grant bypass.
+- `src/tools/unified/OmniFocusWriteTool.ts` — funnel, gate handling, lineage stamp + agent-ok auto-stamp, session-grant
+  bypass.
 - `src/auth/operation-policy.ts` — `decide()`, `create/task = gate`.
 - `src/auth/session-state.ts` — owner-only `setAllowAllThisSession` / `isAllowedAllThisSession`.
 - `src/auth/role-resolver.ts` — `parseMode()` (`OMNIFOCUS_MCP_INTERACTIVE === 'true'`).

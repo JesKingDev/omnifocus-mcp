@@ -11,13 +11,12 @@ ID** in the notes (LINE-01).
 
 Two runtime modes are gated differently:
 
-- **Async/background runs** — the agent acts only on `agent-okay`-tagged tasks (PERM-01).
+- **Async/background runs** — the agent acts only on `agent-ok`-tagged tasks (PERM-01).
 - **Sync/live sessions** — the agent prompts before creating, with an "allow all this session" option mirroring the
   Jira-creation flow (PERM-02).
 
 **In scope:** the capture write path (extend existing inbox create), the gate-enforcement plumbing for create, the
-sync/async mode signal, the `agent-okay` read-side predicate + capture-time stamping, and the lineage stamp in task
-notes.
+sync/async mode signal, the `agent-ok` read-side predicate + capture-time stamping, and the lineage stamp in task notes.
 
 **Out of scope (later phases):** routing/project inference and routing-time _action_ gating (Phase 3, ROUTE-_/TRIG-01);
 review tags + today-view surfacing (Phase 4, REVIEW-_); live real-time blocker capture (Phase 4, LIVE-01); session
@@ -51,21 +50,21 @@ here *inform\* those phases; they are not built here.
   (`src/auth/role-resolver.ts`). An interactive stdio launch sets the marker to opt into PERM-02 prompting; launchd/n8n
   scheduled runs leave it unset.
 - **D-05:** **Literal-only, default-deny parse** (mirrors `parseRole`): only the exact literal resolves to live;
-  undefined/empty/typo/garbage → **`background`** (the restrictive mode — act only on `agent-okay`, never auto-prompt).
+  undefined/empty/typo/garbage → **`background`** (the restrictive mode — act only on `agent-ok`, never auto-prompt).
   The agent **cannot self-elevate** because mode binds to how the connection authenticated, not to call arguments. A
   per-call `mode` param was rejected as the authoritative signal (self-elevation hole); it is acceptable _only_ as an
   owner-only _downgrade_ hint (live→background), never as an upgrade.
 
-### `agent-okay` scope in Phase 2 (PERM-01)
+### `agent-ok` scope in Phase 2 (PERM-01)
 
-- **D-06:** **Phase 2 builds the read-side `agent-okay` predicate + capture-time stamping; defers routing-time _action_
+- **D-06:** **Phase 2 builds the read-side `agent-ok` predicate + capture-time stamping; defers routing-time _action_
   gating to Phase 3.** The predicate is a thin composition over the existing `tags` + `inInbox` filters
   (`src/contracts/filters.ts` / `task-query-pipeline.ts`). Every agent-captured inbox item is born carrying the
   agent-origin marker via the existing OmniJS `addTag` path.
 - **D-07 (boundary rule):** Phase 2 owns the **write-side stamp** and the **read-side predicate**; Phase 3 owns
   **consuming** that predicate to decide which existing tasks routing may touch.
-- **D-08 (verification wording):** The success criterion "the agent acts only on `agent-okay` tasks" is proven in Phase
-  2 by **(a)** a unit test asserting the predicate compiles to a filter that returns only `agent-okay`-tagged tasks and
+- **D-08 (verification wording):** The success criterion "the agent acts only on `agent-ok` tasks" is proven in Phase 2
+  by **(a)** a unit test asserting the predicate compiles to a filter that returns only `agent-ok`-tagged tasks and
   excludes untagged ones (the filter-generator unit layer runs with no live OmniFocus), **plus (b)** a capture-path test
   asserting newly-created items are stamped. Word the Phase 2 verification to match this — predicate + stamp, **not** a
   routing demo.
@@ -105,7 +104,7 @@ here *inform\* those phases; they are not built here.
 - The exact env-marker literal value (e.g. `interactive` vs `live`) — pick one, parse literal-only.
 - Where in `PolicyEngine`/funnel the create `gate` rule is expressed, and the precise owner-auth call shape that sets
   the session grant.
-- Whether the agent-origin tag and the `agent-okay` gate tag are the same tag or two tags — resolve during planning
+- Whether the agent-origin tag and the `agent-ok` gate tag are the same tag or two tags — resolve during planning
   against the PERM-01 wording and Phase 3's routing needs.
 
 </decisions>
@@ -145,7 +144,7 @@ here *inform\* those phases; they are not built here.
   dual-schema (`inputSchema` override) for the new `lineage` param (D-11).
 - `src/contracts/ast/mutation-script-builder.ts` — OmniJS note/tag setters; server-side stamp composition (D-10).
 - `src/contracts/filters.ts`, `src/tools/tasks/task-query-pipeline.ts`, `filter-types.ts` — the `tags` + `inInbox`
-  filters the `agent-okay` predicate composes over (D-06).
+  filters the `agent-ok` predicate composes over (D-06).
 - `src/tools/unified/verifier/` — independent write-verifier; the stamped `note` must round-trip through it unchanged
   (D-10).
 
@@ -175,7 +174,7 @@ here *inform\* those phases; they are not built here.
   = no project), not a new capture surface.
 - **Gate vocabulary already exists** — `PolicyOutcome` includes `gate`; the funnel + PolicyEngine enforce destructive
   ops server-side. The create gate plugs into this, not a new mechanism.
-- **Filter pipeline** already supports `tags` + `inInbox` filters at the unit/codegen layer — the `agent-okay` predicate
+- **Filter pipeline** already supports `tags` + `inInbox` filters at the unit/codegen layer — the `agent-ok` predicate
   is a thin composition, unit-testable without live OmniFocus.
 - **Per-principal `SessionConfig`** is the natural, forge-resistant home for the session grant.
 
@@ -193,7 +192,7 @@ here *inform\* those phases; they are not built here.
 
 - The **lineage stamp format** (D-09) is the contract Phase 5 archaeology reads back — the `of-mcp:lineage` JSON block
   is this phase's downstream-facing integration surface.
-- The **`agent-okay` predicate** (D-06) is the contract Phase 3 routing consumes to decide which tasks it may act on.
+- The **`agent-ok` predicate** (D-06) is the contract Phase 3 routing consumes to decide which tasks it may act on.
 - The **session-grant + mode signal** are the contracts Phase 3's on-demand trigger and the deferred n8n scheduler will
   run under (background mode, no prompt).
 
@@ -214,8 +213,8 @@ here *inform\* those phases; they are not built here.
 <deferred>
 ## Deferred Ideas
 
-- **Routing-time action gating** — applying the `agent-okay` predicate to _decide which existing tasks routing may
-  touch_ is Phase 3 (ROUTE-\*), not Phase 2. Phase 2 only builds the predicate + capture stamp.
+- **Routing-time action gating** — applying the `agent-ok` predicate to _decide which existing tasks routing may touch_
+  is Phase 3 (ROUTE-\*), not Phase 2. Phase 2 only builds the predicate + capture stamp.
 - **n8n 15-min polling under background mode** — the scheduled path that exercises the fail-safe `background` default is
   TRIG-02, a deferred follow-up to the Phase 3 on-demand MVP (TRIG-01).
 - **Owner-only per-call `background` downgrade hint** — noted as acceptable (live→background only), but not required for

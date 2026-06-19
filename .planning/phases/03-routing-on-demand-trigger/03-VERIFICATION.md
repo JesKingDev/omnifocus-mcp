@@ -9,7 +9,7 @@ human_verification:
       'Invoke the route-inbox-to-projects skill and confirm Pass 1 produces a proposal table before any write, then
       approve and confirm Pass 2 files a matching item under its existing project.'
     expected:
-      'An agent-okay inbox item whose name matches an active project is filed under that project (ROUTE-01). No write
+      'An agent-ok inbox item whose name matches an active project is filed under that project (ROUTE-01). No write
       happens before approval (D-08).'
     why_human:
       "ROUTE-01 is agent-resident behavior executed live against OmniFocus. The server write path (update+project →
@@ -73,7 +73,7 @@ skill against live OmniFocus + the JessOS vault — inherently a human-verificat
 
 | Artifact                                                   | Expected                                                | Status            | Details                                                                                                                                                                                                                                         |
 | ---------------------------------------------------------- | ------------------------------------------------------- | ----------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `src/contracts/ast/mutation-script-builder.ts`             | FUNCTIONAL_TAG_ALLOWLIST includes routing-unplaced      | ✓ VERIFIED        | Line 74: `['agent-okay', 'routing-unplaced']` — exactly two entries, no over-widening. `isTestTagAllowed` (line 77) wires the array. Comment cites D-12 (line 68).                                                                              |
+| `src/contracts/ast/mutation-script-builder.ts`             | FUNCTIONAL_TAG_ALLOWLIST includes routing-unplaced      | ✓ VERIFIED        | Line 74: `['agent-ok', 'routing-unplaced']` — exactly two entries, no over-widening. `isTestTagAllowed` (line 77) wires the array. Comment cites D-12 (line 68).                                                                                |
 | `tests/unit/contracts/ast/mutation-script-builder.test.ts` | Unit test: routing-unplaced passes, regressions guarded | ✓ VERIFIED        | Describe block at line 1217; 4 assertions. Ran directly: 4 passed.                                                                                                                                                                              |
 | `tests/integration/tools/unified/end-to-end.test.ts`       | Live proof of file/marker/create paths                  | ✓ VERIFIED (code) | "Phase 3 Routing — write operations" describe (line 1039) with ROUTE-01/03/04 sub-blocks, agent role, independent read-backs, sandbox sweep teardown. Correct wire shape used throughout.                                                       |
 | `.claude/skills/route-inbox-to-projects/SKILL.md`          | Complete executable routing skill                       | ✓ VERIFIED        | Frontmatter + 5 triggers, Overview, Idempotency, two-pass Procedure, Routing Decision Rules, Vault Signal Read, 5-shape tool-call table, Out of scope, 8-row Common mistakes. Zero implementation code fences. A cold read suffices to execute. |

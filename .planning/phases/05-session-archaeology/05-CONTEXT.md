@@ -67,7 +67,7 @@ routing is **consumed**, not rebuilt).
   the archaeology run**, not deferred. ARCH-03's "in the correct project (inbox only as fallback)" makes eventual
   placement insufficient, so **route-later (the Phase 4 D-10 live-capture mirror) was rejected** — that deferral was
   justified by a single item captured _mid-focus_ when the user isn't in a routing headspace, which does not transfer to
-  a deliberate, already-supervised batch. Each created task carries **`agent-okay` + `archaeology` + the LINE-01 lineage
+  a deliberate, already-supervised batch. Each created task carries **`agent-ok` + `archaeology` + the LINE-01 lineage
   stamp**. The `archaeology` tag is **added to `FUNCTIONAL_TAG_ALLOWLIST`**
   (`src/contracts/ast/mutation-script-builder.ts`) per the Phase 3 `routing-unplaced` precedent — it is the one
   milestone functional tag not yet registered.
@@ -133,7 +133,7 @@ routing is **consumed**, not rebuilt).
 
 ### Phase 1 discovery findings (build-vs-reuse evidence — cite these)
 
-- `docs/reference/omnifocus-capabilities.md` §Tagging — agent tags (`agent-okay`, `review-*`, `archaeology`) are
+- `docs/reference/omnifocus-capabilities.md` §Tagging — agent tags (`agent-ok`, `review-*`, `archaeology`) are
   **conventions over the native model**; OmniJS `addTag` find-or-create required (JXA no-ops). The basis for adding
   `archaeology` to the allowlist (D-05).
 - `docs/reference/omnifocus-capabilities.md` §Capture — native OmniJS `new Task(name, inbox)` inbox path (the create
@@ -207,7 +207,7 @@ routing is **consumed**, not rebuilt).
 - **Phase 3 reuse:** archaeology reuses routing's `match→infer` logic to pre-compute placement proposals (merged gate).
 - **Phase 6 handoff (data, not machinery):** the `archaeology` tag + placement + lineage are native predicates Phase 6's
   JessOS perspective will filter on — Phase 5 produces the input, builds no perspective code.
-- **Namespace contract:** `archaeology` joins `agent-okay` / `routing-unplaced` / `review-*` / `capture-live` —
+- **Namespace contract:** `archaeology` joins `agent-ok` / `routing-unplaced` / `review-*` / `capture-live` —
   collision-free, allowlisted.
 
 </code_context>

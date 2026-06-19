@@ -57,9 +57,9 @@ flowchart TD
 ---
 name: route-inbox-to-projects
 description:
-  Use when Jess says "route my inbox", "process agent-okay items", "file inbox tasks", "run routing", or "route inbox
-  items" — runs the on-demand routing loop that files agent-okay inbox tasks into matching projects, creates projects
-  for vault-inferred items, or leaves the rest marked for later review.
+  Use when Jess says "route my inbox", "process agent-ok items", "file inbox tasks", "run routing", or "route inbox
+  items" — runs the on-demand routing loop that files agent-ok inbox tasks into matching projects, creates projects for
+  vault-inferred items, or leaves the rest marked for later review.
 ---
 ```
 
@@ -101,14 +101,14 @@ read replaces the inbox read; create replaces update.
 plus the `archaeology`-is-never-on-live boundary that this phase inverts:
 
 ```
-- **D-10** — placement is inbox + `agent-okay` + `capture-live` marker tag + `of-mcp:lineage` stamp; `archaeology` is
+- **D-10** — placement is inbox + `agent-ok` + `capture-live` marker tag + `of-mcp:lineage` stamp; `archaeology` is
   never added.
 - **D-11** — reuses Phase 2's native OmniJS inbox-create path, server-side lineage stamp, and the funnel/verifier — no
   new capture mechanism.
 Adds no server code. Drives `omnifocus_write` through the existing write funnel and write-verifier.
 ```
 
-For archaeology each created task carries `agent-okay` + `archaeology` + the `of-mcp:lineage` stamp (D-05). Note the
+For archaeology each created task carries `agent-ok` + `archaeology` + the `of-mcp:lineage` stamp (D-05). Note the
 polarity: capture-live forbids `archaeology`; archaeology requires it.
 
 **Detection rubric** — agent-side prompt, no analog (judgment, not code). Use the four-category rubric +
@@ -143,7 +143,7 @@ now−7d. Emit `{session_id, timestamp, role, text}` grouped by session.
 
 ```typescript
 export const FUNCTIONAL_TAG_ALLOWLIST: readonly string[] = [
-  'agent-okay',
+  'agent-ok',
   'routing-unplaced',
   'review-output', // Phase 4 D-01/D-02
   'review-capture', // Phase 4 D-01/D-02

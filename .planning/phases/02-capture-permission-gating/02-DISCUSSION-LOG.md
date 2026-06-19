@@ -4,7 +4,7 @@
 > CONTEXT.md — this log preserves the alternatives considered.
 
 **Date:** 2026-06-12 **Phase:** 2-Capture & Permission Gating **Mode:** advisor (research-backed comparison tables;
-calibration tier `minimal_decisive`) **Areas discussed:** Gate enforcement locus, Sync vs async mode signal, agent-okay
+calibration tier `minimal_decisive`) **Areas discussed:** Gate enforcement locus, Sync vs async mode signal, agent-ok
 scope in Phase 2, Lineage stamp format & source
 
 ---
@@ -31,18 +31,18 @@ the hardening milestone's server-side single-funnel invariant.
 | Per-call mode parameter                        | `mode: "live"\|"background"` arg on the write call.                                                                                                                                 |          |
 
 **User's choice:** Connection-bound marker; fail-safe default `background`. **Notes:** Per-call param rejected — a
-background agent could pass `mode:"live"` to dodge the `agent-okay` gate (self-elevation). Mode binds to how the
+background agent could pass `mode:"live"` to dodge the `agent-ok` gate (self-elevation). Mode binds to how the
 connection authenticated, mirroring the existing `parseRole` literal-only default-deny pattern. Absent/garbled marker →
 background.
 
 ---
 
-## agent-okay scope in Phase 2 (PERM-01)
+## agent-ok scope in Phase 2 (PERM-01)
 
-| Option                              | Description                                                                                                                                                                     | Selected |
-| ----------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------- |
-| Read-side predicate + capture stamp | Build the reusable `agent-okay` filter predicate (thin compose over existing tags+inInbox filters) AND stamp agent-captured items; defer routing-time action gating to Phase 3. | ✓        |
-| Mechanism only (apply to nothing)   | Establish the tag convention/predicate but wire it to no caller in Phase 2.                                                                                                     |          |
+| Option                              | Description                                                                                                                                                                   | Selected |
+| ----------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------- |
+| Read-side predicate + capture stamp | Build the reusable `agent-ok` filter predicate (thin compose over existing tags+inInbox filters) AND stamp agent-captured items; defer routing-time action gating to Phase 3. | ✓        |
+| Mechanism only (apply to nothing)   | Establish the tag convention/predicate but wire it to no caller in Phase 2.                                                                                                   |          |
 
 **User's choice:** Read-side predicate + capture stamp. **Notes:** "Mechanism only" rejected — ships dead code (violates
 the no-unused-mechanism rule) and leaves the success criterion only assertable, not demonstrable. Boundary: Phase 2 owns
@@ -71,7 +71,7 @@ Zod schema and the `inputSchema` override (dual-schema rule).
 - Exact JSON field naming/casing (keep `v`/`session`/`agent`/`created_at` intent stable for Phase 5).
 - The exact env-marker literal (`interactive` vs `live`) — parse literal-only.
 - Where in PolicyEngine/funnel the create `gate` rule lives + the owner-auth call that sets the grant.
-- Whether the agent-origin tag and the `agent-okay` gate tag are one tag or two — resolve in planning.
+- Whether the agent-origin tag and the `agent-ok` gate tag are one tag or two — resolve in planning.
 
 ## Deferred Ideas
 

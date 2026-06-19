@@ -62,13 +62,13 @@ perspective provisioning/resolution stays in Phase 6.
 
 ## Live auto-capture — Placement (LIVE-01)
 
-| Option                                        | Description                                                                                                         | Selected |
-| --------------------------------------------- | ------------------------------------------------------------------------------------------------------------------- | -------- |
-| Inbox + agent-okay + live marker, route later | Lands in inbox with lineage + live-capture marker; Phase 3 routing places it later; fast, distinct from archaeology | ✓        |
-| Route immediately into a project              | Run Phase 3 routing brain at capture time; heavy, slow, duplicates Phase 3                                          |          |
-| File into current work's project              | Contextually obvious but agent rarely knows the live OF project confidently — misfiling risk                        |          |
+| Option                                      | Description                                                                                                         | Selected |
+| ------------------------------------------- | ------------------------------------------------------------------------------------------------------------------- | -------- |
+| Inbox + agent-ok + live marker, route later | Lands in inbox with lineage + live-capture marker; Phase 3 routing places it later; fast, distinct from archaeology | ✓        |
+| Route immediately into a project            | Run Phase 3 routing brain at capture time; heavy, slow, duplicates Phase 3                                          |          |
+| File into current work's project            | Contextually obvious but agent rarely knows the live OF project confidently — misfiling risk                        |          |
 
-**User's choice:** Inbox + agent-okay + live marker, route later **Notes:** Live capture stays distinct from Phase 5
+**User's choice:** Inbox + agent-ok + live marker, route later **Notes:** Live capture stays distinct from Phase 5
 archaeology (no `archaeology` tag) and reuses the Phase 2 native capture path + lineage stamp. The live-capture marker
 tag name is pinned during planning against the `review-*` / `routing-*` family.
 
