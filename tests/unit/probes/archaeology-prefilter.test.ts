@@ -36,6 +36,9 @@ import {
   formatAge,
   groupSessionsByRepo,
   formatProbeOutput,
+  hasOpenLoopSignal,
+  filterToOpenLoopRecords,
+  truncateMessageText,
 } from '../../../probes/archaeology-prefilter.js';
 
 // Fixed reference time: 2026-06-16T12:00:00.000Z
@@ -506,5 +509,175 @@ describe('formatProbeOutput', () => {
     ];
     const out = formatProbeOutput(mixedGroups, 0, 0, 2);
     expect(out).toContain('in 1 repo(s)');
+  });
+});
+
+// --- hasOpenLoopSignal ---
+describe('hasOpenLoopSignal', () => {
+  // Tier-1: park-skill markers
+  it('matches "Parked." from branch-memory park output', () => {
+    expect(hasOpenLoopSignal('Parked. Next session picks up at:')).toBe(true);
+  });
+
+  it('matches "picks up at" from park template', () => {
+    expect(hasOpenLoopSignal('Next session picks up at:\n  1. Clone the repo')).toBe(true);
+  });
+
+  it('matches "queued below" from park template', () => {
+    expect(hasOpenLoopSignal('Everything else (NR dashboards) is queued below those two.')).toBe(true);
+  });
+
+  it('matches "what\'s-next list" from park template', () => {
+    expect(hasOpenLoopSignal("in the what's-next list")).toBe(true);
+  });
+
+  // Tier-2: GTD / planning language
+  it('matches TODO (word boundary, case-insensitive)', () => {
+    expect(hasOpenLoopSignal('Add a TODO here')).toBe(true);
+    expect(hasOpenLoopSignal('todo: fix this')).toBe(true);
+  });
+
+  it('does not match TODO inside a URL or compound word', () => {
+    // \bTODO\b should not match "TODOLIST" (no word boundary after)
+    expect(hasOpenLoopSignal('See TODOLIST.md for details')).toBe(false);
+  });
+
+  it('matches "need to"', () => {
+    expect(hasOpenLoopSignal('We need to finish the migration')).toBe(true);
+  });
+
+  it('matches "follow up"', () => {
+    expect(hasOpenLoopSignal('Follow up with the infra team')).toBe(true);
+  });
+
+  it('matches "follow-up" (hyphenated)', () => {
+    expect(hasOpenLoopSignal('A follow-up is required')).toBe(true);
+  });
+
+  it('matches "open question"', () => {
+    expect(hasOpenLoopSignal('Open question: should we use SQLite here?')).toBe(true);
+  });
+
+  it('matches "come back to"', () => {
+    expect(hasOpenLoopSignal('Come back to the auth refactor next sprint')).toBe(true);
+  });
+
+  it('matches "not yet"', () => {
+    expect(hasOpenLoopSignal('Not yet implemented — see ROADMAP.md')).toBe(true);
+  });
+
+  it('does not match ordinary prose with no open-loop signal', () => {
+    expect(hasOpenLoopSignal('The test passed and the build is green.')).toBe(false);
+    expect(hasOpenLoopSignal('Here is the summary of what was done.')).toBe(false);
+  });
+});
+
+// --- filterToOpenLoopRecords ---
+describe('filterToOpenLoopRecords', () => {
+  const ts = '2026-06-18T10:00:00.000Z';
+  const mkRec = (session_id: string, text: string, role = 'assistant') => ({
+    session_id,
+    timestamp: ts,
+    role,
+    text,
+  });
+
+  it('returns empty array when no records match', () => {
+    const records = [mkRec('s1', 'The refactor is complete.'), mkRec('s1', 'Tests pass.')];
+    expect(filterToOpenLoopRecords(records)).toHaveLength(0);
+  });
+
+  it('session gate: discards a session with no signal even if other sessions qualify', () => {
+    const records = [
+      mkRec('s-clean', 'Everything is done.'),
+      mkRec('s-signal', 'Parked. Next session picks up at: write the tests.'),
+    ];
+    const result = filterToOpenLoopRecords(records);
+    expect(result.every((r) => r.session_id === 's-signal')).toBe(true);
+    expect(result.some((r) => r.session_id === 's-clean')).toBe(false);
+  });
+
+  it('message filter: within a qualifying session, discards messages without a signal', () => {
+    const records = [
+      mkRec('s1', 'Here is an explanation of the architecture.'), // no signal
+      mkRec('s1', 'need to revisit the error handling'), // signal
+      mkRec('s1', 'The PR is merged.'), // no signal
+    ];
+    const result = filterToOpenLoopRecords(records);
+    expect(result).toHaveLength(1);
+    expect(result[0].text).toBe('need to revisit the error handling');
+  });
+
+  it('keeps all signal-bearing messages across multiple sessions', () => {
+    const records = [
+      mkRec('sA', 'Parked. picks up at: step 1'),
+      mkRec('sA', 'Clean message in same session'),
+      mkRec('sB', 'TODO: add the dedup check'),
+      mkRec('sC', 'Everything is done.'), // no signal — whole session excluded
+    ];
+    const result = filterToOpenLoopRecords(records);
+    const ids = result.map((r) => r.session_id);
+    expect(ids).toContain('sA');
+    expect(ids).toContain('sB');
+    expect(ids).not.toContain('sC');
+    expect(result).toHaveLength(2); // only the signal messages, not "Clean message"
+  });
+
+  it('preserves session_id, timestamp, role, text shape on results', () => {
+    const records = [mkRec('s1', 'TODO: check this', 'user')];
+    const result = filterToOpenLoopRecords(records);
+    expect(result[0]).toMatchObject({ session_id: 's1', timestamp: ts, role: 'user' });
+    expect(result[0].text).toContain('TODO: check this');
+  });
+
+  it('excludes skill injection records (Base directory for this skill:) even if they contain keywords', () => {
+    const skillInjection =
+      'Base directory for this skill: /Users/j/.claude/skills/session-archaeology\n# Session Archaeology\nYou need to TODO run the probe.';
+    const real = mkRec('s2', 'Parked. picks up at: write the filter tests.');
+    const records = [mkRec('s1', skillInjection), real];
+    const result = filterToOpenLoopRecords(records);
+    expect(result.every((r) => r.session_id === 's2')).toBe(true);
+  });
+
+  it('excludes command invocation records (<command-message>) even if they contain keywords', () => {
+    const cmdRecord = mkRec('s1', '<command-message>archaeology</command-message>\nneed to run TODO');
+    const real = mkRec('s2', 'TODO: fix the parser');
+    const records = [cmdRecord, real];
+    const result = filterToOpenLoopRecords(records);
+    expect(result.every((r) => r.session_id === 's2')).toBe(true);
+  });
+
+  it('tail-truncates long signal messages to MAX_MSG_CHARS (200)', () => {
+    const longPrefix = 'x'.repeat(1000);
+    const tail = ' TODO: fix this before merging';
+    const records = [mkRec('s1', longPrefix + tail)];
+    const result = filterToOpenLoopRecords(records);
+    expect(result).toHaveLength(1);
+    expect(result[0].text).toContain('TODO: fix this before merging');
+    expect(result[0].text.length).toBeLessThanOrEqual(220); // 200 chars + prefix label
+    expect(result[0].text).toMatch(/^\[… \+\d+ chars\]/);
+  });
+});
+
+// --- truncateMessageText ---
+describe('truncateMessageText', () => {
+  it('returns text unchanged when at or below 200 chars', () => {
+    const short = 'a'.repeat(200);
+    expect(truncateMessageText(short)).toBe(short);
+  });
+
+  it('truncates text longer than 200 chars keeping the tail', () => {
+    const tail = 'TAIL';
+    const long = 'x'.repeat(1000) + tail;
+    const result = truncateMessageText(long);
+    expect(result.endsWith(tail)).toBe(true);
+    expect(result).toMatch(/^\[… \+\d+ chars\] /);
+  });
+
+  it('reports the correct dropped character count in the prefix', () => {
+    const long = 'x'.repeat(300);
+    const result = truncateMessageText(long);
+    // dropped = 300 - 200 = 100
+    expect(result).toMatch(/^\[… \+100 chars\]/);
   });
 });

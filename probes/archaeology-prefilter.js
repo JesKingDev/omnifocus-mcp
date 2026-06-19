@@ -174,6 +174,107 @@ export function filterTranscriptLines(lines, nowMs, watermarkMap = {}) {
 }
 
 /**
+ * Maximum characters to emit per message text. Messages longer than this are
+ * tail-truncated — the END of a message is kept because open-loop markers
+ * ("TODO:", "Parked.", "next:") almost always appear at the tail. A prefix of
+ * `[… +N chars] ` is prepended so the model knows content was removed.
+ *
+ * At 600 chars, 599 signal records ≈ 360KB max (vs 4.4MB untruncated), a ~92%
+ * reduction while preserving all park-skill and GTD markers.
+ */
+const MAX_MSG_CHARS = 200;
+
+/**
+ * Tail-truncate a message text to MAX_MSG_CHARS. Keeps the END so open-loop
+ * markers at the close of an assistant turn are never dropped.
+ *
+ * @param {string} text
+ * @returns {string}
+ */
+export function truncateMessageText(text) {
+  if (text.length <= MAX_MSG_CHARS) return text;
+  const dropped = text.length - MAX_MSG_CHARS;
+  return `[… +${dropped} chars] ` + text.slice(-MAX_MSG_CHARS);
+}
+
+/**
+ * Open-loop signal patterns — two tiers:
+ *
+ * Tier 1 — park-skill markers: exact phrases emitted by the branch-memory "park"
+ *   output template. High precision; no false positives in normal prose.
+ *     "Parked."              — first line of every park output
+ *     "picks up at"          — from "Next session picks up at:"
+ *     "Next session picks up" — header variant
+ *     "queued below"         — "Everything else … is queued below"
+ *     "what's-next list"     — hyphenated label from park template
+ *
+ * Tier 2 — semantic GTD / planning language: common open-loop markers in
+ *   assistant turns and user planning messages.
+ *
+ * Case-insensitive. Applied at message level inside filterToOpenLoopRecords.
+ */
+const OPEN_LOOP_RE =
+  /Parked\.|picks up at|Next session picks up|queued below|what's-next list|\bTODO\b|\bFIXME\b|next:\s|\bnext up\b|need to|needs to|will need|still need|open question|open loop|follow.?up|come back to|\brevisit\b|don't forget|remember to|\bnot yet\b|\bpending\b|blocked on|in progress|haven't yet/i;
+
+/**
+ * Structural artifact patterns — records whose text matches these are noise,
+ * not open loops, and should be excluded BEFORE the keyword filter runs.
+ *
+ * - "Base directory for this skill:" — Claude Code skill file injection header.
+ *   Every /archaeology (or any skill) invocation injects the full SKILL.md as a
+ *   user message; SKILL.md contains dozens of keywords ("need to", "TODO", etc.)
+ *   in its own instructions, making every skill session a false positive.
+ * - "<command-message>" — Claude Code slash-command invocation XML injected as
+ *   a user message; contains no user-authored open-loop content.
+ */
+const STRUCTURAL_NOISE_RE = /Base directory for this skill:|<command-message>/;
+
+/**
+ * Returns true if the given text contains an open-loop signal keyword.
+ * Pure function — no I/O, no Date.now().
+ *
+ * @param {string} text
+ * @returns {boolean}
+ */
+export function hasOpenLoopSignal(text) {
+  return OPEN_LOOP_RE.test(text);
+}
+
+/**
+ * Two-level open-loop filter over a flat record array:
+ *
+ * Level 1 (session gate) — discard every session where NO message matches
+ *   OPEN_LOOP_RE. Typical scans have >80% sessions with no open-loop content;
+ *   this eliminates them entirely, preserving repo-grouped structure.
+ *
+ * Level 2 (message filter) — within qualifying sessions, keep only messages
+ *   that themselves match OPEN_LOOP_RE. Long sessions may have a single
+ *   signal-bearing line; this discards the surrounding prose.
+ *
+ * The result feeds groupSessionsByRepo unchanged — session headers still show
+ * repo, date, and session ID, giving enough context for the model to route
+ * each open loop. Pass --no-keyword-filter to skip this step for debugging.
+ *
+ * @param {Array<{session_id: string, timestamp: string, role: string, text: string}>} records
+ * @returns {Array<{session_id: string, timestamp: string, role: string, text: string}>}
+ */
+export function filterToOpenLoopRecords(records) {
+  // Strip structural artifacts before keyword matching so skill file injections
+  // and command invocations don't pollute the signal set.
+  const meaningful = records.filter((rec) => !STRUCTURAL_NOISE_RE.test(rec.text));
+
+  const qualifyingSessions = new Set();
+  for (const rec of meaningful) {
+    if (hasOpenLoopSignal(rec.text)) qualifyingSessions.add(rec.session_id);
+  }
+  // Tail-truncate so long messages don't blow out context — open-loop markers
+  // (park output, TODO, next:) almost always appear at the end of a message.
+  return meaningful
+    .filter((rec) => qualifyingSessions.has(rec.session_id) && hasOpenLoopSignal(rec.text))
+    .map((rec) => ({ ...rec, text: truncateMessageText(rec.text) }));
+}
+
+/**
  * Given filtered records, return { sessionId: maxIsoTimestamp } — the newest
  * message timestamp seen per session this run. Used to advance the watermark.
  */
@@ -425,6 +526,10 @@ function readJsonlDir(dirPath) {
 
 // Guard: only execute CLI logic when run directly as main
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
+  // --no-keyword-filter bypasses open-loop pre-filtering (for debugging / full-output mode).
+  // Recognised in scan mode only; ignored alongside --reset / --commit.
+  const noKeywordFilter = process.argv.includes('--no-keyword-filter');
+  // Mode is argv[2] (--reset, --commit, --no-keyword-filter → scan, or absent → scan).
   const arg = process.argv[2];
 
   if (arg === '--reset') {
@@ -491,6 +596,10 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
   const cwdMap = extractCwdPerSession(allLines);
 
   const filtered = filterTranscriptLines(allLines, nowMs, watermarkMap);
+
+  // Watermark advances from the full filtered set so sessions with no open-loop
+  // signal still get their watermark committed on --commit (they are "seen and
+  // clean", not "unseen"). Only the output is narrowed by the keyword filter.
   const pending = maxTsPerSession(filtered);
   try {
     writeJsonFile(PENDING_FILE, pending);
@@ -499,9 +608,13 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
     process.exit(1);
   }
 
-  const repoGroups = groupSessionsByRepo(filtered, cwdMap, sessionDirs, nowMs, fs.existsSync);
+  // Apply keyword pre-filter unless bypassed. Reduces output from full transcript
+  // prose to signal-bearing messages only (park markers + GTD language).
+  const signalFiltered = noKeywordFilter ? filtered : filterToOpenLoopRecords(filtered);
+
+  const repoGroups = groupSessionsByRepo(signalFiltered, cwdMap, sessionDirs, nowMs, fs.existsSync);
   const totalSessions = repoGroups.reduce((n, g) => n + g.sessions.length, 0);
-  const fullOutput = formatProbeOutput(repoGroups, filtered.length, totalSessions, dirs.length);
+  const fullOutput = formatProbeOutput(repoGroups, signalFiltered.length, totalSessions, dirs.length);
 
   process.stdout.write(fullOutput);
 
