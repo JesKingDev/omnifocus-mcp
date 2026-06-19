@@ -24,7 +24,7 @@
  */
 
 import { createHash, timingSafeEqual } from 'node:crypto';
-import type { Role } from '../contracts/roles.js';
+import type { Role, Mode } from '../contracts/roles.js';
 
 // ---------------------------------------------------------------------------
 // Public types
@@ -37,6 +37,11 @@ import type { Role } from '../contracts/roles.js';
 export interface TokenEntry {
   role: Role;
   principal: string;
+  /** Per-token mode override. When set, requests using this token run in this
+   *  mode regardless of the OMNIFOCUS_MCP_INTERACTIVE process env var. Used by
+   *  MCP_INTERACTIVE_TOKEN to mark interactive Claude Code sessions as 'interactive'
+   *  without requiring a separate process or env var change. */
+  mode?: Mode;
 }
 
 // ---------------------------------------------------------------------------
@@ -118,6 +123,15 @@ export function buildTokenRegistry(env: Record<string, string | undefined>): Map
   const ownerToken = env.MCP_OWNER_TOKEN;
   if (ownerToken) {
     registry.set(ownerToken, { role: 'owner', principal: 'http-owner' });
+  }
+
+  // MCP_INTERACTIVE_TOKEN: agent role that marks requests as interactive mode.
+  // Use this token in Claude Desktop / interactive Claude Code sessions so that
+  // task creates go through POLICY_GATE_CAPTURE_CONFIRM rather than
+  // POLICY_GATE_BACKGROUND_ONLY (D-09, PERM-02).
+  const interactiveToken = env.MCP_INTERACTIVE_TOKEN;
+  if (interactiveToken) {
+    registry.set(interactiveToken, { role: 'agent', principal: 'http-interactive', mode: 'interactive' });
   }
 
   return registry;

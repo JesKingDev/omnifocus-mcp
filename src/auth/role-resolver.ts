@@ -27,8 +27,23 @@
  * Only the exact literal 'owner' resolves to OWNER.
  */
 
+import { AsyncLocalStorage } from 'node:async_hooks';
 import type { Role, RoleSource, ResolvedIdentity, Mode } from '../contracts/roles.js';
 import type { TokenEntry } from './token-registry.js';
+
+// Per-request mode context. Set by runWithMode() in the HTTP server for tokens
+// that carry a mode override (e.g. MCP_INTERACTIVE_TOKEN). Checked by parseMode()
+// before falling back to the process env var so WriteTool sees the right mode
+// without any signature changes.
+const requestModeStorage = new AsyncLocalStorage<Mode>();
+
+/**
+ * Runs fn within an async context where parseMode() returns the given mode.
+ * Used by the HTTP server to scope per-token mode to a single request's call tree.
+ */
+export function runWithMode<T>(mode: Mode, fn: () => Promise<T>): Promise<T> {
+  return requestModeStorage.run(mode, fn);
+}
 
 /**
  * Parses OMNIFOCUS_MCP_ROLE with default-deny semantics (ROLE-02, D-01).
@@ -61,6 +76,8 @@ export function parseRole(env: Record<string, string | undefined> = process.env)
  * @param env Optional env override for tests. Defaults to process.env.
  */
 export function parseMode(env: Record<string, string | undefined> = process.env): Mode {
+  const contextMode = requestModeStorage.getStore();
+  if (contextMode !== undefined) return contextMode;
   return env.OMNIFOCUS_MCP_INTERACTIVE === 'true' ? 'interactive' : 'background';
 }
 

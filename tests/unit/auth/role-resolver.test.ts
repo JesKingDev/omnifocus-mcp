@@ -1,5 +1,11 @@
 import { describe, it, expect } from 'vitest';
-import { parseRole, resolveStdioIdentity, resolveHttpIdentity, parseMode } from '../../../src/auth/role-resolver.js';
+import {
+  parseRole,
+  resolveStdioIdentity,
+  resolveHttpIdentity,
+  parseMode,
+  runWithMode,
+} from '../../../src/auth/role-resolver.js';
 import type { ResolvedIdentity } from '../../../src/contracts/roles.js';
 import type { TokenEntry } from '../../../src/auth/token-registry.js';
 
@@ -132,6 +138,32 @@ describe('resolveStdioIdentity', () => {
 // stub form is gone; these tests will be RED on Wave 0 because the source
 // still has the stub signature and src/auth/token-registry.js does not exist.
 // ---------------------------------------------------------------------------
+
+// ---------------------------------------------------------------------------
+// parseMode — AsyncLocalStorage context override (per-request interactive mode)
+// ---------------------------------------------------------------------------
+
+describe('parseMode — AsyncLocalStorage context override via runWithMode', () => {
+  it('runWithMode interactive → parseMode returns interactive inside callback', async () => {
+    const result = await runWithMode('interactive', async () => parseMode({}));
+    expect(result).toBe('interactive');
+  });
+
+  it('runWithMode context overrides env-var value', async () => {
+    const result = await runWithMode('interactive', async () => parseMode({ OMNIFOCUS_MCP_INTERACTIVE: 'false' }));
+    expect(result).toBe('interactive');
+  });
+
+  it('outside runWithMode context parseMode still respects env var', () => {
+    expect(parseMode({ OMNIFOCUS_MCP_INTERACTIVE: 'true' })).toBe('interactive');
+    expect(parseMode({})).toBe('background');
+  });
+
+  it('runWithMode background → parseMode returns background even when env says interactive', async () => {
+    const result = await runWithMode('background', async () => parseMode({ OMNIFOCUS_MCP_INTERACTIVE: 'true' }));
+    expect(result).toBe('background');
+  });
+});
 
 describe('resolveHttpIdentity — Phase 4 implementation', () => {
   it('returns transport=http, roleSource=http-token, principal from agent TokenEntry (HTTP-05)', () => {

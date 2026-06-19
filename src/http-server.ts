@@ -7,7 +7,7 @@ import { randomUUID } from 'node:crypto';
 import { getVersionInfo } from './utils/version.js';
 import { validateTokenSet } from './auth/token-registry.js';
 import type { TokenEntry } from './auth/token-registry.js';
-import { resolveHttpIdentity, parseMode } from './auth/role-resolver.js';
+import { resolveHttpIdentity, parseMode, runWithMode } from './auth/role-resolver.js';
 import type { ResolvedContext } from './contracts/roles.js';
 
 const logger = createLogger('http-server');
@@ -234,20 +234,29 @@ export class HttpServerManager {
       const parsedUrl = new URL(req.url ?? '/', `http://${req.headers.host ?? 'localhost'}`);
       const pathname = parsedUrl.pathname.replace(/\/$/, '') || '/';
 
-      // Route requests based on pathname
-      switch (pathname) {
-        case '/mcp':
-          await this.handleMcpRequest(req, res, requestId, tokenEntry);
-          break;
-        case '/health':
-          this.handleHealthRequest(req, res);
-          break;
-        case '/sessions':
-          this.handleSessionsRequest(req, res, tokenEntry);
-          break;
-        default:
-          this.handleNotFoundRequest(req, res);
-          break;
+      // Route requests. When the token carries a mode override (e.g. MCP_INTERACTIVE_TOKEN),
+      // wrap routing in runWithMode so parseMode() returns the right value anywhere in the
+      // async call tree — including inside WriteTool's gate fork — without signature changes.
+      const dispatch = async (): Promise<void> => {
+        switch (pathname) {
+          case '/mcp':
+            await this.handleMcpRequest(req, res, requestId, tokenEntry);
+            break;
+          case '/health':
+            this.handleHealthRequest(req, res);
+            break;
+          case '/sessions':
+            this.handleSessionsRequest(req, res, tokenEntry);
+            break;
+          default:
+            this.handleNotFoundRequest(req, res);
+            break;
+        }
+      };
+      if (tokenEntry.mode) {
+        await runWithMode(tokenEntry.mode, dispatch);
+      } else {
+        await dispatch();
       }
 
       const duration = Date.now() - startTime;

@@ -141,4 +141,28 @@ describe('buildTokenRegistry — registry construction from env vars (HTTP-05)',
     const registry = buildTokenRegistry({});
     expect(registry.size).toBe(0);
   });
+
+  it('MCP_INTERACTIVE_TOKEN → agent role with mode=interactive and principal=http-interactive (HTTP-05)', () => {
+    const INTERACTIVE_TOKEN = 'd'.repeat(64);
+    const registry = buildTokenRegistry({ MCP_INTERACTIVE_TOKEN: INTERACTIVE_TOKEN });
+    expect(registry.size).toBe(1);
+    expect(registry.get(INTERACTIVE_TOKEN)).toStrictEqual({
+      role: 'agent',
+      principal: 'http-interactive',
+      mode: 'interactive',
+    });
+  });
+
+  it('all three token vars present → three-entry registry (HTTP-05)', () => {
+    const INTERACTIVE_TOKEN = 'd'.repeat(64);
+    const registry = buildTokenRegistry({
+      MCP_AGENT_TOKEN: AGENT_TOKEN,
+      MCP_OWNER_TOKEN: OWNER_TOKEN,
+      MCP_INTERACTIVE_TOKEN: INTERACTIVE_TOKEN,
+    });
+    expect(registry.size).toBe(3);
+    expect(registry.get(INTERACTIVE_TOKEN)).toHaveProperty('mode', 'interactive');
+    expect(registry.get(AGENT_TOKEN)).not.toHaveProperty('mode');
+    expect(registry.get(OWNER_TOKEN)).not.toHaveProperty('mode');
+  });
 });
